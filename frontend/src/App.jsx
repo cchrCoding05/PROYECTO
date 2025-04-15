@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import './App.css';
 
+// Componentes de layout
+import Navbar from './components/Layout/Navbar';
+
 // Componentes de autenticación
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
@@ -22,7 +25,13 @@ const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
-    return <div className="loading-container">Cargando...</div>;
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+    );
   }
   
   if (!isAuthenticated) {
@@ -34,45 +43,19 @@ const ProtectedRoute = ({ children }) => {
 
 // Componente principal de la navegación
 const AppNavigation = () => {
-  const { currentUser, logout } = useAuth();
-
-  const handleLogout = async () => {
-    await logout();
-  };
-
   return (
     <BrowserRouter>
-      <div className="app-container">
-        <header className="app-header">
-          <div className="header-logo">
-            <h1>HelpEx</h1>
-          </div>
-          <nav className="header-nav">
-            {currentUser ? (
-              <>
-                <a href="/buscar/profesionales">Profesionales</a>
-                <a href="/buscar/objetos">Objetos</a>
-                <a href="/perfil">Perfil</a>
-                <button onClick={handleLogout} className="logout-btn">Cerrar sesión</button>
-                <div className="user-credits">{currentUser.credits || 0} pts</div>
-              </>
-            ) : (
-              <>
-                <a href="/login">Iniciar sesión</a>
-                <a href="/registro">Registrarse</a>
-              </>
-            )}
-          </nav>
-        </header>
+      <div className="d-flex flex-column min-vh-100">
+        <Navbar />
 
-        <main className="app-content">
+        <main className="container flex-grow-1 py-3">
           <Routes>
-            <Route path="/" element={<Navigate to="/buscar/profesionales" />} />
+            <Route path="/" element={<Navigate to="/search/professionals" />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/registro" element={<Register />} />
+            <Route path="/register" element={<Register />} />
             
             <Route 
-              path="/perfil" 
+              path="/profile" 
               element={
                 <ProtectedRoute>
                   <ProfileForm />
@@ -81,17 +64,17 @@ const AppNavigation = () => {
             />
             
             <Route 
-              path="/buscar/profesionales" 
+              path="/search/professionals" 
               element={<ProfessionalSearch />} 
             />
             
             <Route 
-              path="/buscar/objetos" 
+              path="/search/products" 
               element={<ProductSearch />} 
             />
             
             <Route 
-              path="/productos/:productId/negociar" 
+              path="/products/:productId/negotiate" 
               element={
                 <ProtectedRoute>
                   <ProductNegotiation />
@@ -101,8 +84,12 @@ const AppNavigation = () => {
           </Routes>
         </main>
 
-        <footer className="app-footer">
-          <p>&copy; 2023 HelpEx - Plataforma de Intercambio de Servicios sin Dinero</p>
+        <footer className="py-3 mt-auto bg-body-tertiary border-top">
+          <div className="container text-center">
+            <p className="mb-0 text-body-secondary">
+              &copy; 2023 HelpEx - Plataforma de Intercambio de Servicios sin Dinero
+            </p>
+          </div>
         </footer>
       </div>
     </BrowserRouter>

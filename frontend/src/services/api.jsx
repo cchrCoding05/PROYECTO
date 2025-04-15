@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const BASE_URL = ""; // URL relativa para usar con el proxy de Vite
+const BASE_URL = "http://localhost:8000"; 
 
 // Manejador de respuestas con gestión de errores
 const handleResponse = async (response) => {
@@ -19,11 +19,11 @@ const handleResponse = async (response) => {
 
     return data;
   } catch (error) {
-    console.error("Error al procesar la respuesta:", error);
+    console.error("Error parsing response:", error);
     if (!response.ok) {
       return Promise.reject(response.statusText);
     }
-    return { success: true }; // Para respuestas exitosas no-JSON
+    return { success: true };
   }
 };
 
@@ -32,11 +32,13 @@ export const fetchApi = async (endpoint, options = {}) => {
   try {
     const url = `${BASE_URL}${endpoint}`;
 
-    // Opciones predeterminadas
     const defaultOptions = {
       headers: {
         "Content-Type": "application/json",
+        "Accept": "application/json"
       },
+      credentials: "include",
+      mode: "cors"
     };
 
     // Si hay un token en localStorage, añadirlo al header de Authorization
@@ -45,14 +47,14 @@ export const fetchApi = async (endpoint, options = {}) => {
       defaultOptions.headers['Authorization'] = `Bearer ${token}`;
     }
 
-    console.log(`Realizando petición ${options.method || "GET"} a ${url}`);
+    console.log(`Fetching ${options.method || "GET"} ${url}`);
 
     const response = await fetch(url, { ...defaultOptions, ...options });
-    console.log(`Estado de respuesta: ${response.status}`);
+    console.log(`Response status: ${response.status}`);
 
     return await handleResponse(response);
   } catch (error) {
-    console.error("Falló la petición a la API:", error);
+    console.error("API request failed:", error);
     throw error;
   }
 };
@@ -97,11 +99,21 @@ export const useApiCall = (endpoint, options = {}, dependencies = []) => {
 
 // Servicios específicos para autenticación
 export const authService = {
-  login: (credentials) => 
-    fetchApi("/api/login_check", {
+  login: (credentials) => {
+    // Depuración: Veamos qué credenciales estamos enviando
+    console.log('Enviando credenciales:', {
+      username: credentials.username,
+      password: credentials.password ? '********' : null
+    });
+    
+    return fetchApi("/api/login_check", {
       method: "POST",
-      body: JSON.stringify(credentials),
-    }),
+      body: JSON.stringify({
+        email: credentials.username,
+        password: credentials.password
+      }),
+    });
+  },
   
   register: (userData) =>
     fetchApi("/api/register", {
@@ -109,9 +121,33 @@ export const authService = {
       body: JSON.stringify(userData),
     }),
     
-  logout: () => fetchApi("/api/logout", { method: "POST" }),
+  logout: () => {
+    console.log('Ejecutando cierre de sesión...');
+    return fetchApi("/api/logout", { 
+      method: "POST" 
+    }).then(response => {
+      console.log('Cierre de sesión completado con éxito:', response);
+      return response;
+    }).catch(error => {
+      console.error('Error en la petición de cierre de sesión:', error);
+      throw error; // Re-lanzamos el error para que sea manejado por useAuth
+    });
+  },
   
-  getCurrentUser: () => fetchApi("/api/user/current")
+  getCurrentUser: () => {
+    // Si hay un token en localStorage, intentamos obtener el usuario actual
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return Promise.resolve(null); // Si no hay token, no hay usuario autenticado
+    }
+    
+    return fetchApi("/api/user/current").catch(error => {
+      // Si hay un error (ej. 401), limpiamos el token y devolvemos null
+      localStorage.removeItem('token');
+      console.log("Sesión expirada o inválida");
+      return null;
+    });
+  }
 };
 
 // Servicios para gestión de perfil de usuario

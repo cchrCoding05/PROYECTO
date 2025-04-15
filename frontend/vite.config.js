@@ -9,7 +9,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
-        // rewrite: (path) => path.replace(/^\/api/, '')  // Opcional si tu API no tiene /api como prefijo
+        rewrite: (path) => path  // Esto mantiene la ruta /api para que coincida con las rutas de Symfony
       }
     }
   }

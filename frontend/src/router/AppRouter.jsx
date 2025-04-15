@@ -30,6 +30,14 @@ const AppRouter = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/products" element={<ProductList />} />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <div className="profile-container">
+                <h2>Mi Perfil</h2>
+                <p>Aquí estará el contenido de tu perfil</p>
+              </div>
+            </ProtectedRoute>
+          } />
           <Route 
             path="/products/edit/:id" 
             element={

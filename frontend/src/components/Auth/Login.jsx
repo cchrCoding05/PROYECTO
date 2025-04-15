@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { authService } from '../../services/api.jsx';
 import AlertMessage from '../Layout/AlertMessage';
 import './Auth.css';
 
@@ -29,14 +28,22 @@ const Login = () => {
     setIsLoading(true);
     
     try {
+      if (!credentials.username || !credentials.password) {
+        setError('Por favor, introduce tu email y contraseña');
+        setIsLoading(false);
+        return;
+      }
+      
       const response = await login(credentials);
       
       if (response.success) {
+        console.log('Inicio de sesión exitoso, redirigiendo...');
         navigate('/buscar/profesionales');
       } else {
         setError(response.message || 'Error al iniciar sesión. Verifica tus credenciales.');
       }
     } catch (err) {
+      console.error('Error durante el inicio de sesión:', err);
       setError('Error de conexión al servidor.');
     } finally {
       setIsLoading(false);
@@ -52,15 +59,16 @@ const Login = () => {
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Usuario</label>
+            <label htmlFor="username">Email</label>
             <input
-              type="text"
+              type="email"
               id="username"
               name="username"
               value={credentials.username}
               onChange={handleChange}
               className="form-control"
               required
+              placeholder="tu@email.com"
             />
           </div>
           
@@ -74,6 +82,7 @@ const Login = () => {
               onChange={handleChange}
               className="form-control"
               required
+              placeholder="Tu contraseña"
             />
           </div>
           

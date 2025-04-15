@@ -1,8 +1,7 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .logo {
@@ -169,4 +168,44 @@ body {
     flex-direction: column;
     gap: 15px;
   }
+}
+
+/* Estilos personalizados que complementan a Bootstrap */
+
+/* Transiciones para mejorar la experiencia de usuario */
+.transition {
+  transition: all 0.3s ease;
+}
+
+.transition-slow {
+  transition: all 0.5s ease;
+}
+
+/* Hover effects */
+.hover-shadow-md:hover {
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+  transform: translateY(-3px);
+}
+
+/* Clases de ayuda */
+.object-fit-cover {
+  object-fit: cover;
+}
+
+/* Estilos personalizados para el tema claro/oscuro */
+[data-bs-theme="dark"] .text-body-emphasis {
+  color: #f8f9fa !important;
+}
+
+[data-bs-theme="dark"] .bg-body-tertiary {
+  background-color: #2b3035 !important;
+}
+
+[data-bs-theme="dark"] .border-light {
+  border-color: #495057 !important;
+}
+
+/* Estilos para tooltips y popovers */
+.custom-tooltip {
+  --bs-tooltip-bg: var(--bs-primary);
 }

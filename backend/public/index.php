@@ -1,25 +1,5 @@
 <?php
 
-// Configuración CORS
-header('Access-Control-Allow-Origin: http://localhost:5173');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-header('Access-Control-Allow-Credentials: true');
-header('Access-Control-Max-Age: 3600');
-
-// Para peticiones OPTIONS (preflight)
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-// Redireccionar las peticiones de API al archivo api.php
-if (strpos($_SERVER['REQUEST_URI'], '/api/') === 0) {
-    require_once __DIR__ . '/api.php';
-    exit();
-}
-
-// Para el resto de peticiones, usar el framework Symfony
 use App\Kernel;
 
 require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
