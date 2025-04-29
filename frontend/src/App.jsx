@@ -11,14 +11,14 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 
 // Componentes de perfil
-import ProfileForm from './components/profile/ProfileForm';
+import ProfileForm from './components/Profile/ProfileForm';
 
 // Componentes de búsqueda
 import ProfessionalSearch from './components/search/ProfessionalSearch';
 import ProductSearch from './components/search/ProductSearch';
 
 // Componentes de negociación
-import ProductNegotiation from './components/negotiation/ProductNegotiation';
+import ProductNegotiation from './components/Negotiation/ProductNegotiation';
 
 // Componente protegido para rutas que requieren autenticación
 const ProtectedRoute = ({ children }) => {

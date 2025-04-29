@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { professionalService } from '../../services/api.jsx';
+import AlertMessage from '../Layout/AlertMessage.jsx';
 
 const ProfessionalSearch = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,6 +39,14 @@ const ProfessionalSearch = () => {
       const results = await professionalService.search(query);
       console.log('Resultados de búsqueda:', results);
 
+      // Comprobar si la respuesta indica un error
+      if (results && results.success === false) {
+        setError(results.message || 'Error en la búsqueda de profesionales');
+        setProfessionals([]);
+        setNoResults(true);
+        return;
+      }
+
       // Validar que results es un array
       const professionalsArray = Array.isArray(results) ? results : [];
 
@@ -49,6 +58,7 @@ const ProfessionalSearch = () => {
         description: professional.description || 'Sin descripción',
         rating: professional.rating || 0,
         ratingCount: professional.ratingCount || 0,
+        sales: professional.cantidad_ventas || 0,
         // Pre-normalizar los campos de búsqueda para facilitar la comparación
         _normalizedName: normalizeText(professional.name || ''),
         _normalizedProfession: normalizeText(professional.profession || ''),
@@ -83,6 +93,7 @@ const ProfessionalSearch = () => {
       setError('Error al buscar profesionales: ' + (err.message || 'Error desconocido'));
       console.error('Error en la búsqueda:', err);
       setProfessionals([]);
+      setNoResults(true);
     } finally {
       setLoading(false);
     }
@@ -116,9 +127,23 @@ const ProfessionalSearch = () => {
     </div>
   );
 
+  // Manejar el cierre del mensaje de error
+  const handleCloseError = () => {
+    setError(null);
+  };
+
   return (
     <div className="container py-4">
       <h2 className="text-center display-5 mb-4">PROFESIONALES</h2>
+      
+      {error && (
+        <AlertMessage 
+          message={error}
+          type="danger"
+          duration={0} // No auto-cerrar
+          onClose={handleCloseError}
+        />
+      )}
       
       <form onSubmit={handleSearch} className="mb-5">
         <div className="input-group shadow-sm mx-auto" style={{ maxWidth: '600px' }}>
@@ -141,12 +166,6 @@ const ProfessionalSearch = () => {
             <span className="visually-hidden">Cargando...</span>
           </div>
           <p className="mt-2 text-muted">Cargando...</p>
-        </div>
-      )}
-      
-      {error && (
-        <div className="alert alert-danger text-center my-4" role="alert">
-          {error}
         </div>
       )}
       
@@ -207,23 +226,56 @@ const ProfessionalSearch = () => {
                     
                     <div className="d-flex flex-column align-items-center mb-3">
                       <div className="mb-1">
-                        {Array.from({ length: 5 }).map((_, index) => (
-                          <span 
-                            key={index}
-                            className={index < professional.rating ? "text-warning" : "text-body-tertiary"}
-                            style={{ fontSize: '1.1rem' }}
-                          >
-                            ★
-                          </span>
-                        ))}
+                        {[1, 2, 3, 4, 5].map((starIndex) => {
+                          // Asegurarse de que rating se trata como número
+                          const rating = parseFloat(professional.rating) || 0;
+                          
+                          // Determinar el tipo de estrella a mostrar
+                          let starClass = "text-body-tertiary"; // Estrella vacía por defecto
+                          
+                          if (rating >= starIndex) {
+                            starClass = "text-warning"; // Estrella completa
+                          } else if (rating >= starIndex - 0.5) {
+                            return (
+                              <span 
+                                key={starIndex}
+                                className="position-relative"
+                                style={{ fontSize: '1.1rem' }}
+                              >
+                                {/* Estrella a la mitad: primero una estrella vacía */}
+                                <span className="text-body-tertiary position-absolute">★</span>
+                                {/* Luego, media estrella coloreada usando clip-path */}
+                                <span 
+                                  className="text-warning"
+                                  style={{ 
+                                    clipPath: 'inset(0 50% 0 0)',
+                                    position: 'relative'
+                                  }}
+                                >★</span>
+                              </span>
+                            );
+                          }
+                          
+                          return (
+                            <span 
+                              key={starIndex}
+                              className={starClass}
+                              style={{ fontSize: '1.1rem' }}
+                            >
+                              ★
+                            </span>
+                          );
+                        })}
                       </div>
-                      <div className="text-body-secondary small">{professional.ratingCount} valoraciones</div>
+                      <div className="text-body-secondary small">
+                        {professional.ratingCount} valoraciones | {professional.sales} ventas
+                      </div>
                     </div>
                     
                     <div className="d-flex justify-content-center gap-3">
                       <button className="btn btn-primary">Contactar</button>
                       <button className="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', padding: 0 }}>
-                        💬
+                      <i className="bi bi-chat"></i>
                       </button>
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import ThemeToggle from '../ui/ThemeToggle';
+import ThemeToggle from '../UI/ThemeToggle';
 
 const Navbar = () => {
   const { isAuthenticated, currentUser, logout } = useAuth();
@@ -50,14 +50,16 @@ const Navbar = () => {
               <Link className="nav-link" to="/">Inicio</Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/products">Productos</Link>
-            </li>
-            <li className="nav-item">
               <Link className="nav-link" to="/search/products">Buscar Objetos</Link>
             </li>
             <li className="nav-item">
               <Link className="nav-link" to="/search/professionals">Buscar Profesionales</Link>
             </li>
+            {isAuthenticated && currentUser?.username === 'admin' && (
+              <li className="nav-item">
+                <Link className="nav-link" to="/admin/users">Gestión de Usuarios</Link>
+              </li>
+            )}
           </ul>
           
           {/* Toggle de tema solo visible en escritorio */}

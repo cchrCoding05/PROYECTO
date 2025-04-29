@@ -1,8 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from '../components/Home/Home';
-import Login from '../components/Auth/Login';
-import Register from '../components/Auth/Register';
 import ProductList from '../components/Products/ProductList';
 import EditProduct from '../components/Products/EditProduct';
 import Navbar from '../components/Layout/Navbar';
