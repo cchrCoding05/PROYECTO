@@ -12,48 +12,41 @@ class IntercambioServicioFixtures extends Fixture implements DependentFixtureInt
 {
     public function load(ObjectManager $manager): void
     {
-        $intercambiosServicios = [
+        $intercambios = [
             [
-                'servicio' => 0,
-                'solicitante' => 'mariagonzalez',
-                'cantidad_creditos' => 80,
-                'fecha_solicitud' => new \DateTimeImmutable('-15 days'),
-                'fecha_completado' => new \DateTimeImmutable('-10 days')
+                'cantidad_creditos' => 50,
+                'estado' => 'completado',
+                'servicio' => 'servicio_desarrollo_de_sitios_web',
+                'solicitante' => 'usuario_mariagarcia',
+                'fecha_completado' => new \DateTimeImmutable('2024-03-15')
             ],
-            // Your other fixtures
+            [
+                'cantidad_creditos' => 30,
+                'estado' => 'en_proceso',
+                'servicio' => 'servicio_diseño_de_logos',
+                'solicitante' => 'usuario_juanperez',
+                'fecha_completado' => null
+            ],
+            [
+                'cantidad_creditos' => 40,
+                'estado' => 'completado',
+                'servicio' => 'servicio_estrategia_de_marketing_digital',
+                'solicitante' => 'usuario_mariagarcia',
+                'fecha_completado' => new \DateTimeImmutable('2024-03-20')
+            ]
         ];
 
-        foreach ($intercambiosServicios as $index => $intercambioData) {
+        foreach ($intercambios as $intercambioData) {
             $intercambio = new IntercambioServicio();
-            
-            try {
-                $servicioReference = 'servicio-' . $intercambioData['servicio'];
-                $usuarioReference = 'usuario-' . $intercambioData['solicitante'];
-                
-                // Make sure to specify the class type for hasReference
-                if ($this->hasReference($servicioReference, Servicio::class) && 
-                    $this->hasReference($usuarioReference, Usuario::class)) {
-                    
-                    $intercambio->setServicio($this->getReference($servicioReference, Servicio::class));
-                    $intercambio->setSolicitante($this->getReference($usuarioReference, Usuario::class));
-                    $intercambio->setCantidadCreditos($intercambioData['cantidad_creditos']);
-                    $intercambio->setFechaSolicitud($intercambioData['fecha_solicitud']);
-                    
-                    if ($intercambioData['fecha_completado']) {
-                        $intercambio->setFechaCompletado($intercambioData['fecha_completado']);
-                    }
-                    
-                    $manager->persist($intercambio);
-                    
-                    // Referencias para usar en otras fixtures
-                    $this->addReference('intercambio-servicio-' . $index, $intercambio);
-                } else {
-                    echo "Reference not found: $servicioReference or $usuarioReference\n";
-                }
-            } catch (\Exception $e) {
-                // Log the error but continue with other fixtures
-                echo "Error loading fixture: " . $e->getMessage() . "\n";
-            }
+            $intercambio->setCantidadCreditos($intercambioData['cantidad_creditos']);
+            $intercambio->setEstado($intercambioData['estado']);
+            $intercambio->setServicio($this->getReference($intercambioData['servicio'], Servicio::class));
+            $intercambio->setSolicitante($this->getReference($intercambioData['solicitante'], Usuario::class));
+            $intercambio->setFechaSolicitud(new \DateTimeImmutable());
+            $intercambio->setFechaCompletado($intercambioData['fecha_completado']);
+
+            $manager->persist($intercambio);
+            $this->addReference('intercambio_servicio_' . $intercambioData['servicio'], $intercambio);
         }
 
         $manager->flush();
@@ -62,8 +55,8 @@ class IntercambioServicioFixtures extends Fixture implements DependentFixtureInt
     public function getDependencies(): array
     {
         return [
-            ServicioFixtures::class,
             UsuarioFixtures::class,
+            ServicioFixtures::class,
         ];
     }
 }

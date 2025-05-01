@@ -12,55 +12,71 @@ class ObjetoFixtures extends Fixture implements DependentFixtureInterface
     public function load(ObjectManager $manager): void
     {
         $objetos = [
+            // Objetos disponibles
             [
-                'usuario' => 'juanperez',
-                'titulo' => 'Monitor 24" Full HD',
-                'descripcion' => 'Monitor en excelente estado, apenas un año de uso. Resolución Full HD.',
-                'creditos' => 150
+                'titulo' => 'Laptop HP EliteBook',
+                'descripcion' => 'Laptop en excelente estado, ideal para trabajo y estudio',
+                'creditos' => 200,
+                'usuario' => 'usuario_juanperez',
+                'estado' => Objeto::ESTADO_DISPONIBLE
             ],
             [
-                'usuario' => 'mariagonzalez',
-                'titulo' => 'Tablet Samsung Galaxy Tab A',
-                'descripcion' => 'Tablet en buen estado, con funda protectora incluida. 64GB de almacenamiento.',
-                'creditos' => 200
+                'titulo' => 'Teclado Mecánico',
+                'descripcion' => 'Teclado mecánico RGB con switches Cherry MX Red',
+                'creditos' => 250,
+                'usuario' => 'usuario_carloslopez',
+                'estado' => Objeto::ESTADO_DISPONIBLE
             ],
             [
-                'usuario' => 'pedrosan',
-                'titulo' => 'Cámara Canon EOS 700D',
-                'descripcion' => 'Cámara réflex en buen estado. Incluye objetivo 18-55mm y batería extra.',
-                'creditos' => 350
+                'titulo' => 'Auriculares Sony',
+                'descripcion' => 'Auriculares inalámbricos con cancelación de ruido',
+                'creditos' => 180,
+                'usuario' => 'usuario_mariagarcia',
+                'estado' => Objeto::ESTADO_DISPONIBLE
+            ],
+            // Objetos reservados
+            [
+                'titulo' => 'Camara Canon EOS',
+                'descripcion' => 'Camara profesional con lente 18-55mm, perfecta para fotografía',
+                'creditos' => 300,
+                'usuario' => 'usuario_mariagarcia',
+                'estado' => Objeto::ESTADO_RESERVADO
             ],
             [
-                'usuario' => 'luciamartinez',
-                'titulo' => 'Colección de libros de matemáticas',
-                'descripcion' => 'Colección de 10 libros de matemáticas nivel universitario. Como nuevos.',
-                'creditos' => 120
+                'titulo' => 'Monitor LG 27',
+                'descripcion' => 'Monitor 4K con excelente calidad de imagen',
+                'creditos' => 150,
+                'usuario' => 'usuario_carloslopez',
+                'estado' => Objeto::ESTADO_RESERVADO
+            ],
+            // Objetos intercambiados
+            [
+                'titulo' => 'Smartphone Samsung',
+                'descripcion' => 'Smartphone en perfecto estado, con todos sus accesorios',
+                'creditos' => 350,
+                'usuario' => 'usuario_juanperez',
+                'estado' => Objeto::ESTADO_INTERCAMBIADO
             ],
             [
-                'usuario' => 'carlosrodriguez',
-                'titulo' => 'Set de herramientas eléctricas',
-                'descripcion' => 'Set completo de herramientas para electricista. Poco uso.',
-                'creditos' => 180
-            ],
-            [
-                'usuario' => 'analopez',
-                'titulo' => 'Batería de cocina premium',
-                'descripcion' => 'Juego de ollas y sartenes de alta calidad. Aptas para todo tipo de cocinas.',
-                'creditos' => 250
+                'titulo' => 'Tablet iPad',
+                'descripcion' => 'Tablet Apple con lápiz digital incluido',
+                'creditos' => 400,
+                'usuario' => 'usuario_mariagarcia',
+                'estado' => Objeto::ESTADO_INTERCAMBIADO
             ]
         ];
 
-        foreach ($objetos as $index => $objetoData) {
+        foreach ($objetos as $objetoData) {
             $objeto = new Objeto();
-            $objeto->setUsuario($this->getReference('usuario-' . $objetoData['usuario'], Usuario::class));
             $objeto->setTitulo($objetoData['titulo']);
             $objeto->setDescripcion($objetoData['descripcion']);
             $objeto->setCreditos($objetoData['creditos']);
-            
+            $objeto->setUsuario($this->getReference($objetoData['usuario'], Usuario::class));
+            $objeto->setFechaCreacion(new \DateTimeImmutable());
+            $objeto->setEstado($objetoData['estado']);
+
             $manager->persist($objeto);
-            
-            // Referencias para usar en otras fixtures
-            $this->addReference('objeto-' . $index, $objeto);
+            $this->addReference('objeto_' . strtolower(str_replace(' ', '_', $objetoData['titulo'])), $objeto);
         }
 
         $manager->flush();

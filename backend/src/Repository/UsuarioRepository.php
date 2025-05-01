@@ -16,6 +16,19 @@ class UsuarioRepository extends ServiceEntityRepository
         parent::__construct($registry, Usuario::class);
     }
 
+    public function findByProfession(?string $query = null): array
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->where('u.profesion IS NOT NULL');
+
+        if ($query) {
+            $qb->andWhere('u.profesion LIKE :query OR u.nombre_usuario LIKE :query')
+               ->setParameter('query', '%' . $query . '%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
 //    /**
 //     * @return Usuario[] Returns an array of Usuario objects
 //     */

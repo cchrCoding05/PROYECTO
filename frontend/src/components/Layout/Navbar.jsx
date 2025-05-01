@@ -9,15 +9,10 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      const result = await logout();
-      if (result.success) {
-        console.log('Cierre de sesión exitoso');
-        navigate('/');
-      } else {
-        console.error('Error al cerrar sesión:', result.message);
-      }
+      await logout();
+      navigate('/');
     } catch (error) {
-      console.error('Error inesperado al cerrar sesión:', error);
+      console.error('Error al cerrar sesión:', error);
     }
   };
 
@@ -80,7 +75,7 @@ const Navbar = () => {
             ) : (
               <div className="d-flex align-items-center gap-3">
                 <div className="text-nowrap d-none d-md-block">
-                  Hola, {currentUser?.username || currentUser?.userName || 'Usuario'}
+                  Hola, {currentUser?.username || 'Usuario'}
                 </div>
                 
                 {currentUser?.credits !== undefined && (

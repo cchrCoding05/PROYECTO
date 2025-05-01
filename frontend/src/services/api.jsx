@@ -1,60 +1,51 @@
 import { useState, useEffect } from 'react';
 
-const BASE_URL = "http://localhost:8000"; 
+const API_URL = 'http://localhost:8000/api';
 
-// Manejador de respuestas con gestión de errores
-const handleResponse = async (response) => {
-  // Verificar si la respuesta está vacía (como 204 No Content)
-  if (response.status === 204) {
-    return { success: true };
-  }
+// Función fetch mejorada con mejor gestión de errores
+const fetchApi = async (endpoint, options = {}) => {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Origin': window.location.origin,
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...options.headers,
+  };
 
   try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+      mode: 'cors',
+      cache: 'no-cache',
+    });
+
+    if (response.status === 204) {
+      return { success: true };
+    }
+
     const data = await response.json();
 
     if (!response.ok) {
-      const error = (data && data.message) || response.statusText;
+      if (response.status === 401) {
+        // Si recibimos un 401, limpiamos el token
+        localStorage.removeItem('token');
+        const error = new Error(data.message || 'Sesión expirada o inválida');
+        error.status = 401;
+        return Promise.reject(error);
+      }
+      const error = new Error(data.message || response.statusText);
+      error.status = response.status;
       return Promise.reject(error);
     }
 
     return data;
   } catch (error) {
-    console.error("Error parsing response:", error);
-    if (!response.ok) {
-      return Promise.reject(response.statusText);
+    console.error('Error en la petición:', error);
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error('No se pudo conectar con el servidor. Por favor, verifica tu conexión.');
     }
-    return { success: true };
-  }
-};
-
-// Función fetch mejorada con mejor gestión de errores
-export const fetchApi = async (endpoint, options = {}) => {
-  try {
-    const url = `${BASE_URL}${endpoint}`;
-
-    const defaultOptions = {
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      credentials: "include",
-      mode: "cors"
-    };
-
-    // Si hay un token en localStorage, añadirlo al header de Authorization
-    const token = localStorage.getItem('token');
-    if (token) {
-      defaultOptions.headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    console.log(`Fetching ${options.method || "GET"} ${url}`);
-
-    const response = await fetch(url, { ...defaultOptions, ...options });
-    console.log(`Response status: ${response.status}`);
-
-    return await handleResponse(response);
-  } catch (error) {
-    console.error("API request failed:", error);
     throw error;
   }
 };
@@ -97,65 +88,59 @@ export const useApiCall = (endpoint, options = {}, dependencies = []) => {
   return { data, loading, error };
 };
 
-// Servicios específicos para autenticación
+// Servicios de autenticación
 export const authService = {
-  login: (credentials) => {
-    // Depuración: Veamos qué credenciales estamos enviando
-    console.log('Enviando credenciales:', {
-      username: credentials.username,
-      password: credentials.password ? '********' : null
+  login: async (credentials) => {
+    const response = await fetchApi('/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
     });
-    
-    return fetchApi("/api/login_check", {
-      method: "POST",
-      body: JSON.stringify({
-        email: credentials.username,
-        password: credentials.password
-      }),
-    });
-  },
-  
-  register: (userData) =>
-    fetchApi("/api/register", {
-      method: "POST",
-      body: JSON.stringify(userData),
-    }),
-    
-  logout: () => {
-    console.log('Ejecutando cierre de sesión...');
-    return fetchApi("/api/logout", { 
-      method: "POST" 
-    }).then(response => {
-      console.log('Cierre de sesión completado con éxito:', response);
-      return response;
-    }).catch(error => {
-      console.error('Error en la petición de cierre de sesión:', error);
-      throw error; // Re-lanzamos el error para que sea manejado por useAuth
-    });
-  },
-  
-  getCurrentUser: () => {
-    // Si hay un token en localStorage, intentamos obtener el usuario actual
-    const token = localStorage.getItem('token');
-    if (!token) {
-      return Promise.resolve(null); // Si no hay token, no hay usuario autenticado
+    if (response.token) {
+      localStorage.setItem('token', response.token);
     }
-    
-    return fetchApi("/api/user/current").catch(error => {
-      // Si hay un error (ej. 401), limpiamos el token y devolvemos null
-      localStorage.removeItem('token');
-      console.log("Sesión expirada o inválida");
-      return null;
+    return response;
+  },
+  
+  register: async (userData) => {
+    return fetchApi('/register', {
+      method: 'POST',
+      body: JSON.stringify(userData)
     });
+  },
+  
+  logout: async () => {
+    await fetchApi('/api/logout', {
+      method: 'POST'
+    });
+    localStorage.removeItem('token');
+  },
+  
+  getCurrentUser: async () => {
+    return fetchApi('/user/profile');
+  },
+
+  getProfile: async () => {
+    return fetchApi('/user/profile');
+  },
+
+  updateProfile: async (profileData) => {
+    return fetchApi('/user/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData)
+    });
+  },
+
+  get isAuthenticated() {
+    return !!localStorage.getItem('token');
   }
 };
 
-// Servicios para gestión de perfil de usuario
+// Servicios de usuario
 export const userService = {
-  getProfile: () => fetchApi("/api/user/profile"),
+  getProfile: () => fetchApi("/user/profile"),
   
   updateProfile: (profileData) => 
-    fetchApi("/api/user/profile", {
+    fetchApi("/user/profile", {
       method: "PUT",
       body: JSON.stringify(profileData),
     }),
@@ -168,72 +153,129 @@ export const userService = {
     }),
 };
 
-// Servicios para gestión de profesionales
+// Servicios de profesionales
 export const professionalService = {
-  search: (query = "", filters = {}) => {
-    const queryParams = new URLSearchParams();
-    if (query) queryParams.append("q", query);
-    
-    Object.entries(filters).forEach(([key, value]) => {
-      queryParams.append(key, value);
-    });
-    
-    return fetchApi(`/api/professionals/search?${queryParams.toString()}`);
+  search: async (query = '') => {
+    return fetchApi(`/professionals/search?query=${encodeURIComponent(query)}`);
   },
   
-  getById: (id) => fetchApi(`/api/professionals/${id}`),
+  get: async (id) => {
+    return fetchApi(`/professionals/${id}`);
+  },
   
-  getRatings: (id) => fetchApi(`/api/professionals/${id}/ratings`),
+  getRatings: async (id) => {
+    return fetchApi(`/professionals/${id}/ratings`);
+  },
 };
 
-// Servicios para gestión de objetos/productos
+// Servicios de productos
 export const productService = {
-  search: (query = "", filters = {}) => {
-    const queryParams = new URLSearchParams();
-    if (query) queryParams.append("q", query);
+  search: async (query = '') => {
+    console.log('Llamando a la API de búsqueda de productos...');
+    const response = await fetchApi(`/products/search?query=${encodeURIComponent(query)}`);
+    console.log('Respuesta de la API de productos:', response);
     
-    Object.entries(filters).forEach(([key, value]) => {
-      queryParams.append(key, value);
-    });
+    // Acceder a response.data si existe, o usar response directamente
+    const results = response.data || response;
+    console.log('Datos de productos:', results);
     
-    return fetchApi(`/api/products/search?${queryParams.toString()}`);
+    // Asegurarnos de que cada producto tenga un estado
+    const processedResults = Array.isArray(results) ? results.map(product => ({
+      ...product,
+      state: product.state || 1
+    })) : [];
+    console.log('Productos procesados:', processedResults);
+    return processedResults;
   },
   
-  getById: (id) => fetchApi(`/api/products/${id}`),
+  get: async (id) => {
+    console.log('Obteniendo producto con ID:', id);
+    const response = await fetchApi(`/products/${id}`);
+    console.log('Producto obtenido:', response);
+    return response.data || response;
+  },
   
-  create: (productData) =>
-    fetchApi("/api/products", {
-      method: "POST",
-      body: JSON.stringify(productData),
-    }),
+  create: async (productData) => {
+    return fetchApi('/products', {
+      method: 'POST',
+      body: JSON.stringify(productData)
+    });
+  },
     
-  update: (id, productData) =>
-    fetchApi(`/api/products/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(productData),
-    }),
+  update: async (id, productData) => {
+    return fetchApi(`/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(productData)
+    });
+  },
     
-  delete: (id) =>
-    fetchApi(`/api/products/${id}`, {
-      method: "DELETE",
-    }),
+  delete: async (id) => {
+    return fetchApi(`/products/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // Nuevos endpoints para manejar estados
+  updateState: async (id, state) => {
+    return fetchApi(`/products/${id}/state`, {
+      method: 'PUT',
+      body: JSON.stringify({ state })
+    });
+  },
+
+  getState: async (id) => {
+    return fetchApi(`/products/${id}/state`);
+  },
+
+  // Endpoints de negociación con validaciones
+  proposePrice: async (productId, data) => {
+    // Primero verificamos el estado del producto
+    const productState = await fetchApi(`/products/${productId}/state`);
+    if (productState.state !== 1) { // 1 = Disponible
+      throw new Error('No se puede proponer precio para un producto no disponible');
+    }
+    return fetchApi(`/products/${productId}/propose-price`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  getNegotiations: async (productId) => {
+    return fetchApi(`/products/${productId}/negotiations`);
+  },
+
+  acceptOffer: async (productId, negotiationId) => {
+    // Verificamos el estado antes de aceptar
+    const productState = await fetchApi(`/products/${productId}/state`);
+    if (productState.state !== 1) { // 1 = Disponible
+      throw new Error('No se puede aceptar una oferta para un producto no disponible');
+    }
+    return fetchApi(`/products/${productId}/negotiations/${negotiationId}/accept`, {
+      method: 'POST'
+    });
+  },
+
+  rejectOffer: async (productId, negotiationId) => {
+    return fetchApi(`/products/${productId}/negotiations/${negotiationId}/reject`, {
+      method: 'POST'
+    });
+  }
 };
 
-// Servicios para gestión de créditos
+// Servicios de créditos
 export const creditService = {
-  getBalance: () => fetchApi("/api/credits/balance"),
+  getBalance: async () => {
+    return fetchApi('/credits/balance');
+  },
   
-  getHistory: () => fetchApi("/api/credits/history"),
+  getHistory: async () => {
+    return fetchApi('/credits/history');
+  },
   
-  transferCredits: (transferData) =>
-    fetchApi("/api/credits/transfer", {
-      method: "POST",
-      body: JSON.stringify(transferData),
-    }),
-    
-  proposePrice: (productId, price) =>
-    fetchApi(`/api/products/${productId}/propose-price`, {
-      method: "POST",
-      body: JSON.stringify({ price }),
-    }),
+  transfer: async (data) => {
+    return fetchApi('/credits/transfer', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
 };

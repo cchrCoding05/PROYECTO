@@ -4,33 +4,55 @@ namespace App\DataFixtures;
 use App\Entity\Usuario;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UsuarioFixtures extends Fixture
 {
+    private $passwordHasher;
+
+    public function __construct(UserPasswordHasherInterface $passwordHasher)
+    {
+        $this->passwordHasher = $passwordHasher;
+    }
+
     public function load(ObjectManager $manager): void
     {
         $usuarios = [
-            ['nombre_usuario' => 'juanperez', 'correo' => 'juan@example.com', 'contrasena' => 'password123', 'profesion' => 'Programador', 'descripcion' => 'Desarrollador web con 5 años de experiencia'],
-            ['nombre_usuario' => 'mariagonzalez', 'correo' => 'maria@example.com', 'contrasena' => 'password456', 'profesion' => 'Diseñadora', 'descripcion' => 'Diseñadora gráfica especializada en UI/UX'],
-            ['nombre_usuario' => 'pedrosan', 'correo' => 'pedro@example.com', 'contrasena' => 'password789', 'profesion' => 'Fotógrafo', 'descripcion' => 'Fotógrafo profesional de bodas y eventos'],
-            ['nombre_usuario' => 'luciamartinez', 'correo' => 'lucia@example.com', 'contrasena' => 'password101', 'profesion' => 'Profesora', 'descripcion' => 'Profesora de matemáticas con 10 años de experiencia'],
-            ['nombre_usuario' => 'carlosrodriguez', 'correo' => 'carlos@example.com', 'contrasena' => 'password202', 'profesion' => 'Electricista', 'descripcion' => 'Electricista certificado con experiencia en instalaciones residenciales'],
-            ['nombre_usuario' => 'analopez', 'correo' => 'ana@example.com', 'contrasena' => 'password303', 'profesion' => 'Cocinera', 'descripcion' => 'Chef especializada en cocina mediterránea']
+            [
+                'nombre_usuario' => 'juanperez',
+                'correo' => 'juan@example.com',
+                'contrasena' => 'Password123',
+                'profesion' => 'Desarrollador Web',
+                'descripcion' => 'Apasionado por la programación y el desarrollo web'
+            ],
+            [
+                'nombre_usuario' => 'mariagarcia',
+                'correo' => 'maria@example.com',
+                'contrasena' => 'Password123',
+                'profesion' => 'Diseñadora Gráfica',
+                'descripcion' => 'Especialista en diseño UI/UX'
+            ],
+            [
+                'nombre_usuario' => 'carloslopez',
+                'correo' => 'carlos@example.com',
+                'contrasena' => 'Password123',
+                'profesion' => 'Marketing Digital',
+                'descripcion' => 'Experto en estrategias de marketing online'
+            ]
         ];
 
-        foreach ($usuarios as $index => $userData) {
+        foreach ($usuarios as $usuarioData) {
             $usuario = new Usuario();
-            $usuario->setNombreUsuario($userData['nombre_usuario']);
-            $usuario->setCorreo($userData['correo']);
-            $usuario->setContrasena(password_hash($userData['contrasena'], PASSWORD_DEFAULT));
-            $usuario->setProfesion($userData['profesion']);
-            $usuario->setDescripcion($userData['descripcion']);
-            $usuario->setCreditos(100 + $index * 50); // Cada usuario tiene una cantidad diferente de créditos
+            $usuario->setNombreUsuario($usuarioData['nombre_usuario']);
+            $usuario->setCorreo($usuarioData['correo']);
+            $usuario->setContrasena($this->passwordHasher->hashPassword($usuario, $usuarioData['contrasena']));
+            $usuario->setProfesion($usuarioData['profesion']);
+            $usuario->setDescripcion($usuarioData['descripcion']);
+            $usuario->setFechaRegistro(new \DateTimeImmutable());
+            $usuario->setCreditos(100);
 
             $manager->persist($usuario);
-            
-            // Referencias para usar en otras fixtures
-            $this->addReference('usuario-' . $userData['nombre_usuario'], $usuario);
+            $this->addReference('usuario_' . $usuarioData['nombre_usuario'], $usuario);
         }
 
         $manager->flush();

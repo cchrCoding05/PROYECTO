@@ -7,17 +7,11 @@ import './Auth.css';
 const Register = () => {
   const [formData, setFormData] = useState({
     username: '',
+    email: '',
     password: '',
-    repeatPassword: '',
-    profession: ''
+    repeatPassword: ''
   });
   const [alert, setAlert] = useState(null);
-  const [professionOptions, setProfessionOptions] = useState([
-    'Fontanero',
-    'Electricista'
-  ]);
-  const [showProfessionDropdown, setShowProfessionDropdown] = useState(false);
-  const [customProfession, setCustomProfession] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -25,27 +19,24 @@ const Register = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const selectProfession = (profession) => {
-    setFormData({ ...formData, profession });
-    setShowProfessionDropdown(false);
-  };
-
-  const handleCustomProfession = (e) => {
-    setCustomProfession(e.target.value);
-  };
-
-  const addCustomProfession = () => {
-    if (customProfession.trim()) {
-      setProfessionOptions([...professionOptions, customProfession]);
-      selectProfession(customProfession);
-      setCustomProfession('');
-    }
+  const validatePassword = (password) => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    return hasUpperCase && hasNumber;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validación básica
+    // Validación de contraseña
+    if (!validatePassword(formData.password)) {
+      setAlert({ 
+        message: 'La contraseña debe contener al menos una mayúscula y un número', 
+        type: 'danger' 
+      });
+      return;
+    }
+
     if (formData.password !== formData.repeatPassword) {
       setAlert({ 
         message: 'Las contraseñas no coinciden', 
@@ -57,8 +48,8 @@ const Register = () => {
     try {
       const userData = {
         username: formData.username,
-        password: formData.password,
-        profession: formData.profession
+        email: formData.email,
+        password: formData.password
       };
       
       const result = await authService.register(userData);
@@ -105,6 +96,19 @@ const Register = () => {
               required
             />
           </div>
+
+          <div className="form-group">
+            <label htmlFor="email">Correo electrónico</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="form-control"
+              required
+            />
+          </div>
           
           <div className="form-group">
             <label htmlFor="password">Contraseña</label>
@@ -116,6 +120,7 @@ const Register = () => {
               onChange={handleChange}
               className="form-control"
               required
+              placeholder="Debe contener una mayúscula y un número"
             />
           </div>
           
@@ -130,48 +135,6 @@ const Register = () => {
               className="form-control"
               required
             />
-          </div>
-          
-          <div className="form-layout">
-            <div className="form-col">
-              {/* Columna izquierda con datos básicos */}
-            </div>
-            <div className="form-col">
-              <div className="form-group profession-select">
-                <label>Profesión</label>
-                <div className="dropdown-container">
-                  <div 
-                    className="selected-option"
-                    onClick={() => setShowProfessionDropdown(!showProfessionDropdown)}
-                  >
-                    {formData.profession || 'AÑADIR'}
-                  </div>
-                  
-                  {showProfessionDropdown && (
-                    <div className="dropdown-options">
-                      {professionOptions.map((option, index) => (
-                        <div 
-                          key={index} 
-                          className="dropdown-option"
-                          onClick={() => selectProfession(option)}
-                        >
-                          {option}
-                        </div>
-                      ))}
-                      <div className="custom-option">
-                        <input
-                          type="text"
-                          placeholder="Escribe aquí..."
-                          value={customProfession}
-                          onChange={handleCustomProfession}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
           </div>
           
           <button 

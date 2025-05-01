@@ -16,6 +16,20 @@ class ObjetoRepository extends ServiceEntityRepository
         parent::__construct($registry, Objeto::class);
     }
 
+    public function findBySearchQuery(string $query = ''): array
+    {
+        $qb = $this->createQueryBuilder('o');
+
+        if ($query) {
+            $qb->andWhere('o.titulo LIKE :query OR o.descripcion LIKE :query')
+                ->setParameter('query', '%' . $query . '%');
+        }
+
+        return $qb->orderBy('o.fecha_creacion', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return Objeto[] Returns an array of Objeto objects
 //     */

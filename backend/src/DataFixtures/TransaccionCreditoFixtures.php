@@ -3,6 +3,7 @@ namespace App\DataFixtures;
 
 use App\Entity\TransaccionCredito;
 use App\Entity\Usuario;
+use App\Entity\IntercambioServicio;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -13,57 +14,37 @@ class TransaccionCreditoFixtures extends Fixture implements DependentFixtureInte
     {
         $transacciones = [
             [
-                'usuario' => 'usuario-juanperez',
                 'cantidad' => 50,
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
+                'tipo' => 'compra',
+                'descripcion' => 'Compra de servicio de desarrollo web',
+                'usuario' => 'usuario_mariagarcia',
+                'intercambio_servicio' => 'intercambio_servicio_servicio_desarrollo_de_sitios_web'
             ],
             [
-                'usuario' => 'usuario-mariagonzalez',
-                'cantidad' => -30,
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
+                'cantidad' => 30,
+                'tipo' => 'compra',
+                'descripcion' => 'Compra de servicio de diseño de logo',
+                'usuario' => 'usuario_juanperez',
+                'intercambio_servicio' => 'intercambio_servicio_servicio_diseño_de_logos'
             ],
             [
-                'usuario' => 'usuario-pedrosan',
-                'cantidad' => 75,
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
-            ],
-            [
-                'usuario' => 'usuario-luciamartinez',
-                'cantidad' => -45,
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
-            ],
-            [
-                'usuario' => 'usuario-carlosrodriguez',
-                'cantidad' => 60,
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
-            ],
-            [
-                'usuario' => 'usuario-analopez',
-                'cantidad' => -25,
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
+                'cantidad' => 40,
+                'tipo' => 'compra',
+                'descripcion' => 'Compra de servicio de marketing digital',
+                'usuario' => 'usuario_mariagarcia',
+                'intercambio_servicio' => 'intercambio_servicio_servicio_estrategia_de_marketing_digital'
             ]
         ];
 
         foreach ($transacciones as $transaccionData) {
             $transaccion = new TransaccionCredito();
-            $transaccion->setUsuario($this->getReference($transaccionData['usuario'], Usuario::class));
             $transaccion->setCantidad($transaccionData['cantidad']);
-            
-            // Si necesitas establecer referencias a intercambios:
-            // if ($transaccionData['intercambio_servicio']) {
-            //     $transaccion->setIntercambioServicio($this->getReference($transaccionData['intercambio_servicio'], IntercambioServicio::class));
-            // }
-            
-            // if ($transaccionData['intercambio_objeto']) {
-            //     $transaccion->setIntercambioObjeto($this->getReference($transaccionData['intercambio_objeto'], IntercambioObjeto::class));
-            // }
-            
+            $transaccion->setTipo($transaccionData['tipo']);
+            $transaccion->setDescripcion($transaccionData['descripcion']);
+            $transaccion->setUsuario($this->getReference($transaccionData['usuario'], Usuario::class));
+            $transaccion->setIntercambioServicio($this->getReference($transaccionData['intercambio_servicio'], IntercambioServicio::class));
+            $transaccion->setFechaCreacion(new \DateTimeImmutable());
+
             $manager->persist($transaccion);
         }
 
@@ -75,7 +56,6 @@ class TransaccionCreditoFixtures extends Fixture implements DependentFixtureInte
         return [
             UsuarioFixtures::class,
             IntercambioServicioFixtures::class,
-            IntercambioObjetoFixtures::class,
         ];
     }
 }

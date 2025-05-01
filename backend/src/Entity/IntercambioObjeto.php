@@ -28,7 +28,7 @@ class IntercambioObjeto
     private ?Usuario $comprador = null;
 
     #[ORM\Column]
-    private ?int $creditos_propuestos = null;
+    private ?int $precio_propuesto = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $fecha_solicitud;
@@ -65,8 +65,10 @@ class IntercambioObjeto
 
     public function setObjeto(?Objeto $objeto): self
     {
+        if ($objeto && !$objeto->estaDisponible()) {
+            throw new \InvalidArgumentException('El objeto debe estar disponible para crear un intercambio');
+        }
         $this->objeto = $objeto;
-
         return $this;
     }
 
@@ -94,14 +96,14 @@ class IntercambioObjeto
         return $this;
     }
 
-    public function getCreditosPropuestos(): ?int
+    public function getPrecioPropuesto(): ?int
     {
-        return $this->creditos_propuestos;
+        return $this->precio_propuesto;
     }
 
-    public function setCreditosPropuestos(int $creditos_propuestos): self
+    public function setPrecioPropuesto(int $precio_propuesto): self
     {
-        $this->creditos_propuestos = $creditos_propuestos;
+        $this->precio_propuesto = $precio_propuesto;
 
         return $this;
     }
@@ -126,7 +128,15 @@ class IntercambioObjeto
     public function setFechaCompletado(?\DateTimeImmutable $fecha_completado): self
     {
         $this->fecha_completado = $fecha_completado;
+        return $this;
+    }
 
+    public function marcarComoCompletado(): self
+    {
+        $this->fecha_completado = new \DateTimeImmutable();
+        if ($this->objeto) {
+            $this->objeto->setEstado(Objeto::ESTADO_INTERCAMBIADO);
+        }
         return $this;
     }
 

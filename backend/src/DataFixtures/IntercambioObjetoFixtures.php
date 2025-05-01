@@ -2,8 +2,8 @@
 namespace App\DataFixtures;
 
 use App\Entity\IntercambioObjeto;
-use App\Entity\Objeto;
 use App\Entity\Usuario;
+use App\Entity\Objeto;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -12,57 +12,66 @@ class IntercambioObjetoFixtures extends Fixture implements DependentFixtureInter
 {
     public function load(ObjectManager $manager): void
     {
-        $intercambiosObjetos = [
+        $intercambios = [
+            // Intercambios completados
             [
-                'objeto' => 0,
-                'vendedor' => 'juanperez',
-                'comprador' => 'mariagonzalez',
-                'creditos_propuestos' => 140,
-                'fecha_solicitud' => new \DateTimeImmutable('-20 days'),
-                'fecha_completado' => new \DateTimeImmutable('-15 days')
+                'precio_propuesto' => 200,
+                'objeto' => 'objeto_laptop_hp_elitebook',
+                'vendedor' => 'usuario_juanperez',
+                'comprador' => 'usuario_mariagarcia',
+                'fecha_completado' => new \DateTimeImmutable('2024-03-15'),
+                'estado_final' => Objeto::ESTADO_INTERCAMBIADO
+            ],
+            // Intercambios en proceso
+            [
+                'precio_propuesto' => 300,
+                'objeto' => 'objeto_camara_canon_eos',
+                'vendedor' => 'usuario_mariagarcia',
+                'comprador' => 'usuario_juanperez',
+                'fecha_completado' => null,
+                'estado_final' => Objeto::ESTADO_RESERVADO
+            ],
+            // Nuevos intercambios
+            [
+                'precio_propuesto' => 150,
+                'objeto' => 'objeto_monitor_lg_27',
+                'vendedor' => 'usuario_carloslopez',
+                'comprador' => 'usuario_juanperez',
+                'fecha_completado' => null,
+                'estado_final' => Objeto::ESTADO_DISPONIBLE
             ],
             [
-                'objeto' => 1,
-                'vendedor' => 'mariagonzalez',
-                'comprador' => 'luciamartinez',
-                'creditos_propuestos' => 190,
-                'fecha_solicitud' => new \DateTimeImmutable('-18 days'),
-                'fecha_completado' => new \DateTimeImmutable('-13 days')
-            ],
-            [
-                'objeto' => 2,
-                'vendedor' => 'pedrosan',
-                'comprador' => 'carlosrodriguez',
-                'creditos_propuestos' => 330,
-                'fecha_solicitud' => new \DateTimeImmutable('-10 days'),
-                'fecha_completado' => null
-            ],
-            [
-                'objeto' => 3,
-                'vendedor' => 'luciamartinez',
-                'comprador' => 'analopez',
-                'creditos_propuestos' => 110,
-                'fecha_solicitud' => new \DateTimeImmutable('-7 days'),
-                'fecha_completado' => null
+                'precio_propuesto' => 350,
+                'objeto' => 'objeto_smartphone_samsung',
+                'vendedor' => 'usuario_juanperez',
+                'comprador' => 'usuario_mariagarcia',
+                'fecha_completado' => null,
+                'estado_final' => Objeto::ESTADO_DISPONIBLE
             ]
         ];
 
-        foreach ($intercambiosObjetos as $index => $intercambioData) {
-            $intercambio = new IntercambioObjeto();
-            $intercambio->setObjeto($this->getReference('objeto-' . $intercambioData['objeto'], Objeto::class));
-            $intercambio->setVendedor($this->getReference('usuario-' . $intercambioData['vendedor'], Usuario::class));
-            $intercambio->setComprador($this->getReference('usuario-' . $intercambioData['comprador'], Usuario::class));
-            $intercambio->setCreditosPropuestos($intercambioData['creditos_propuestos']);
-            $intercambio->setFechaSolicitud($intercambioData['fecha_solicitud']);
+        foreach ($intercambios as $intercambioData) {
+            $objeto = $this->getReference($intercambioData['objeto'], Objeto::class);
             
-            if ($intercambioData['fecha_completado']) {
-                $intercambio->setFechaCompletado($intercambioData['fecha_completado']);
+            // Solo crear intercambio si el objeto está disponible
+            if ($objeto->estaDisponible()) {
+                $intercambio = new IntercambioObjeto();
+                $intercambio->setPrecioPropuesto($intercambioData['precio_propuesto']);
+                $intercambio->setObjeto($objeto);
+                $intercambio->setVendedor($this->getReference($intercambioData['vendedor'], Usuario::class));
+                $intercambio->setComprador($this->getReference($intercambioData['comprador'], Usuario::class));
+                $intercambio->setFechaSolicitud(new \DateTimeImmutable());
+                
+                if ($intercambioData['fecha_completado']) {
+                    $intercambio->setFechaCompletado($intercambioData['fecha_completado']);
+                    $objeto->marcarComoIntercambiado();
+                } else {
+                    $objeto->setEstado($intercambioData['estado_final']);
+                }
+
+                $manager->persist($intercambio);
+                $this->addReference('intercambio_' . $intercambioData['objeto'], $intercambio);
             }
-            
-            $manager->persist($intercambio);
-            
-            // Referencias para usar en otras fixtures
-            $this->addReference('intercambio-objeto-' . $index, $intercambio);
         }
 
         $manager->flush();
@@ -71,8 +80,8 @@ class IntercambioObjetoFixtures extends Fixture implements DependentFixtureInter
     public function getDependencies(): array
     {
         return [
-            ObjetoFixtures::class,
             UsuarioFixtures::class,
+            ObjetoFixtures::class,
         ];
     }
 }

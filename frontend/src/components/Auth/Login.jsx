@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import AlertMessage from '../Layout/AlertMessage';
 import './Auth.css';
+import { Link } from 'react-router-dom';
 
 const Login = () => {
   const [credentials, setCredentials] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,8 +30,14 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      if (!credentials.username || !credentials.password) {
-        setError('Por favor, introduce tu email y contraseña');
+      if (!credentials.email || !credentials.password) {
+        setError('Por favor, introduce tu correo electrónico y contraseña');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credentials.email)) {
+        setError('Por favor, introduce un correo electrónico válido');
         setIsLoading(false);
         return;
       }
@@ -37,14 +45,15 @@ const Login = () => {
       const response = await login(credentials);
       
       if (response.success) {
-        console.log('Inicio de sesión exitoso, redirigiendo...');
-        navigate('/buscar/profesionales');
+        // Redirigir a la página que intentaba visitar o a la página principal
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
       } else {
         setError(response.message || 'Error al iniciar sesión. Verifica tus credenciales.');
       }
     } catch (err) {
       console.error('Error durante el inicio de sesión:', err);
-      setError('Error de conexión al servidor.');
+      setError('Error de conexión al servidor. Por favor, intenta nuevamente.');
     } finally {
       setIsLoading(false);
     }
@@ -53,18 +62,18 @@ const Login = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>Inicio sesión</h2>
+        <h2>Iniciar sesión</h2>
         
         {error && <AlertMessage message={error} type="danger" onClose={() => setError('')} />}
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Email</label>
+            <label htmlFor="email">Correo electrónico</label>
             <input
               type="email"
-              id="username"
-              name="username"
-              value={credentials.username}
+              id="email"
+              name="email"
+              value={credentials.email}
               onChange={handleChange}
               className="form-control"
               required
@@ -96,7 +105,7 @@ const Login = () => {
         </form>
         
         <div className="auth-footer">
-          <p>Si aún no tienes cuenta, <a href="/registro">regístrate</a></p>
+          <p>¿No tienes cuenta? <Link to="/registro">Regístrate</Link></p>
         </div>
       </div>
     </div>

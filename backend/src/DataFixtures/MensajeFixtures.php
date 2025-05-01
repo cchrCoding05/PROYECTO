@@ -13,52 +13,33 @@ class MensajeFixtures extends Fixture implements DependentFixtureInterface
     {
         $mensajes = [
             [
-                'emisor' => 'usuario-juanperez',
-                'receptor' => 'usuario-mariagonzalez',
-                'contenido' => '¡Hola María! Me gustaría hablar sobre tu trabajo de diseño',
+                'contenido' => 'Hola, me interesa tu servicio de desarrollo web. ¿Podrías darme más detalles?',
+                'emisor' => 'usuario_mariagarcia',
+                'receptor' => 'usuario_juanperez',
                 'leido' => true
             ],
             [
-                'emisor' => 'usuario-mariagonzalez',
-                'receptor' => 'usuario-juanperez',
-                'contenido' => 'Hola Juan, claro que sí. ¿En qué puedo ayudarte?',
+                'contenido' => 'Claro, con gusto te explico los detalles del servicio. ¿Qué tipo de sitio web necesitas?',
+                'emisor' => 'usuario_juanperez',
+                'receptor' => 'usuario_mariagarcia',
+                'leido' => false
+            ],
+            [
+                'contenido' => '¿Te interesaría colaborar en un proyecto de marketing digital?',
+                'emisor' => 'usuario_carloslopez',
+                'receptor' => 'usuario_mariagarcia',
                 'leido' => true
-            ],
-            [
-                'emisor' => 'usuario-pedrosan',
-                'receptor' => 'usuario-luciamartinez',
-                'contenido' => 'Buenos días Lucia, ¿estarías disponible para una sesión de fotos este fin de semana?',
-                'leido' => false
-            ],
-            [
-                'emisor' => 'usuario-carlosrodriguez',
-                'receptor' => 'usuario-analopez',
-                'contenido' => 'Hola Ana, me encantaría aprender algunas recetas. ¿Podríamos intercambiar habilidades?',
-                'leido' => false
-            ],
-            [
-                'emisor' => 'usuario-analopez',
-                'receptor' => 'usuario-juanperez',
-                'contenido' => 'Juan, ¿podrías ayudarme con un problema en mi página web?',
-                'leido' => true
-            ],
-            [
-                'emisor' => 'usuario-luciamartinez',
-                'receptor' => 'usuario-carlosrodriguez',
-                'contenido' => 'Necesito un electricista para revisar la instalación de mi casa. ¿Estás disponible?',
-                'leido' => false
             ]
         ];
 
         foreach ($mensajes as $mensajeData) {
             $mensaje = new Mensaje();
+            $mensaje->setContenido($mensajeData['contenido']);
             $mensaje->setEmisor($this->getReference($mensajeData['emisor'], Usuario::class));
             $mensaje->setReceptor($this->getReference($mensajeData['receptor'], Usuario::class));
-            $mensaje->setContenido($mensajeData['contenido']);
             $mensaje->setLeido($mensajeData['leido']);
-            
-            // La fecha de envío se establece automáticamente en el constructor
-            
+            $mensaje->setFechaEnvio(new \DateTimeImmutable());
+
             $manager->persist($mensaje);
         }
 

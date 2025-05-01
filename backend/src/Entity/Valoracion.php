@@ -14,20 +14,16 @@ class Valoracion
     private ?int $id_valoracion = null;
 
     #[ORM\ManyToOne(inversedBy: 'valoraciones')]
+    #[ORM\JoinColumn(name: 'id_usuario', referencedColumnName: 'id_usuario', nullable: false)]
+    private ?Usuario $usuario = null;
+
+    #[ORM\ManyToOne(inversedBy: 'valoraciones')]
     #[ORM\JoinColumn(name: 'id_intercambio_servicio', referencedColumnName: 'id_intercambio', nullable: true)]
     private ?IntercambioServicio $intercambio_servicio = null;
 
     #[ORM\ManyToOne(inversedBy: 'valoraciones')]
     #[ORM\JoinColumn(name: 'id_intercambio_objeto', referencedColumnName: 'id_intercambio', nullable: true)]
     private ?IntercambioObjeto $intercambio_objeto = null;
-
-    #[ORM\ManyToOne(targetEntity: Usuario::class)]
-    #[ORM\JoinColumn(name: 'id_evaluador', referencedColumnName: 'id_usuario', nullable: false)]
-    private ?Usuario $evaluador = null;
-
-    #[ORM\ManyToOne(targetEntity: Usuario::class)]
-    #[ORM\JoinColumn(name: 'id_evaluado', referencedColumnName: 'id_usuario', nullable: false)]
-    private ?Usuario $evaluado = null;
 
     #[ORM\Column]
     private ?int $puntuacion = null;
@@ -36,16 +32,28 @@ class Valoracion
     private ?string $comentario = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $fecha_valoracion;
+    private ?\DateTimeImmutable $fecha_creacion;
 
     public function __construct()
     {
-        $this->fecha_valoracion = new \DateTimeImmutable();
+        $this->fecha_creacion = new \DateTimeImmutable();
     }
 
     public function getId_valoracion(): ?int
     {
         return $this->id_valoracion;
+    }
+
+    public function getUsuario(): ?Usuario
+    {
+        return $this->usuario;
+    }
+
+    public function setUsuario(?Usuario $usuario): self
+    {
+        $this->usuario = $usuario;
+
+        return $this;
     }
 
     public function getIntercambioServicio(): ?IntercambioServicio
@@ -56,7 +64,6 @@ class Valoracion
     public function setIntercambioServicio(?IntercambioServicio $intercambio_servicio): self
     {
         $this->intercambio_servicio = $intercambio_servicio;
-
         return $this;
     }
 
@@ -68,31 +75,6 @@ class Valoracion
     public function setIntercambioObjeto(?IntercambioObjeto $intercambio_objeto): self
     {
         $this->intercambio_objeto = $intercambio_objeto;
-
-        return $this;
-    }
-
-    public function getEvaluador(): ?Usuario
-    {
-        return $this->evaluador;
-    }
-
-    public function setEvaluador(?Usuario $evaluador): self
-    {
-        $this->evaluador = $evaluador;
-
-        return $this;
-    }
-
-    public function getEvaluado(): ?Usuario
-    {
-        return $this->evaluado;
-    }
-
-    public function setEvaluado(?Usuario $evaluado): self
-    {
-        $this->evaluado = $evaluado;
-
         return $this;
     }
 
@@ -120,14 +102,14 @@ class Valoracion
         return $this;
     }
 
-    public function getFechaValoracion(): ?\DateTimeImmutable
+    public function getFechaCreacion(): ?\DateTimeImmutable
     {
-        return $this->fecha_valoracion;
+        return $this->fecha_creacion;
     }
 
-    public function setFechaValoracion(\DateTimeImmutable $fecha_valoracion): self
+    public function setFechaCreacion(\DateTimeImmutable $fecha_creacion): self
     {
-        $this->fecha_valoracion = $fecha_valoracion;
+        $this->fecha_creacion = $fecha_creacion;
 
         return $this;
     }

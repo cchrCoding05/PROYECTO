@@ -1,8 +1,9 @@
 <?php
 namespace App\DataFixtures;
 
-use App\Entity\Valoracion;
 use App\Entity\Usuario;
+use App\Entity\Valoracion;
+use App\Entity\IntercambioServicio;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -12,82 +13,86 @@ class ValoracionFixtures extends Fixture implements DependentFixtureInterface
     public function load(ObjectManager $manager): void
     {
         $valoraciones = [
+            // Valoraciones para el servicio de desarrollo web
             [
-                'evaluador' => 'usuario-juanperez',
-                'evaluado' => 'usuario-mariagonzalez',
                 'puntuacion' => 5,
-                'comentario' => 'Excelente trabajo de diseño, muy profesional y puntual.',
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
+                'comentario' => 'Excelente servicio, muy profesional y cumplido',
+                'usuario' => 'usuario_mariagarcia',
+                'intercambio_servicio' => 'intercambio_servicio_servicio_desarrollo_de_sitios_web'
             ],
             [
-                'evaluador' => 'usuario-mariagonzalez',
-                'evaluado' => 'usuario-juanperez',
                 'puntuacion' => 4,
-                'comentario' => 'Buen programador, resolvió todos los problemas que tenía.',
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
+                'comentario' => 'Buen trabajo, aunque hubo algunos retrasos menores',
+                'usuario' => 'usuario_juanperez',
+                'intercambio_servicio' => 'intercambio_servicio_servicio_desarrollo_de_sitios_web'
             ],
             [
-                'evaluador' => 'usuario-pedrosan',
-                'evaluado' => 'usuario-luciamartinez',
-                'puntuacion' => 5,
-                'comentario' => 'Excelente profesora, muy clara explicando.',
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
-            ],
-            [
-                'evaluador' => 'usuario-luciamartinez',
-                'evaluado' => 'usuario-carlosrodriguez',
                 'puntuacion' => 3,
-                'comentario' => 'Hizo el trabajo correctamente pero tardó más de lo acordado.',
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
+                'comentario' => 'El servicio fue aceptable, pero podría mejorar en la comunicación',
+                'usuario' => 'usuario_mariagarcia',
+                'intercambio_servicio' => 'intercambio_servicio_servicio_desarrollo_de_sitios_web'
+            ],
+
+            // Valoraciones para el servicio de diseño de logos
+            [
+                'puntuacion' => 2,
+                'comentario' => 'No cumplió con las expectativas, el diseño fue muy básico',
+                'usuario' => 'usuario_mariagarcia',
+                'intercambio_servicio' => 'intercambio_servicio_servicio_diseño_de_logos'
             ],
             [
-                'evaluador' => 'usuario-carlosrodriguez',
-                'evaluado' => 'usuario-analopez',
                 'puntuacion' => 5,
-                'comentario' => 'Las clases de cocina fueron increíbles, aprendí mucho.',
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
+                'comentario' => '¡Increíble trabajo! El logo superó todas mis expectativas',
+                'usuario' => 'usuario_juanperez',
+                'intercambio_servicio' => 'intercambio_servicio_servicio_diseño_de_logos'
+            ],
+
+            // Valoraciones para el servicio de marketing digital
+            [
+                'puntuacion' => 1,
+                'comentario' => 'Muy decepcionante, no se cumplieron los objetivos acordados',
+                'usuario' => 'usuario_juanperez',
+                'intercambio_servicio' => 'intercambio_servicio_servicio_estrategia_de_marketing_digital'
             ],
             [
-                'evaluador' => 'usuario-analopez',
-                'evaluado' => 'usuario-juanperez',
+                'puntuacion' => 5,
+                'comentario' => 'Estrategia de marketing muy efectiva, superó nuestras expectativas',
+                'usuario' => 'usuario_mariagarcia',
+                'intercambio_servicio' => 'intercambio_servicio_servicio_estrategia_de_marketing_digital'
+            ],
+            [
                 'puntuacion' => 4,
-                'comentario' => 'Solucionó el problema de mi web rápidamente.',
-                'intercambio_servicio' => null,
-                'intercambio_objeto' => null
+                'comentario' => 'Buen trabajo en general, aunque el ROI podría ser mejor',
+                'usuario' => 'usuario_juanperez',
+                'intercambio_servicio' => 'intercambio_servicio_servicio_estrategia_de_marketing_digital'
             ]
         ];
 
         foreach ($valoraciones as $valoracionData) {
             $valoracion = new Valoracion();
-            $valoracion->setEvaluador($this->getReference($valoracionData['evaluador'], Usuario::class));
-            $valoracion->setEvaluado($this->getReference($valoracionData['evaluado'], Usuario::class));
             $valoracion->setPuntuacion($valoracionData['puntuacion']);
             $valoracion->setComentario($valoracionData['comentario']);
-            
-            // Para los intercambios necesitarías referencias a esos objetos
-            // Por ahora los dejaremos como null, pero si tienes fixtures para intercambios,
-            // podrías establecerlos aquí mediante referencias
-            
-            // La fecha de valoración se establece automáticamente en el constructor
-            
+            $valoracion->setUsuario($this->getReference($valoracionData['usuario'], Usuario::class));
+            $valoracion->setIntercambioServicio($this->getReference($valoracionData['intercambio_servicio'], IntercambioServicio::class));
+            $valoracion->setFechaCreacion(new \DateTimeImmutable());
+
             $manager->persist($valoracion);
         }
 
         $manager->flush();
+
+        // Crear referencias después de tener los IDs
+        $valoracionesGuardadas = $manager->getRepository(Valoracion::class)->findAll();
+        foreach ($valoracionesGuardadas as $valoracion) {
+            $this->addReference('valoracion-' . $valoracion->getId_valoracion(), $valoracion);
+        }
     }
 
     public function getDependencies(): array
     {
         return [
             UsuarioFixtures::class,
-
             IntercambioServicioFixtures::class,
-            IntercambioObjetoFixtures::class,
         ];
     }
 }

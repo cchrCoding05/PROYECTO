@@ -1,7 +1,5 @@
 // components/home/HomePage.jsx
 import React, { useEffect } from "react";
-import Carousel from "./Carousel";
-import TeamSection from "./TeamSection";
 
 const Home = () => {
   return (
@@ -21,12 +19,8 @@ const Home = () => {
             </div>
           </header>
 
-          {/* Carrusel de productos destacados */}
-          <Carousel />
-        </div>
 
-        {/* Aside: Equipo */}
-        <TeamSection />
+        </div>
       </div>
     </div>
   );

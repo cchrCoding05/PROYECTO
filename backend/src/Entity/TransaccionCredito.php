@@ -20,6 +20,12 @@ class TransaccionCredito
     #[ORM\Column]
     private ?int $cantidad = null;
 
+    #[ORM\Column(length: 20)]
+    private ?string $tipo = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $descripcion = null;
+
     #[ORM\ManyToOne(inversedBy: 'transacciones')]
     #[ORM\JoinColumn(name: 'id_intercambio_servicio', referencedColumnName: 'id_intercambio', nullable: true)]
     private ?IntercambioServicio $intercambio_servicio = null;
@@ -29,11 +35,11 @@ class TransaccionCredito
     private ?IntercambioObjeto $intercambio_objeto = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $fecha_transaccion;
+    private ?\DateTimeImmutable $fecha_creacion;
 
     public function __construct()
     {
-        $this->fecha_transaccion = new \DateTimeImmutable();
+        $this->fecha_creacion = new \DateTimeImmutable();
     }
 
     public function getId_transaccion(): ?int
@@ -89,15 +95,36 @@ class TransaccionCredito
         return $this;
     }
 
-    public function getFechaTransaccion(): ?\DateTimeImmutable
+    public function getTipo(): ?string
     {
-        return $this->fecha_transaccion;
+        return $this->tipo;
     }
 
-    public function setFechaTransaccion(\DateTimeImmutable $fecha_transaccion): self
+    public function setTipo(string $tipo): self
     {
-        $this->fecha_transaccion = $fecha_transaccion;
+        $this->tipo = $tipo;
+        return $this;
+    }
 
+    public function getDescripcion(): ?string
+    {
+        return $this->descripcion;
+    }
+
+    public function setDescripcion(?string $descripcion): self
+    {
+        $this->descripcion = $descripcion;
+        return $this;
+    }
+
+    public function getFechaCreacion(): ?\DateTimeImmutable
+    {
+        return $this->fecha_creacion;
+    }
+
+    public function setFechaCreacion(\DateTimeImmutable $fecha_creacion): self
+    {
+        $this->fecha_creacion = $fecha_creacion;
         return $this;
     }
 }

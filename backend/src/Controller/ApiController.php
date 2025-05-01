@@ -2,89 +2,57 @@
 
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Attribute\Route;
-// use Symfony\Component\Security\Http\Attribute\IsGranted; // Comentado temporalmente
-// use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface; // Comentado temporalmente
-use Doctrine\ORM\EntityManagerInterface;
-
 use App\Entity\Usuario;
-use App\Entity\ImagenObjeto;
+use App\Entity\Objeto;
 use App\Repository\UsuarioRepository;
 use App\Repository\ObjetoRepository;
-use Symfony\Component\Serializer\SerializerInterface;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/api', name: 'api_')]
 class ApiController extends AbstractController
 {
-    private $em;
-    // private $passwordHasher; // Comentado temporalmente
-    
-    public function __construct(EntityManagerInterface $em/*, UserPasswordHasherInterface $passwordHasher*/)
-    {
-        $this->em = $em;
-        // $this->passwordHasher = $passwordHasher; // Comentado temporalmente
-    }
-    
-    private function createCorsResponse($data = null, $status = 200): JsonResponse
-    {
-        $response = new JsonResponse($data, $status);
-        // Configurar CORS una sola vez
-        $response->headers->set('Access-Control-Allow-Origin', 'http://localhost:5173');
-        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-        $response->headers->set('Access-Control-Allow-Credentials', 'true');
-        $response->headers->set('Access-Control-Max-Age', '3600');
-        
-        return $response;
-    }
-    
-    #[Route('/options', name: 'options', methods: ['OPTIONS'])]
-    #[Route('/{any}', name: 'any_options', requirements: ['any' => '.+'], methods: ['OPTIONS'])]
-    public function handleOptions(): Response
-    {
-        return $this->createCorsResponse(null);
-    }
-    
-    // Método de registro simplificado y sin seguridad (temporalmente)
+    public function __construct(
+        private UsuarioRepository $usuarioRepository,
+        private ObjetoRepository $objetoRepository,
+        private EntityManagerInterface $em
+    ) {}
+
     #[Route('/register', name: 'register', methods: ['POST'])]
-    public function register(Request $request, UsuarioRepository $usuarioRepository, EntityManagerInterface $entityManager): JsonResponse
+    public function register(Request $request, UserPasswordHasherInterface $passwordHasher): JsonResponse
     {
         try {
             $data = json_decode($request->getContent(), true);
             
-            $username = $data['username'] ?? null;
-            $email = $data['email'] ?? null;
-            $password = $data['password'] ?? null;
-            
-            if (!$username || !$email || !$password) {
-                return $this->createCorsResponse([
+            if (!isset($data['username']) || !isset($data['email']) || !isset($data['password'])) {
+                return $this->json([
                     'success' => false,
                     'message' => 'Faltan datos obligatorios'
                 ], Response::HTTP_BAD_REQUEST);
             }
             
-            // Comprobar si el usuario ya existe
-            $usuarioExistente = $usuarioRepository->findOneBy(['correo' => $email]);
+            $usuarioExistente = $this->usuarioRepository->findOneBy(['correo' => $data['email']]);
             
             if ($usuarioExistente) {
-                return $this->createCorsResponse([
+                return $this->json([
                     'success' => false,
                     'message' => 'Este email ya está registrado'
                 ], Response::HTTP_CONFLICT);
             }
             
-            // Crear nuevo usuario
             $usuario = new Usuario();
-            $usuario->setNombreUsuario($username);
-            $usuario->setCorreo($email);
-            // Ciframos la contraseña con password_hash
-            $usuario->setContrasena(password_hash($password, PASSWORD_DEFAULT));
+            $usuario->setNombreUsuario($data['username']);
+            $usuario->setCorreo($data['email']);
             
-            // Opcional, si proporcionan otros datos
+            // Usar UserPasswordHasherInterface para hashear la contraseña
+            $hashedPassword = $passwordHasher->hashPassword($usuario, $data['password']);
+            $usuario->setContrasena($hashedPassword);
+            
             if (isset($data['descripcion'])) {
                 $usuario->setDescripcion($data['descripcion']);
             }
@@ -92,11 +60,10 @@ class ApiController extends AbstractController
                 $usuario->setProfesion($data['profesion']);
             }
             
-            // Guardar en la base de datos
-            $entityManager->persist($usuario);
-            $entityManager->flush();
+            $this->em->persist($usuario);
+            $this->em->flush();
             
-            return $this->createCorsResponse([
+            return $this->json([
                 'success' => true,
                 'message' => 'Usuario registrado con éxito',
                 'user' => [
@@ -106,355 +73,526 @@ class ApiController extends AbstractController
                 ]
             ], Response::HTTP_CREATED);
         } catch (\Exception $e) {
-            return $this->createCorsResponse([
+            return $this->json([
                 'success' => false,
                 'message' => 'Error al registrar usuario',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-    
-    // Método de login simplificado y sin seguridad (temporalmente)
-    #[Route('/login_check', name: 'login_check', methods: ['POST'])]
-    public function login(Request $request, UsuarioRepository $usuarioRepository): JsonResponse
+
+    #[Route('/login', name: 'login', methods: ['POST'])]
+    public function login(Request $request, UserPasswordHasherInterface $passwordHasher): JsonResponse
     {
         try {
             $data = json_decode($request->getContent(), true);
             
-            $email = $data['email'] ?? null;
-            $password = $data['password'] ?? null;
-            
-            if (!$email || !$password) {
-                return $this->createCorsResponse([
+            if (!isset($data['email']) || !isset($data['password'])) {
+                return $this->json([
                     'success' => false,
-                    'message' => 'Faltan datos de login'
+                    'message' => 'Email y contraseña son requeridos'
                 ], Response::HTTP_BAD_REQUEST);
             }
+
+            $usuario = $this->usuarioRepository->findOneBy(['correo' => $data['email']]);
             
-            $usuario = $usuarioRepository->findOneBy(['correo' => $email]);
-            
-            if (!$usuario) {
-                return $this->createCorsResponse([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado'
-                ], Response::HTTP_NOT_FOUND);
-            }
-            
-            // Verificar la contraseña utilizando password_verify
-            if (!password_verify($password, $usuario->getContrasena())) {
-                return $this->createCorsResponse([
+            if (!$usuario || !$passwordHasher->isPasswordValid($usuario, $data['password'])) {
+                return $this->json([
                     'success' => false,
                     'message' => 'Credenciales inválidas'
                 ], Response::HTTP_UNAUTHORIZED);
             }
-            
-            return $this->createCorsResponse([
+
+            $token = bin2hex(random_bytes(32));
+            $usuario->setToken($token);
+            $this->em->flush();
+
+            return $this->json([
                 'success' => true,
-                'token' => 'token_' . $usuario->getId_usuario(),
+                'token' => $token,
                 'user' => [
                     'id' => $usuario->getId_usuario(),
                     'username' => $usuario->getNombreUsuario(),
                     'email' => $usuario->getCorreo(),
-                    'credits' => $usuario->getCreditos()
+                    'credits' => $usuario->getCreditos(),
+                    'profession' => $usuario->getProfesion(),
+                    'rating' => $usuario->getValoracionPromedio(),
+                    'sales' => $usuario->getVentasRealizadas(),
+                    'profilePhoto' => $usuario->getFotoPerfil(),
+                    'description' => $usuario->getDescripcion()
                 ]
             ]);
         } catch (\Exception $e) {
-            return $this->createCorsResponse([
+            return $this->json([
                 'success' => false,
-                'message' => 'Error de autenticación',
+                'message' => 'Error durante el inicio de sesión',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-    
-    #[Route('/user/current', name: 'current_user', methods: ['GET'])]
-    public function getCurrentUser(Request $request): JsonResponse
-    {
-        // En una aplicación real, extraeríamos el usuario del token
-        // Para pruebas, devolvemos un usuario demo
-        return $this->createCorsResponse([
-            'id' => 1,
-            'username' => 'usuario_demo',
-            'email' => 'demo@example.com',
-            'credits' => 500,
-            'description' => 'Usuario de prueba para desarrollo',
-            'profession' => 'Desarrollador',
-            'avatarUrl' => null
-        ]);
-    }
-    
-    // Método simple para el cierre de sesión
+
     #[Route('/logout', name: 'logout', methods: ['POST'])]
     public function logout(): JsonResponse
     {
-        // En una aplicación real, invalidaríamos el token
-        // Aquí simplemente confirmamos la operación
-        return $this->createCorsResponse([
+        return $this->json([
             'success' => true,
             'message' => 'Sesión cerrada con éxito'
         ]);
     }
-    
-    // Método de actualización de perfil simplificado (temporalmente)
-    #[Route('/user/profile', name: 'update_profile', methods: ['PUT'])]
-    // #[IsGranted('ROLE_USER')] // Comentado temporalmente
+
+    #[Route('/user/profile', name: 'user_profile', methods: ['GET'])]
+    public function getProfile(): JsonResponse
+    {
+        try {
+            error_log('Iniciando getProfile');
+            $request = $this->container->get('request_stack')->getCurrentRequest();
+            error_log('Headers: ' . json_encode($request->headers->all()));
+            
+            $user = $this->getUser();
+            error_log('Usuario: ' . ($user ? 'encontrado' : 'no encontrado'));
+            
+            if (!$user) {
+                error_log('Usuario no autenticado');
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario no autenticado',
+                    'debug' => [
+                        'token' => $request->headers->get('Authorization'),
+                        'method' => $request->getMethod(),
+                    ]
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+
+            error_log('Preparando respuesta de usuario');
+            return $this->json([
+                'success' => true,
+                'data' => [
+                    'id' => $user->getId_usuario(),
+                    'username' => $user->getNombreUsuario(),
+                    'email' => $user->getCorreo(),
+                    'credits' => $user->getCreditos(),
+                    'profession' => $user->getProfesion(),
+                    'rating' => $user->getValoracionPromedio(),
+                    'sales' => $user->getVentasRealizadas(),
+                    'profilePhoto' => $user->getFotoPerfil(),
+                    'description' => $user->getDescripcion()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            error_log('Error en getProfile: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            return $this->json([
+                'success' => false,
+                'message' => 'Error interno del servidor',
+                'debug' => [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/user/profile', name: 'user_profile_update', methods: ['PUT'])]
     public function updateProfile(Request $request): JsonResponse
     {
-        // Mensaje temporal
-        return $this->createCorsResponse([
-            'success' => false,
-            'message' => 'La actualización de perfil está temporalmente deshabilitada debido a problemas con las dependencias de seguridad.'
-        ], Response::HTTP_SERVICE_UNAVAILABLE);
-    }
-    
-    #[Route('/professionals/search', name: 'search_professionals', methods: ['GET'])]
-    public function searchProfessionals(Request $request, UsuarioRepository $usuarioRepository): JsonResponse
-    {
-        try {
-            // Obtener el parámetro de búsqueda
-            $query = $request->query->get('q', '');
-            
-            // Registrar la consulta para depuración
-            $this->logDebug("Buscando profesionales con query: " . $query);
-            
-            // Obtener todos los usuarios (en un caso real, filtraríamos por profesionales)
-            $usuarios = $usuarioRepository->findAll();
-            
-            // Transformar los datos para la respuesta
-            $result = [];
-            foreach ($usuarios as $usuario) {
-                // Solo incluimos usuarios con profesión definida
-                if ($usuario->getProfesion()) {
-                    $profesional = [
-                        'id' => $usuario->getId_usuario(),
-                        'name' => $usuario->getNombreUsuario(),
-                        'profession' => $usuario->getProfesion(),
-                        'rating' => 4, // Ejemplo estático, en un caso real calcularíamos esto
-                        'ratingCount' => 10, // Ejemplo estático
-                        'description' => $usuario->getDescripcion(),
-                        'avatarUrl' => $usuario->getFotoPerfil(),
-                        'email' => $usuario->getCorreo()
-                    ];
-                    $result[] = $profesional;
-                    
-                    // Registrar los profesionales encontrados
-                    $this->logDebug("Profesional encontrado: " . json_encode([
-                        'name' => $profesional['name'],
-                        'profession' => $profesional['profession']
-                    ]));
-                }
-            }
-            
-            // Filtrar por consulta si se proporciona
-            if (!empty($query)) {
-                $filteredResult = [];
-                foreach ($result as $professional) {
-                    // Convertimos todo a minúsculas para una comparación sin distinción de mayúsculas/minúsculas
-                    $nameMatch = stripos($professional['name'], $query) !== false;
-                    $professionMatch = stripos($professional['profession'], $query) !== false;
-                    $descriptionMatch = stripos($professional['description'], $query) !== false;
-                    
-                    if ($nameMatch || $professionMatch || $descriptionMatch) {
-                        $filteredResult[] = $professional;
-                        
-                        // Registrar qué campo coincidió con la búsqueda
-                        $matchReason = [];
-                        if ($nameMatch) $matchReason[] = "nombre";
-                        if ($professionMatch) $matchReason[] = "profesión";
-                        if ($descriptionMatch) $matchReason[] = "descripción";
-                        
-                        $this->logDebug("Coincidencia encontrada para '" . $query . "' en " . 
-                                     implode(", ", $matchReason) . ": " . $professional['name']);
-                    }
-                }
-                $result = $filteredResult;
-            }
-            
-            // Registrar número de resultados
-            $this->logDebug("Total resultados encontrados: " . count($result));
-            
-            // Devolver un array vacío si no hay resultados
-            return $this->createCorsResponse(array_values($result));
-        } catch (\Exception $e) {
-            // Si hay un error, devolver un mensaje descriptivo
-            $this->logDebug("Error en búsqueda de profesionales: " . $e->getMessage());
-            return $this->createCorsResponse([
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
                 'success' => false,
-                'message' => 'Error al cargar datos desde la base de datos',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+                'message' => 'Usuario no autenticado'
+            ], Response::HTTP_UNAUTHORIZED);
         }
-    }
-    
-    /**
-     * Método auxiliar para registrar información de depuración
-     */
-    private function logDebug($message): void
-    {
-        // En producción, esto debería usar un logger adecuado
-        file_put_contents(
-            __DIR__ . '/../../var/log/debug.log', 
-            '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL, 
-            FILE_APPEND
-        );
-    }
-    
-    #[Route('/products/search', name: 'search_products', methods: ['GET'])]
-    public function searchProducts(Request $request, ObjetoRepository $objetoRepository): JsonResponse
-    {
-        try {
-            // Obtener el parámetro de búsqueda
-            $query = $request->query->get('q', '');
-            
-            // Obtener todos los objetos
-            $objetos = $objetoRepository->findAll();
-            
-            // Transformar los datos para la respuesta
-            $result = [];
-            foreach ($objetos as $objeto) {
-                $usuario = $objeto->getUsuario();
-                if ($usuario) {
-                    // Obtener la primera imagen si existe
-                    $imagenUrl = 'https://via.placeholder.com/150'; // Imagen por defecto
-                    if ($objeto->getImagenes()->count() > 0) {
-                        $imagen = $objeto->getImagenes()->first();
-                        $imagenUrl = $imagen->getUrlImagen();
-                    }
-                    
-                    $result[] = [
-                        'id' => $objeto->getId_objeto(),
-                        'name' => $objeto->getTitulo(),
-                        'description' => $objeto->getDescripcion(),
-                        'price' => $objeto->getCreditos(),
-                        'imageUrl' => $imagenUrl,
-                        'seller' => [
-                            'id' => $usuario->getId_usuario(),
-                            'username' => $usuario->getNombreUsuario(),
-                            'sales' => 0 // Ejemplo estático, en un caso real calcularíamos esto
-                        ]
-                    ];
-                }
-            }
-            
-            // Filtrar por consulta si se proporciona
-            if (!empty($query)) {
-                $result = array_filter($result, function($product) use ($query) {
-                    return stripos($product['name'], $query) !== false || 
-                           stripos($product['description'], $query) !== false;
-                });
-            }
-            
-            // Devolver un array vacío si no hay resultados
-            return $this->createCorsResponse(array_values($result));
-        } catch (\Exception $e) {
-            // Si hay un error, devolver un mensaje descriptivo
-            return $this->createCorsResponse([
-                'success' => false,
-                'message' => 'Error al cargar datos desde la base de datos',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+
+        $data = json_decode($request->getContent(), true);
+        
+        if (isset($data['username'])) {
+            $user->setNombreUsuario($data['username']);
         }
-    }
-    
-    #[Route('/products/{id}', name: 'get_product', methods: ['GET'])]
-    public function getProduct(int $id, ObjetoRepository $objetoRepository): JsonResponse
-    {
-        try {
-            // Buscar el objeto por su ID
-            $objeto = $objetoRepository->find($id);
-            
-            if ($objeto) {
-                $usuario = $objeto->getUsuario();
-                
-                // Obtener la primera imagen si existe
-                $imagenUrl = 'https://via.placeholder.com/300x200'; // Imagen por defecto
-                if ($objeto->getImagenes()->count() > 0) {
-                    $imagen = $objeto->getImagenes()->first();
-                    $imagenUrl = $imagen->getUrl();
-                }
-                
-                $result = [
-                    'id' => $objeto->getId_objeto(),
-                    'name' => $objeto->getTitulo(),
-                    'description' => $objeto->getDescripcion(),
-                    'price' => $objeto->getCreditos(),
-                    'imageUrl' => $imagenUrl,
-                    'seller' => [
-                        'id' => $usuario->getId_usuario(),
-                        'username' => $usuario->getNombreUsuario(),
-                        'sales' => 0 // Ejemplo estático, en un caso real calcularíamos esto
-                    ]
-                ];
-                
-                return $this->createCorsResponse($result);
-            } else {
-                // Si no se encuentra el producto, devolver un error
-                return $this->createCorsResponse([
-                    'success' => false,
-                    'message' => 'Producto no encontrado'
-                ], Response::HTTP_NOT_FOUND);
-            }
-        } catch (\Exception $e) {
-            // Si hay un error, devolver un mensaje descriptivo
-            return $this->createCorsResponse([
-                'success' => false,
-                'message' => 'Error al cargar datos desde la base de datos',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        if (isset($data['description'])) {
+            $user->setDescripcion($data['description']);
         }
-    }
-    
-    #[Route('/credits/balance', name: 'get_balance', methods: ['GET'])]
-    // #[IsGranted('ROLE_USER')] // Comentado temporalmente
-    public function getBalance(): JsonResponse
-    {
-        // Simulación: en una app real, extraerías el usuario del token
-        // Para fines de demostración, simplemente devolvemos un usuario de prueba
-        return $this->createCorsResponse([
-            'credits' => 500
+        if (isset($data['profession'])) {
+            $user->setProfesion($data['profession']);
+        }
+
+        $this->em->flush();
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Perfil actualizado con éxito'
         ]);
     }
-    
-    #[Route('/products/{id}/propose-price', name: 'propose_price', methods: ['POST'])]
-    // #[IsGranted('ROLE_USER')] // Comentado temporalmente
+
+    #[Route('/professionals/search', name: 'professionals_search', methods: ['GET'])]
+    public function searchProfessionals(Request $request): JsonResponse
+    {
+        $query = $request->query->get('query', '');
+        
+        $professionals = $this->usuarioRepository->findByProfession($query);
+        
+        $data = array_map(function(Usuario $usuario) {
+            return [
+                'id' => $usuario->getId_usuario(),
+                'name' => $usuario->getNombreUsuario(),
+                'profession' => $usuario->getProfesion(),
+                'rating' => $usuario->getValoracionPromedio(),
+                'reviews_count' => $usuario->getValoraciones()->count(),
+                'description' => $usuario->getDescripcion(),
+                'photo' => $usuario->getFotoPerfil()
+            ];
+        }, $professionals);
+
+        return $this->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
+
+    #[Route('/professionals/{id}', name: 'professional_get', methods: ['GET'])]
+    public function getProfessional(int $id): JsonResponse
+    {
+        $professional = $this->usuarioRepository->find($id);
+        
+        if (!$professional) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Profesional no encontrado'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json([
+            'success' => true,
+            'data' => [
+                'id' => $professional->getId_usuario(),
+                'name' => $professional->getNombreUsuario(),
+                'profession' => $professional->getProfesion(),
+                'rating' => $professional->getValoracionPromedio(),
+                'reviews_count' => $professional->getValoraciones()->count(),
+                'description' => $professional->getDescripcion(),
+                'photo' => $professional->getFotoPerfil()
+            ]
+        ]);
+    }
+
+    #[Route('/professionals/{id}/ratings', name: 'professional_ratings', methods: ['GET'])]
+    public function getProfessionalRatings(int $id): JsonResponse
+    {
+        $professional = $this->usuarioRepository->find($id);
+        
+        if (!$professional) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Profesional no encontrado'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $ratings = $professional->getValoraciones();
+        
+        $data = array_map(function($valoracion) {
+            return [
+                'id' => $valoracion->getId_valoracion(),
+                'user' => [
+                    'id' => $valoracion->getUsuario()->getId_usuario(),
+                    'name' => $valoracion->getUsuario()->getNombreUsuario()
+                ],
+                'rating' => $valoracion->getPuntuacion(),
+                'comment' => $valoracion->getComentario(),
+                'created_at' => $valoracion->getFechaCreacion()->format('c')
+            ];
+        }, $ratings->toArray());
+
+        return $this->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
+
+    #[Route('/products/search', name: 'products_search', methods: ['GET'])]
+    public function searchProducts(Request $request): JsonResponse
+    {
+        $query = $request->query->get('query', '');
+        
+        $products = $this->objetoRepository->findBySearchQuery($query);
+        
+        $data = array_map(function(Objeto $objeto) {
+            return [
+                'id' => $objeto->getId_objeto(),
+                'title' => $objeto->getTitulo(),
+                'description' => $objeto->getDescripcion(),
+                'credits' => $objeto->getCreditos(),
+                'estado' => $objeto->getEstado(),
+                'images' => $objeto->getImagenes()->map(function($imagen) {
+                    return $imagen->getUrlImagen();
+                })->toArray(),
+                'seller' => [
+                    'id' => $objeto->getUsuario()->getId_usuario(),
+                    'name' => $objeto->getUsuario()->getNombreUsuario()
+                ],
+                'created_at' => $objeto->getFechaCreacion()->format('c')
+            ];
+        }, $products);
+
+        return $this->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
+
+    #[Route('/products/{id}', name: 'product_get', methods: ['GET'])]
+    public function getProduct(int $id): JsonResponse
+    {
+        $product = $this->objetoRepository->find($id);
+        
+        if (!$product) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Producto no encontrado'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json([
+            'success' => true,
+            'data' => [
+                'id' => $product->getId_objeto(),
+                'title' => $product->getTitulo(),
+                'description' => $product->getDescripcion(),
+                'credits' => $product->getCreditos(),
+                'images' => $product->getImagenes()->map(function($imagen) {
+                    return $imagen->getUrl();
+                })->toArray(),
+                'seller' => [
+                    'id' => $product->getUsuario()->getId_usuario(),
+                    'name' => $product->getUsuario()->getNombreUsuario()
+                ],
+                'created_at' => $product->getFechaCreacion()->format('c')
+            ]
+        ]);
+    }
+
+    #[Route('/products', name: 'product_create', methods: ['POST'])]
+    public function createProduct(Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        
+        if (!isset($data['title']) || !isset($data['description']) || !isset($data['credits'])) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Faltan datos obligatorios'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $product = new Objeto();
+        $product->setTitulo($data['title']);
+        $product->setDescripcion($data['description']);
+        $product->setCreditos($data['credits']);
+        $product->setUsuario($user);
+        $product->setEstado('disponible');
+
+        $this->em->persist($product);
+        $this->em->flush();
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Producto creado con éxito',
+            'data' => [
+                'id' => $product->getId_objeto(),
+                'title' => $product->getTitulo(),
+                'description' => $product->getDescripcion(),
+                'credits' => $product->getCreditos()
+            ]
+        ], Response::HTTP_CREATED);
+    }
+
+    #[Route('/products/{id}', name: 'product_update', methods: ['PUT'])]
+    public function updateProduct(Request $request, int $id): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $product = $this->objetoRepository->find($id);
+        
+        if (!$product) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Producto no encontrado'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($product->getUsuario()->getId_usuario() !== $user->getId_usuario()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'No tienes permiso para modificar este producto'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        
+        if (isset($data['title'])) {
+            $product->setTitulo($data['title']);
+        }
+        if (isset($data['description'])) {
+            $product->setDescripcion($data['description']);
+        }
+        if (isset($data['credits'])) {
+            $product->setCreditos($data['credits']);
+        }
+
+        $this->em->flush();
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Producto actualizado con éxito'
+        ]);
+    }
+
+    #[Route('/products/{id}', name: 'product_delete', methods: ['DELETE'])]
+    public function deleteProduct(int $id): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $product = $this->objetoRepository->find($id);
+        
+        if (!$product) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Producto no encontrado'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($product->getUsuario()->getId_usuario() !== $user->getId_usuario()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'No tienes permiso para eliminar este producto'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $this->em->remove($product);
+        $this->em->flush();
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Producto eliminado con éxito'
+        ]);
+    }
+
+    #[Route('/credits/balance', name: 'credits_balance', methods: ['GET'])]
+    public function getCreditsBalance(): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        return $this->json([
+            'success' => true,
+            'data' => [
+                'balance' => $user->getCreditos()
+            ]
+        ]);
+    }
+
+    #[Route('/credits/history', name: 'credits_history', methods: ['GET'])]
+    public function getCreditsHistory(): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // TODO: Implementar historial de créditos
+        return $this->json([
+            'success' => true,
+            'data' => []
+        ]);
+    }
+
+    #[Route('/credits/transfer', name: 'credits_transfer', methods: ['POST'])]
+    public function transferCredits(Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        
+        if (!isset($data['recipient_id']) || !isset($data['amount'])) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Faltan datos obligatorios'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // TODO: Implementar transferencia de créditos
+        return $this->json([
+            'success' => true,
+            'message' => 'Transferencia realizada con éxito'
+        ]);
+    }
+
+    #[Route('/products/{id}/propose-price', name: 'product_propose_price', methods: ['POST'])]
     public function proposePrice(Request $request, int $id): JsonResponse
     {
-        // Implementación simulada
-        return $this->createCorsResponse([
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $product = $this->objetoRepository->find($id);
+        
+        if (!$product) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Producto no encontrado'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        
+        if (!isset($data['price'])) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Falta el precio propuesto'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // TODO: Implementar propuesta de precio
+        return $this->json([
             'success' => true,
             'message' => 'Precio propuesto con éxito'
         ]);
     }
-    
-    #[Route('/usuarios', name: 'usuarios_index', methods: ['GET'])]
-    public function getUsuarios(UsuarioRepository $usuarioRepository, SerializerInterface $serializer): JsonResponse
-    {
-        try {
-            // Obtiene todos los usuarios de la base de datos
-            $usuarios = $usuarioRepository->findAll();
-            
-            // Transformamos los datos para la respuesta
-            $result = [];
-            foreach ($usuarios as $usuario) {
-                $result[] = [
-                    'id' => $usuario->getId_usuario(),
-                    'username' => $usuario->getNombreUsuario(),
-                    'email' => $usuario->getCorreo(),
-                    'profesion' => $usuario->getProfesion(),
-                    'descripcion' => $usuario->getDescripcion(),
-                    'creditos' => $usuario->getCreditos(),
-                    'avatarUrl' => $usuario->getFotoPerfil(),
-                    'fechaRegistro' => $usuario->getFechaRegistro()->format('Y-m-d H:i:s')
-                ];
-            }
-            
-            return $this->createCorsResponse($result);
-        } catch (\Exception $e) {
-            return $this->createCorsResponse([
-                'success' => false,
-                'message' => 'Error al cargar usuarios desde la base de datos',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-} 
+}

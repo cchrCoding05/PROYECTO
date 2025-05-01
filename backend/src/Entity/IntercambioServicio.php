@@ -32,6 +32,9 @@ class IntercambioServicio
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $fecha_completado = null;
 
+    #[ORM\Column(length: 20)]
+    private ?string $estado = null;
+
     #[ORM\OneToMany(mappedBy: 'intercambio_servicio', targetEntity: Valoracion::class)]
     private Collection $valoraciones;
 
@@ -107,6 +110,17 @@ class IntercambioServicio
     {
         $this->fecha_completado = $fecha_completado;
 
+        return $this;
+    }
+
+    public function getEstado(): ?string
+    {
+        return $this->estado;
+    }
+
+    public function setEstado(string $estado): self
+    {
+        $this->estado = $estado;
         return $this;
     }
 

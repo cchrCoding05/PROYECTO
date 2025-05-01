@@ -1,125 +1,135 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useProducts } from "../../hooks/useProducts";
-import { useAuth } from "../../hooks/useAuth";
-import AlertMessage from "../Layout/AlertMessage";
-import ProductItem from "./ProductItem";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { productService } from '../../services/api.jsx';
+import { useAuth } from '../../hooks/useAuth';
+import AlertMessage from '../Layout/AlertMessage';
+import './Products.css';
 
 const ProductList = () => {
-  const { products, loading, error, deleteProduct, loadProducts } =
-    useProducts();
   const { isAuthenticated } = useAuth();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [alert, setAlert] = useState(error ? { message: error } : null);
-  const navigate = useNavigate();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadProducts();
+    }
+  }, [isAuthenticated]);
 
-  const handleDelete = async (id) => {
-    if (
-      window.confirm("¿Estás seguro de que quieres eliminar este producto?")
-    ) {
-      const result = await deleteProduct(id);
-
-      if (result.success) {
-        setAlert({
-          message: "Producto eliminado correctamente",
-          type: "success",
-        });
-      } else {
-        setAlert({
-          message: result.message || "Error al eliminar el producto",
-        });
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const results = await productService.search('');
+      
+      if (results && results.success === false) {
+        setError(results.message || 'Error al cargar productos');
+        setProducts([]);
+        return;
       }
+      
+      const productsArray = Array.isArray(results) ? results : [];
+      
+      const validatedProducts = productsArray.map(product => ({
+        id: product.id || 0,
+        name: product.name || 'Producto sin nombre',
+        description: product.description || 'Sin descripción',
+        credits: product.credits || 0,
+        imageUrl: product.imageUrl || 'https://via.placeholder.com/150',
+        seller: {
+          id: product.seller?.id || 0,
+          username: product.seller?.username || 'Vendedor desconocido'
+        }
+      }));
+      
+      setProducts(validatedProducts);
+    } catch (err) {
+      console.error('Error al cargar productos:', err);
+      setError('Error al cargar los productos');
+      setProducts([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleEdit = (id) => {
-    navigate(`/products/edit/${id}`);
-  };
-
-  // Filter products based on search term
-  const filteredProducts = products.filter(
-    (product) =>
-      product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  if (!isAuthenticated) {
+    return (
+      <div className="container py-4">
+        <AlertMessage 
+          message="Debes iniciar sesión para ver los productos" 
+          type="warning" 
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
-      <div className="text-center my-5">
-        <div className="spinner-border" role="status"></div>
+      <div className="container py-4">
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container py-4">
+        <AlertMessage 
+          message={error} 
+          type="danger" 
+        />
       </div>
     );
   }
 
   return (
-    <div className="row">
-      <div className="col-12">
-        <h2>Lista de Productos</h2>
-
-        {alert && (
-          <AlertMessage
-            message={alert.message}
-            type={alert.type || "danger"}
-            onClose={() => setAlert(null)}
-          />
-        )}
-
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <input
-            type="text"
-            className="form-control w-50"
-            placeholder="Buscar producto..."
-            value={searchTerm}
-            onChange={handleSearch}
-          />
-          <button className="btn btn-primary" onClick={() => loadProducts()}>
-            <i className="bi bi-arrow-clockwise me-1"></i> Actualizar
-          </button>
-        </div>
-
-        <div className="table-responsive">
-          <table className="table table-striped">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Categoría</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Imagen</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  <ProductItem
-                    key={product.id}
-                    product={product}
-                    onDelete={handleDelete}
-                    onEdit={handleEdit}
-                    isAuthenticated={isAuthenticated}
-                  />
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="8" className="text-center">
-                    No hay productos disponibles
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+    <div className="container py-4">
+      <h2 className="text-center display-5 mb-4">LISTA DE PRODUCTOS</h2>
+      
+      <div className="row row-cols-1 row-cols-md-3 g-4">
+        {products.map(product => (
+          <div key={product.id} className="col">
+            <div className="card h-100 shadow-sm">
+              <img 
+                src={product.imageUrl} 
+                className="card-img-top" 
+                alt={product.name}
+                style={{ height: '200px', objectFit: 'cover' }}
+              />
+              <div className="card-body">
+                <h5 className="card-title">{product.name}</h5>
+                <p className="card-text">{product.description}</p>
+                <p className="card-text">
+                  <small className="text-muted">
+                    {product.credits} créditos
+                  </small>
+                </p>
+                <p className="card-text">
+                  <small className="text-muted">
+                    Vendedor: {product.seller.username}
+                  </small>
+                </p>
+              </div>
+              <div className="card-footer bg-transparent">
+                <Link 
+                  to={`/products/${product.id}`}
+                  className="btn btn-primary w-100"
+                >
+                  Ver detalles
+                </Link>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 };
 
-export default ProductList;
+export default ProductList; 

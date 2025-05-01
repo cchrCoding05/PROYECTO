@@ -15,84 +15,38 @@ class ServicioFixtures extends Fixture implements DependentFixtureInterface
     {
         $servicios = [
             [
-                'usuario' => 'juanperez', 
-                'titulo' => 'Desarrollo de sitios web', 
-                'descripcion' => 'Creación de sitios web modernos y responsivos con las últimas tecnologías', 
-                'categoria' => 'Informática', 
-                'creditos' => 80,
-                'etiquetas' => ['Programación', 'Desarrollo web']
+                'titulo' => 'Desarrollo de sitios web',
+                'descripcion' => 'Desarrollo de sitios web personalizados con las últimas tecnologías',
+                'creditos' => 50,
+                'usuario' => 'usuario_juanperez',
+                'categoria' => 'categoria_desarrollo_web'
             ],
             [
-                'usuario' => 'juanperez', 
-                'titulo' => 'Clases de programación', 
-                'descripcion' => 'Clases particulares de programación para principiantes', 
-                'categoria' => 'Educación', 
+                'titulo' => 'Diseño de logos',
+                'descripcion' => 'Creación de logos profesionales y branding',
+                'creditos' => 30,
+                'usuario' => 'usuario_mariagarcia',
+                'categoria' => 'categoria_diseno_grafico'
+            ],
+            [
+                'titulo' => 'Estrategia de marketing digital',
+                'descripcion' => 'Desarrollo de estrategias de marketing digital efectivas',
                 'creditos' => 40,
-                'etiquetas' => ['Programación', 'Clases', 'Tutoría']
-            ],
-            [
-                'usuario' => 'mariagonzalez', 
-                'titulo' => 'Diseño de logotipos', 
-                'descripcion' => 'Diseño profesional de logotipos para empresas y particulares', 
-                'categoria' => 'Arte', 
-                'creditos' => 60,
-                'etiquetas' => ['Diseño']
-            ],
-            [
-                'usuario' => 'pedrosan', 
-                'titulo' => 'Sesiones fotográficas', 
-                'descripcion' => 'Sesiones fotográficas para eventos, retratos, productos, etc.', 
-                'categoria' => 'Arte', 
-                'creditos' => 70,
-                'etiquetas' => ['Fotografía']
-            ],
-            [
-                'usuario' => 'luciamartinez', 
-                'titulo' => 'Clases de matemáticas', 
-                'descripcion' => 'Clases particulares de matemáticas para todos los niveles', 
-                'categoria' => 'Educación', 
-                'creditos' => 35,
-                'etiquetas' => ['Clases', 'Tutoría']
-            ],
-            [
-                'usuario' => 'carlosrodriguez', 
-                'titulo' => 'Reparaciones eléctricas', 
-                'descripcion' => 'Reparación de instalaciones eléctricas en hogares', 
-                'categoria' => 'Hogar', 
-                'creditos' => 55,
-                'etiquetas' => ['Reparación', 'Electricidad']
-            ],
-            [
-                'usuario' => 'analopez', 
-                'titulo' => 'Catering para eventos', 
-                'descripcion' => 'Servicio de catering para eventos y celebraciones', 
-                'categoria' => 'Eventos', 
-                'creditos' => 90,
-                'etiquetas' => ['Cocina', 'Eventos']
+                'usuario' => 'usuario_carloslopez',
+                'categoria' => 'categoria_marketing_digital'
             ]
         ];
 
-        foreach ($servicios as $index => $servicioData) {
+        foreach ($servicios as $servicioData) {
             $servicio = new Servicio();
-            $servicio->setUsuario($this->getReference('usuario-' . $servicioData['usuario'], Usuario::class));
             $servicio->setTitulo($servicioData['titulo']);
             $servicio->setDescripcion($servicioData['descripcion']);
-            $servicio->setCategoria($this->getReference('categoria-' . $servicioData['categoria'], Categoria::class));
             $servicio->setCreditos($servicioData['creditos']);
-            $servicio->setActivo(true);
+            $servicio->setUsuario($this->getReference($servicioData['usuario'], Usuario::class));
+            $servicio->setCategoria($this->getReference($servicioData['categoria'], Categoria::class));
 
-            // Añadir etiquetas
-// Añadir etiquetas
-
-foreach ($servicioData['etiquetas'] as $etiquetaNombre) {
-    $servicio->addEtiqueta($this->getReference('etiqueta-' . $etiquetaNombre, Etiqueta::class));
-}
-
-            
             $manager->persist($servicio);
-            
-            // Referencias para usar en otras fixtures
-            $this->addReference('servicio-' . $index, $servicio);
+            $this->addReference('servicio_' . strtolower(str_replace(' ', '_', $servicioData['titulo'])), $servicio);
         }
 
         $manager->flush();
@@ -103,7 +57,6 @@ foreach ($servicioData['etiquetas'] as $etiquetaNombre) {
         return [
             UsuarioFixtures::class,
             CategoriaFixtures::class,
-            EtiquetaFixtures::class,
         ];
     }
 }

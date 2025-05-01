@@ -47,51 +47,13 @@ const ProfessionalSearch = () => {
         return;
       }
 
-      // Validar que results es un array
-      const professionalsArray = Array.isArray(results) ? results : [];
-
-      // Validar y preparar los datos de profesionales
-      const validatedProfessionals = professionalsArray.map(professional => ({
-        ...professional,
-        name: professional.name || 'Profesional sin nombre',
-        profession: professional.profession || 'Profesión no especificada',
-        description: professional.description || 'Sin descripción',
-        rating: professional.rating || 0,
-        ratingCount: professional.ratingCount || 0,
-        sales: professional.cantidad_ventas || 0,
-        // Pre-normalizar los campos de búsqueda para facilitar la comparación
-        _normalizedName: normalizeText(professional.name || ''),
-        _normalizedProfession: normalizeText(professional.profession || ''),
-        _normalizedDescription: normalizeText(professional.description || '')
-      }));
-
-      // Si hay un término de búsqueda, hacemos un filtrado adicional
-      if (normalizedQuery) {
-        // Filtramos los resultados en el cliente para mejorar la búsqueda
-        const filteredResults = validatedProfessionals.filter(professional => 
-          professional._normalizedName.includes(normalizedQuery) || 
-          professional._normalizedProfession.includes(normalizedQuery) ||
-          professional._normalizedDescription.includes(normalizedQuery)
-        );
-        
-        console.log('Resultados después de filtrar tildes:', filteredResults.length);
-        setProfessionals(filteredResults);
-        
-        // Si no hay resultados después del filtrado, mostrar un mensaje
-        if (filteredResults.length === 0) {
-          setNoResults(true);
-        }
-      } else {
-        setProfessionals(validatedProfessionals);
-        
-        // Si no hay resultados, mostrar un mensaje
-        if (validatedProfessionals.length === 0) {
-          setNoResults(true);
-        }
-      }
-    } catch (err) {
-      setError('Error al buscar profesionales: ' + (err.message || 'Error desconocido'));
-      console.error('Error en la búsqueda:', err);
+      // Validar que results.data es un array
+      const professionalsArray = Array.isArray(results.data) ? results.data : [];
+      setProfessionals(professionalsArray);
+      setNoResults(professionalsArray.length === 0);
+    } catch (error) {
+      console.error('Error en la búsqueda:', error);
+      setError('Error al buscar profesionales. Por favor, inténtalo de nuevo.');
       setProfessionals([]);
       setNoResults(true);
     } finally {
@@ -155,7 +117,7 @@ const ProfessionalSearch = () => {
             className="form-control py-3 border-0"
           />
           <button type="submit" className="btn btn-primary px-4">
-            <i className="bi bi-search"></i>
+            {loading ? 'Buscando...' : 'Buscar'}
           </button>
         </div>
       </form>
@@ -227,14 +189,10 @@ const ProfessionalSearch = () => {
                     <div className="d-flex flex-column align-items-center mb-3">
                       <div className="mb-1">
                         {[1, 2, 3, 4, 5].map((starIndex) => {
-                          // Asegurarse de que rating se trata como número
                           const rating = parseFloat(professional.rating) || 0;
                           
-                          // Determinar el tipo de estrella a mostrar
-                          let starClass = "text-body-tertiary"; // Estrella vacía por defecto
-                          
                           if (rating >= starIndex) {
-                            starClass = "text-warning"; // Estrella completa
+                            return <span key={starIndex} className="text-warning">★</span>;
                           } else if (rating >= starIndex - 0.5) {
                             return (
                               <span 
@@ -242,9 +200,7 @@ const ProfessionalSearch = () => {
                                 className="position-relative"
                                 style={{ fontSize: '1.1rem' }}
                               >
-                                {/* Estrella a la mitad: primero una estrella vacía */}
                                 <span className="text-body-tertiary position-absolute">★</span>
-                                {/* Luego, media estrella coloreada usando clip-path */}
                                 <span 
                                   className="text-warning"
                                   style={{ 
@@ -254,22 +210,14 @@ const ProfessionalSearch = () => {
                                 >★</span>
                               </span>
                             );
+                          } else {
+                            return <span key={starIndex} className="text-body-tertiary">★</span>;
                           }
-                          
-                          return (
-                            <span 
-                              key={starIndex}
-                              className={starClass}
-                              style={{ fontSize: '1.1rem' }}
-                            >
-                              ★
-                            </span>
-                          );
                         })}
                       </div>
-                      <div className="text-body-secondary small">
-                        {professional.ratingCount} valoraciones | {professional.sales} ventas
-                      </div>
+                      <small className="text-muted">
+                        {professional.ratingCount || 0} valoraciones
+                      </small>
                     </div>
                     
                     <div className="d-flex justify-content-center gap-3">

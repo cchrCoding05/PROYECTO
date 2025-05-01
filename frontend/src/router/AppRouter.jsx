@@ -6,13 +6,25 @@ import EditProduct from '../components/Products/EditProduct';
 import Navbar from '../components/Layout/Navbar';
 import Footer from '../components/Layout/Footer';
 import { useAuth } from '../hooks/useAuth';
+import Login from '../components/Auth/Login';
+import Register from '../components/Auth/Register';
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+    );
+  }
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
   
   return children;
@@ -20,7 +32,7 @@ const ProtectedRoute = ({ children }) => {
 
 const AppRouter = () => {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Navbar />
       <main className="container mt-4 mb-5">
         <Routes>
@@ -44,7 +56,7 @@ const AppRouter = () => {
               </ProtectedRoute>
             } 
           />
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       <Footer />

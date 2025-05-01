@@ -10,21 +10,24 @@ class EtiquetaFixtures extends Fixture
     public function load(ObjectManager $manager): void
     {
         $etiquetas = [
-            'Programación', 'Diseño', 'Reparación', 'Clases', 'Tutoría', 'Consultoría',
-            'Limpieza', 'Jardinería', 'Pintura', 'Fontanería', 'Electricidad', 
-            'Traducciones', 'Fotografía', 'Cuidado', 'Cocina', 'Música', 'Masajes',
-            'Legal', 'Financiero', 'Marketing', 'Social Media', 'Desarrollo web',
-            'Carpintería', 'Transporte', 'Mudanzas', 'Idiomas', 'Deporte', 'Eventos'
+            'PHP',
+            'JavaScript',
+            'HTML',
+            'CSS',
+            'Diseño',
+            'Marketing',
+            'SEO',
+            'Redes Sociales',
+            'Branding',
+            'Consultoría'
         ];
 
-        foreach ($etiquetas as $nombreEtiqueta) {
+        foreach ($etiquetas as $nombre) {
             $etiqueta = new Etiqueta();
-            $etiqueta->setNombre($nombreEtiqueta);
-            
+            $etiqueta->setNombre($nombre);
+
             $manager->persist($etiqueta);
-            
-            // Referencias para usar en otras fixtures
-            $this->addReference('etiqueta-' . $nombreEtiqueta, $etiqueta);
+            $this->addReference('etiqueta_' . strtolower($nombre), $etiqueta);
         }
 
         $manager->flush();

@@ -6,9 +6,11 @@ use App\Repository\UsuarioRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UsuarioRepository::class)]
-class Usuario
+class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -54,6 +56,21 @@ class Usuario
     #[ORM\OneToMany(mappedBy: 'usuario', targetEntity: TransaccionCredito::class)]
     private Collection $transacciones_credito;
 
+    #[ORM\OneToMany(mappedBy: 'usuario', targetEntity: Valoracion::class)]
+    private Collection $valoraciones;
+
+    #[ORM\OneToMany(mappedBy: 'usuario', targetEntity: NegociacionPrecio::class)]
+    private Collection $negociaciones_precio;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $valoracion_promedio = null;
+
+    #[ORM\Column]
+    private ?int $ventas_realizadas = 0;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $token = null;
+
     public function __construct()
     {
         $this->fecha_registro = new \DateTimeImmutable();
@@ -61,6 +78,8 @@ class Usuario
         $this->objetos = new ArrayCollection();
         $this->mensajes_enviados = new ArrayCollection();
         $this->mensajes_recibidos = new ArrayCollection();
+        $this->valoraciones = new ArrayCollection();
+        $this->negociaciones_precio = new ArrayCollection();
         $this->transacciones_credito = new ArrayCollection();
     }
 
@@ -222,6 +241,174 @@ class Usuario
             }
         }
 
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Valoracion>
+     */
+    public function getValoraciones(): Collection
+    {
+        return $this->valoraciones;
+    }
+
+    public function addValoracion(Valoracion $valoracion): self
+    {
+        if (!$this->valoraciones->contains($valoracion)) {
+            $this->valoraciones->add($valoracion);
+            $valoracion->setUsuario($this);
+            $this->actualizarValoracionPromedio();
+        }
+
+        return $this;
+    }
+
+    public function removeValoracion(Valoracion $valoracion): self
+    {
+        if ($this->valoraciones->removeElement($valoracion)) {
+            // set the owning side to null (unless already changed)
+            if ($valoracion->getUsuario() === $this) {
+                $valoracion->setUsuario(null);
+            }
+            $this->actualizarValoracionPromedio();
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, NegociacionPrecio>
+     */
+    public function getNegociacionesPrecio(): Collection
+    {
+        return $this->negociaciones_precio;
+    }
+
+    public function addNegociacionPrecio(NegociacionPrecio $negociacionPrecio): self
+    {
+        if (!$this->negociaciones_precio->contains($negociacionPrecio)) {
+            $this->negociaciones_precio->add($negociacionPrecio);
+            $negociacionPrecio->setUsuario($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNegociacionPrecio(NegociacionPrecio $negociacionPrecio): self
+    {
+        if ($this->negociaciones_precio->removeElement($negociacionPrecio)) {
+            // set the owning side to null (unless already changed)
+            if ($negociacionPrecio->getUsuario() === $this) {
+                $negociacionPrecio->setUsuario(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, TransaccionCredito>
+     */
+    public function getTransaccionesCredito(): Collection
+    {
+        return $this->transacciones_credito;
+    }
+
+    public function addTransaccionCredito(TransaccionCredito $transaccionCredito): self
+    {
+        if (!$this->transacciones_credito->contains($transaccionCredito)) {
+            $this->transacciones_credito->add($transaccionCredito);
+            $transaccionCredito->setUsuario($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTransaccionCredito(TransaccionCredito $transaccionCredito): self
+    {
+        if ($this->transacciones_credito->removeElement($transaccionCredito)) {
+            // set the owning side to null (unless already changed)
+            if ($transaccionCredito->getUsuario() === $this) {
+                $transaccionCredito->setUsuario(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getValoracionPromedio(): ?float
+    {
+        return $this->valoracion_promedio;
+    }
+
+    public function setValoracionPromedio(?float $valoracion_promedio): self
+    {
+        $this->valoracion_promedio = $valoracion_promedio;
+        return $this;
+    }
+
+    public function getVentasRealizadas(): ?int
+    {
+        return $this->ventas_realizadas;
+    }
+
+    public function setVentasRealizadas(int $ventas_realizadas): self
+    {
+        $this->ventas_realizadas = $ventas_realizadas;
+        return $this;
+    }
+
+    public function incrementarVentas(): self
+    {
+        $this->ventas_realizadas++;
+        return $this;
+    }
+
+    public function actualizarValoracionPromedio(): self
+    {
+        $totalValoraciones = $this->valoraciones->count();
+        if ($totalValoraciones === 0) {
+            $this->valoracion_promedio = null;
+            return $this;
+        }
+
+        $sumaValoraciones = 0;
+        foreach ($this->valoraciones as $valoracion) {
+            $sumaValoraciones += $valoracion->getPuntuacion();
+        }
+
+        $this->valoracion_promedio = round($sumaValoraciones / $totalValoraciones, 1);
+        return $this;
+    }
+
+    public function getRoles(): array
+    {
+        return ['ROLE_USER'];
+    }
+
+    public function eraseCredentials(): void
+    {
+        // No es necesario implementar nada aquí
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->correo;
+    }
+
+    public function getPassword(): ?string
+    {
+        return $this->contrasena;
+    }
+
+    public function getToken(): ?string
+    {
+        return $this->token;
+    }
+
+    public function setToken(?string $token): self
+    {
+        $this->token = $token;
         return $this;
     }
 }

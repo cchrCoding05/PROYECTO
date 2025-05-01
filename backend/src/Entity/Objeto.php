@@ -6,6 +6,7 @@ use App\Repository\ObjetoRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ObjetoRepository::class)]
 class Objeto
@@ -29,6 +30,14 @@ class Objeto
     private ?int $creditos = null;
 
     #[ORM\Column]
+    #[Assert\Choice(choices: [1, 2, 3], message: 'El estado debe ser 1 (Disponible), 2 (Reservado) o 3 (Intercambiado)')]
+    private ?int $estado = null;
+
+    public const ESTADO_DISPONIBLE = 1;
+    public const ESTADO_RESERVADO = 2;
+    public const ESTADO_INTERCAMBIADO = 3;
+
+    #[ORM\Column]
     private ?\DateTimeImmutable $fecha_creacion;
 
     #[ORM\OneToMany(mappedBy: 'objeto', targetEntity: ImagenObjeto::class, cascade: ['persist', 'remove'])]
@@ -42,6 +51,7 @@ class Objeto
         $this->fecha_creacion = new \DateTimeImmutable();
         $this->imagenes = new ArrayCollection();
         $this->intercambios = new ArrayCollection();
+        $this->estado = self::ESTADO_DISPONIBLE;
     }
 
     public function getId_objeto(): ?int
@@ -95,6 +105,67 @@ class Objeto
         $this->creditos = $creditos;
 
         return $this;
+    }
+
+    public function getEstado(): ?int
+    {
+        return $this->estado;
+    }
+
+    public function setEstado(int $estado): self
+    {
+        if (!in_array($estado, [self::ESTADO_DISPONIBLE, self::ESTADO_RESERVADO, self::ESTADO_INTERCAMBIADO])) {
+            throw new \InvalidArgumentException('Estado no válido');
+        }
+        $this->estado = $estado;
+        return $this;
+    }
+
+    public function marcarComoDisponible(): self
+    {
+        return $this->setEstado(self::ESTADO_DISPONIBLE);
+    }
+
+    public function marcarComoReservado(): self
+    {
+        return $this->setEstado(self::ESTADO_RESERVADO);
+    }
+
+    public function marcarComoIntercambiado(): self
+    {
+        $this->setEstado(self::ESTADO_INTERCAMBIADO);
+        // Marcar todos los intercambios activos como completados
+        foreach ($this->intercambios as $intercambio) {
+            if (!$intercambio->getFechaCompletado()) {
+                $intercambio->marcarComoCompletado();
+            }
+        }
+        return $this;
+    }
+
+    public function estaDisponible(): bool
+    {
+        return $this->estado === self::ESTADO_DISPONIBLE;
+    }
+
+    public function estaReservado(): bool
+    {
+        return $this->estado === self::ESTADO_RESERVADO;
+    }
+
+    public function estaIntercambiado(): bool
+    {
+        return $this->estado === self::ESTADO_INTERCAMBIADO;
+    }
+
+    public function getEstadoTexto(): string
+    {
+        return match($this->estado) {
+            self::ESTADO_DISPONIBLE => 'Disponible',
+            self::ESTADO_RESERVADO => 'Reservado',
+            self::ESTADO_INTERCAMBIADO => 'Intercambiado',
+            default => 'Desconocido'
+        };
     }
 
     public function getFechaCreacion(): ?\DateTimeImmutable

@@ -1,0 +1,88 @@
+.product-card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+}
+
+.product-image {
+  height: 200px;
+  object-fit: cover;
+}
+
+.negotiation-card {
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  border-radius: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.negotiation-card .card-body {
+  padding: 1rem;
+}
+
+.negotiation-status {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.negotiation-status.pending {
+  color: #ffc107;
+}
+
+.negotiation-status.accepted {
+  color: #28a745;
+}
+
+.negotiation-status.rejected {
+  color: #dc3545;
+}
+
+.price-input {
+  max-width: 200px;
+}
+
+.negotiation-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.negotiation-item {
+  border-left: 4px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.negotiation-item:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.negotiation-item.accepted {
+  border-left-color: #28a745;
+}
+
+.negotiation-item.rejected {
+  border-left-color: #dc3545;
+}
+
+.negotiation-item.pending {
+  border-left-color: #ffc107;
+}
+
+.negotiation-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.negotiation-item:hover .negotiation-actions {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .negotiation-actions {
+    opacity: 1;
+  }
+  
+  .product-image {
+    height: 150px;
+  }
+} 
