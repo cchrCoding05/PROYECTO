@@ -109,10 +109,19 @@ export const authService = {
   },
   
   logout: async () => {
-    await fetchApi('/api/logout', {
-      method: 'POST'
-    });
-    localStorage.removeItem('token');
+    try {
+      // Primero eliminamos el token
+      localStorage.removeItem('token');
+      
+      // Luego intentamos hacer logout en el servidor
+      await fetchApi('/logout', {
+        method: 'POST'
+      });
+    } catch (error) {
+      console.error('Error en logout:', error);
+      // Asegurarnos de que el token se elimine incluso si hay error
+      localStorage.removeItem('token');
+    }
   },
   
   getCurrentUser: async () => {

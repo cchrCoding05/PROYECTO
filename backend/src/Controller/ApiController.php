@@ -134,6 +134,12 @@ class ApiController extends AbstractController
     #[Route('/logout', name: 'logout', methods: ['POST'])]
     public function logout(): JsonResponse
     {
+        $user = $this->getUser();
+        if ($user) {
+            $user->setToken(null);
+            $this->em->flush();
+        }
+
         return $this->json([
             'success' => true,
             'message' => 'Sesión cerrada con éxito'

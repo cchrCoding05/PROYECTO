@@ -75,7 +75,7 @@ const Navbar = () => {
             ) : (
               <div className="d-flex align-items-center gap-3">
                 <div className="text-nowrap d-none d-md-block">
-                  Hola, {currentUser?.username || 'Usuario'}
+                  ¡Bienvenido, {currentUser?.data?.username || 'Usuario'}! 👋
                 </div>
                 
                 {currentUser?.credits !== undefined && (
