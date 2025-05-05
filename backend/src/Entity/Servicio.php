@@ -35,8 +35,8 @@ class Servicio
     #[ORM\Column]
     private ?bool $activo = true;
 
-    #[ORM\OneToMany(mappedBy: 'servicio', targetEntity: ImagenServicio::class, cascade: ['persist', 'remove'])]
-    private Collection $imagenes;
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $imagen = null;
 
     #[ORM\ManyToMany(targetEntity: Etiqueta::class, inversedBy: 'servicios')]
     #[ORM\JoinTable(name: 'servicio_etiquetas')]
@@ -49,7 +49,6 @@ class Servicio
 
     public function __construct()
     {
-        $this->imagenes = new ArrayCollection();
         $this->etiquetas = new ArrayCollection();
         $this->intercambios = new ArrayCollection();
     }
@@ -131,33 +130,14 @@ class Servicio
         return $this;
     }
 
-    /**
-     * @return Collection<int, ImagenServicio>
-     */
-    public function getImagenes(): Collection
+    public function getImagen(): ?string
     {
-        return $this->imagenes;
+        return $this->imagen;
     }
 
-    public function addImagen(ImagenServicio $imagen): self
+    public function setImagen(?string $imagen): self
     {
-        if (!$this->imagenes->contains($imagen)) {
-            $this->imagenes->add($imagen);
-            $imagen->setServicio($this);
-        }
-
-        return $this;
-    }
-
-    public function removeImagen(ImagenServicio $imagen): self
-    {
-        if ($this->imagenes->removeElement($imagen)) {
-            // set the owning side to null (unless already changed)
-            if ($imagen->getServicio() === $this) {
-                $imagen->setServicio(null);
-            }
-        }
-
+        $this->imagen = $imagen;
         return $this;
     }
 

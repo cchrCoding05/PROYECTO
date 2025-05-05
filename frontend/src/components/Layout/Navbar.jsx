@@ -50,6 +50,10 @@ const Navbar = () => {
             <li className="nav-item">
               <Link className="nav-link" to="/search/professionals">Buscar Profesionales</Link>
             </li>
+            <li className="nav-item">
+              <Link className="nav-link" to="/upload-product">Subir Producto</Link>
+            </li>
+
             {isAuthenticated && currentUser?.username === 'admin' && (
               <li className="nav-item">
                 <Link className="nav-link" to="/admin/users">Gestión de Usuarios</Link>

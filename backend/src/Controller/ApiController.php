@@ -222,12 +222,26 @@ class ApiController extends AbstractController
         if (isset($data['profession'])) {
             $user->setProfesion($data['profession']);
         }
+        if (isset($data['profilePhoto'])) {
+            $user->setFotoPerfil($data['profilePhoto']);
+        }
 
         $this->em->flush();
 
         return $this->json([
             'success' => true,
-            'message' => 'Perfil actualizado con éxito'
+            'message' => 'Perfil actualizado con éxito',
+            'data' => [
+                'id' => $user->getId_usuario(),
+                'username' => $user->getNombreUsuario(),
+                'email' => $user->getCorreo(),
+                'credits' => $user->getCreditos(),
+                'profession' => $user->getProfesion(),
+                'rating' => $user->getValoracionPromedio(),
+                'sales' => $user->getVentasRealizadas(),
+                'profilePhoto' => $user->getFotoPerfil(),
+                'description' => $user->getDescripcion()
+            ]
         ]);
     }
 
@@ -329,9 +343,7 @@ class ApiController extends AbstractController
                 'description' => $objeto->getDescripcion(),
                 'credits' => $objeto->getCreditos(),
                 'estado' => $objeto->getEstado(),
-                'images' => $objeto->getImagenes()->map(function($imagen) {
-                    return $imagen->getUrlImagen();
-                })->toArray(),
+                'image' => $objeto->getImagen(),
                 'seller' => [
                     'id' => $objeto->getUsuario()->getId_usuario(),
                     'name' => $objeto->getUsuario()->getNombreUsuario()
@@ -365,9 +377,7 @@ class ApiController extends AbstractController
                 'title' => $product->getTitulo(),
                 'description' => $product->getDescripcion(),
                 'credits' => $product->getCreditos(),
-                'images' => $product->getImagenes()->map(function($imagen) {
-                    return $imagen->getUrl();
-                })->toArray(),
+                'image' => $product->getImagen(),
                 'seller' => [
                     'id' => $product->getUsuario()->getId_usuario(),
                     'name' => $product->getUsuario()->getNombreUsuario()
@@ -390,7 +400,7 @@ class ApiController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
         
-        if (!isset($data['title']) || !isset($data['description']) || !isset($data['credits'])) {
+        if (!isset($data['titulo']) || !isset($data['descripcion']) || !isset($data['creditos'])) {
             return $this->json([
                 'success' => false,
                 'message' => 'Faltan datos obligatorios'
@@ -398,11 +408,12 @@ class ApiController extends AbstractController
         }
 
         $product = new Objeto();
-        $product->setTitulo($data['title']);
-        $product->setDescripcion($data['description']);
-        $product->setCreditos($data['credits']);
+        $product->setTitulo($data['titulo']);
+        $product->setDescripcion($data['descripcion']);
+        $product->setCreditos($data['creditos']);
         $product->setUsuario($user);
-        $product->setEstado('disponible');
+        $product->setEstado(1); // Estado por defecto: disponible
+        $product->setImagen($data['imagen'] ?? null);
 
         $this->em->persist($product);
         $this->em->flush();
@@ -412,9 +423,10 @@ class ApiController extends AbstractController
             'message' => 'Producto creado con éxito',
             'data' => [
                 'id' => $product->getId_objeto(),
-                'title' => $product->getTitulo(),
-                'description' => $product->getDescripcion(),
-                'credits' => $product->getCreditos()
+                'titulo' => $product->getTitulo(),
+                'descripcion' => $product->getDescripcion(),
+                'creditos' => $product->getCreditos(),
+                'imagen' => $product->getImagen()
             ]
         ], Response::HTTP_CREATED);
     }

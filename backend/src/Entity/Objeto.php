@@ -40,8 +40,8 @@ class Objeto
     #[ORM\Column]
     private ?\DateTimeImmutable $fecha_creacion;
 
-    #[ORM\OneToMany(mappedBy: 'objeto', targetEntity: ImagenObjeto::class, cascade: ['persist', 'remove'])]
-    private Collection $imagenes;
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $imagen = null;
 
     #[ORM\OneToMany(mappedBy: 'objeto', targetEntity: IntercambioObjeto::class)]
     private Collection $intercambios;
@@ -49,7 +49,6 @@ class Objeto
     public function __construct()
     {
         $this->fecha_creacion = new \DateTimeImmutable();
-        $this->imagenes = new ArrayCollection();
         $this->intercambios = new ArrayCollection();
         $this->estado = self::ESTADO_DISPONIBLE;
     }
@@ -180,33 +179,14 @@ class Objeto
         return $this;
     }
 
-    /**
-     * @return Collection<int, ImagenObjeto>
-     */
-    public function getImagenes(): Collection
+    public function getImagen(): ?string
     {
-        return $this->imagenes;
+        return $this->imagen;
     }
 
-    public function addImagen(ImagenObjeto $imagen): self
+    public function setImagen(?string $imagen): self
     {
-        if (!$this->imagenes->contains($imagen)) {
-            $this->imagenes->add($imagen);
-            $imagen->setObjeto($this);
-        }
-
-        return $this;
-    }
-
-    public function removeImagen(ImagenObjeto $imagen): self
-    {
-        if ($this->imagenes->removeElement($imagen)) {
-            // set the owning side to null (unless already changed)
-            if ($imagen->getObjeto() === $this) {
-                $imagen->setObjeto(null);
-            }
-        }
-
+        $this->imagen = $imagen;
         return $this;
     }
 

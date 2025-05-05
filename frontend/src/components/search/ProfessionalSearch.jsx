@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { professionalService } from '../../services/api.jsx';
 import AlertMessage from '../Layout/AlertMessage.jsx';
+import { Cloudinary } from '@cloudinary/url-gen';
+import { AdvancedImage } from '@cloudinary/react';
 
 const ProfessionalSearch = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -9,10 +11,16 @@ const ProfessionalSearch = () => {
   const [error, setError] = useState(null);
   const [noResults, setNoResults] = useState(false);
 
+  // Inicializar Cloudinary
+  const cld = new Cloudinary({
+    cloud: {
+      cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+    }
+  });
+
   // Función para normalizar texto (quitar tildes y convertir a minúsculas)
   const normalizeText = (text) => {
     if (!text) return '';
-    // Convertir a minúsculas y eliminar acentos/tildes
     return text
       .toLowerCase()
       .normalize("NFD")
@@ -49,6 +57,13 @@ const ProfessionalSearch = () => {
 
       // Validar que results.data es un array
       const professionalsArray = Array.isArray(results.data) ? results.data : [];
+      console.log('Profesionales procesados:', professionalsArray);
+      
+      // Verificar las URLs de las fotos
+      professionalsArray.forEach(prof => {
+        console.log('Foto de perfil para', prof.name, ':', prof.foto_perfil);
+      });
+
       setProfessionals(professionalsArray);
       setNoResults(professionalsArray.length === 0);
     } catch (error) {
@@ -145,10 +160,10 @@ const ProfessionalSearch = () => {
                 <div className="card h-100 border-0 shadow-sm transition">
                   <div className="card-body text-center p-4">
                     <div className="mb-3">
-                      {professional.avatarUrl ? (
+                      {professional.foto_perfil ? (
                         <img 
-                          src={professional.avatarUrl} 
-                          alt={professional.name} 
+                          src={professional.foto_perfil}
+                          alt={professional.name}
                           className="rounded-circle mx-auto border"
                           style={{ 
                             width: '80px', 
@@ -156,10 +171,6 @@ const ProfessionalSearch = () => {
                             objectFit: 'cover',
                             borderColor: 'var(--bs-border-color)'
                           }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = `https://via.placeholder.com/80/e6f3ff/007bff?text=${professional.name.charAt(0).toUpperCase()}`;
-                          }} 
                         />
                       ) : (
                         <div 
@@ -223,7 +234,7 @@ const ProfessionalSearch = () => {
                     <div className="d-flex justify-content-center gap-3">
                       <button className="btn btn-primary">Contactar</button>
                       <button className="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', padding: 0 }}>
-                      <i className="bi bi-chat"></i>
+                        <i className="bi bi-chat"></i>
                       </button>
                     </div>
                   </div>

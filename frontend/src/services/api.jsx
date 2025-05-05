@@ -148,28 +148,72 @@ export const authService = {
 export const userService = {
   getProfile: () => fetchApi("/user/profile"),
   
-  updateProfile: (profileData) => 
-    fetchApi("/user/profile", {
-      method: "PUT",
-      body: JSON.stringify(profileData),
-    }),
-    
-  updateAvatar: (formData) => 
-    fetchApi("/api/user/avatar", {
-      method: "POST",
-      headers: {}, // Vacío para que fetch configure automáticamente content-type para FormData
-      body: formData,
-    }),
+  updateProfile: async (profileData) => {
+    try {
+      const response = await fetchApi("/user/profile", {
+        method: "PUT",
+        body: JSON.stringify(profileData),
+      });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Error al actualizar el perfil');
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error en updateProfile:', error);
+      throw error;
+    }
+  },
 };
 
 // Servicios de profesionales
 export const professionalService = {
   search: async (query = '') => {
-    return fetchApi(`/professionals/search?query=${encodeURIComponent(query)}`);
+    try {
+      const response = await fetchApi(`/professionals/search?query=${encodeURIComponent(query)}`);
+      console.log('Respuesta del backend:', response);
+      
+      // Si la respuesta es un array, procesarlo
+      if (Array.isArray(response)) {
+        const processedData = response.map(professional => ({
+          ...professional,
+          foto_perfil: professional.profilePhoto || professional.photo || null
+        }));
+        console.log('Datos procesados (array):', processedData);
+        return {
+          success: true,
+          data: processedData
+        };
+      }
+      
+      // Si la respuesta tiene la estructura { success, data }
+      if (response.success && Array.isArray(response.data)) {
+        const processedData = response.data.map(professional => ({
+          ...professional,
+          foto_perfil: professional.profilePhoto || professional.photo || null
+        }));
+        console.log('Datos procesados (success):', processedData);
+        return {
+          success: true,
+          data: processedData
+        };
+      }
+      
+      // Si no es ninguno de los casos anteriores, devolver la respuesta tal cual
+      return response;
+    } catch (error) {
+      console.error('Error en professionalService.search:', error);
+      throw error;
+    }
   },
   
   get: async (id) => {
-    return fetchApi(`/professionals/${id}`);
+    const response = await fetchApi(`/professionals/${id}`);
+    return {
+      ...response,
+      foto_perfil: response.profilePhoto || response.photo || null
+    };
   },
   
   getRatings: async (id) => {
@@ -179,22 +223,21 @@ export const professionalService = {
 
 // Servicios de productos
 export const productService = {
-  search: async (query = '') => {
-    console.log('Llamando a la API de búsqueda de productos...');
-    const response = await fetchApi(`/products/search?query=${encodeURIComponent(query)}`);
-    console.log('Respuesta de la API de productos:', response);
-    
-    // Acceder a response.data si existe, o usar response directamente
-    const results = response.data || response;
-    console.log('Datos de productos:', results);
-    
-    // Asegurarnos de que cada producto tenga un estado
-    const processedResults = Array.isArray(results) ? results.map(product => ({
-      ...product,
-      state: product.state || 1
-    })) : [];
-    console.log('Productos procesados:', processedResults);
-    return processedResults;
+  search: async (query) => {
+    try {
+      console.log('Iniciando búsqueda con query:', query);
+      const response = await fetchApi(`/products/search?query=${encodeURIComponent(query)}`);
+      console.log('Respuesta de búsqueda:', response);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Error en la búsqueda');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error en la búsqueda:', error);
+      throw error;
+    }
   },
   
   get: async (id) => {
@@ -205,10 +248,33 @@ export const productService = {
   },
   
   create: async (productData) => {
-    return fetchApi('/products', {
-      method: 'POST',
-      body: JSON.stringify(productData)
-    });
+    console.log('Creando producto con datos:', productData);
+    try {
+      // Validar que todos los campos obligatorios estén presentes
+      if (!productData.name || !productData.description || !productData.price) {
+        throw new Error('Faltan campos obligatorios');
+      }
+
+      const response = await fetchApi('/products', {
+        method: 'POST',
+        body: JSON.stringify({
+          titulo: productData.name,
+          descripcion: productData.description,
+          creditos: parseInt(productData.price),
+          estado: 1, // Estado por defecto: disponible (1)
+          id_usuario: 1, // TODO: Obtener el ID del usuario actual
+          imagen: productData.image // URL de la imagen de Cloudinary
+        })
+      });
+      console.log('Respuesta de creación:', response);
+      return response;
+    } catch (error) {
+      console.error('Error al crear producto:', error);
+      if (error.response) {
+        console.error('Detalles del error:', error.response);
+      }
+      throw error;
+    }
   },
     
   update: async (id, productData) => {

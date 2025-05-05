@@ -22,6 +22,10 @@ import ProductSearch from './components/Search/ProductSearch';
 // Componentes de negociación
 import ProductNegotiation from './components/Negotiation/ProductNegotiation';
 
+// Componentes de subida de productos
+import ProductUpload from './components/Product/ProductUpload';
+import ProductDetails from './components/Product/ProductDetails';
+
 // Componente principal de la navegación
 const AppNavigation = () => {
   const navigate = useNavigate();
@@ -63,12 +67,30 @@ const AppNavigation = () => {
               </ProtectedRoute>
             } 
           />
+
+          <Route 
+            path="/products/:id" 
+            element={
+              <ProtectedRoute>
+                <ProductDetails />
+              </ProtectedRoute>
+            } 
+          />
           
           <Route 
             path="/products/:productId/negotiate" 
             element={
               <ProtectedRoute>
                 <ProductNegotiation />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/upload-product" 
+            element={
+              <ProtectedRoute>
+                <ProductUpload />
               </ProtectedRoute>
             } 
           />

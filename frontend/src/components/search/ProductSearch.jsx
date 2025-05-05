@@ -62,7 +62,7 @@ const ProductSearch = () => {
         name: product.title || 'Producto sin nombre',
         description: product.description || 'Sin descripción',
         credits: product.credits || 0,
-        imageUrl: product.images?.[0] || 'https://via.placeholder.com/150',
+        imageUrl: product.image || 'https://via.placeholder.com/150',
         state: product.estado || 1,
         seller: {
           id: product.seller?.id || 0,
@@ -213,7 +213,6 @@ const ProductSearch = () => {
                     <Link 
                       to={`/products/${product.id}`}
                       className="btn btn-primary w-100"
-                      disabled={product.state !== 1}
                     >
                       Ver detalles
                     </Link>
