@@ -53,6 +53,10 @@ const Login = () => {
       }
     } catch (err) {
       console.error('Error durante el inicio de sesión:', err);
+      setAlert({ 
+        message: 'Email o contraseña incorrectos', 
+        type: 'danger' 
+      });
       setError('Error de conexión al servidor. Por favor, intenta nuevamente.');
     } finally {
       setIsLoading(false);

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import './App.css';
+import CookieConsent from './components/CookieConsent';
+import Footer from './components/Layout/Footer';
 
 // Componentes de layout
 import Navbar from './components/Layout/Navbar';
@@ -24,7 +26,7 @@ import ProductNegotiation from './components/Negotiation/ProductNegotiation';
 
 // Componentes de subida de productos
 import ProductUpload from './components/Product/ProductUpload';
-import ProductDetails from './components/Product/ProductDetails';
+import ProductDetail from './components/Products/ProductDetail';
 
 // Componente principal de la navegación
 const AppNavigation = () => {
@@ -69,10 +71,10 @@ const AppNavigation = () => {
           />
 
           <Route 
-            path="/products/:id" 
+            path="/product/:id" 
             element={
               <ProtectedRoute>
-                <ProductDetails />
+                <ProductDetail />
               </ProtectedRoute>
             } 
           />
@@ -97,13 +99,8 @@ const AppNavigation = () => {
         </Routes>
       </main>
 
-      <footer className="py-3 mt-auto bg-body-tertiary border-top">
-        <div className="container text-center">
-          <p className="mb-0 text-body-secondary">
-            &copy; 2023 HelpEx - Plataforma de Intercambio de Servicios sin Dinero
-          </p>
-        </div>
-      </footer>
+      <Footer />
+      <CookieConsent />
     </div>
   );
 };

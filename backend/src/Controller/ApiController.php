@@ -358,33 +358,132 @@ class ApiController extends AbstractController
         ]);
     }
 
+    #[Route('/products/top-rated-users', name: 'products_top_rated_users', methods: ['GET'])]
+    public function getProductsFromTopRatedUsers(): JsonResponse
+    {
+        try {
+            error_log('Iniciando getProductsFromTopRatedUsers');
+            
+            // Primero obtenemos los usuarios mejor valorados
+            $qb = $this->usuarioRepository->createQueryBuilder('u')
+                ->orderBy('u.valoracion_promedio', 'DESC')
+                ->setMaxResults(5);
+            
+            error_log('Query usuarios: ' . $qb->getQuery()->getSQL());
+            $topUsers = $qb->getQuery()->getResult();
+            error_log('Usuarios encontrados: ' . count($topUsers));
+
+            if (empty($topUsers)) {
+                error_log('No se encontraron usuarios');
+                return $this->json([
+                    'success' => true,
+                    'data' => []
+                ]);
+            }
+
+            // Obtenemos los IDs de los usuarios
+            $userIds = array_map(function($user) {
+                return $user->getId_usuario();
+            }, $topUsers);
+
+            // Luego obtenemos los productos de estos usuarios
+            $qb = $this->objetoRepository->createQueryBuilder('o')
+                ->select('o', 'u')  // Seleccionamos explícitamente el usuario
+                ->join('o.usuario', 'u')  // Hacemos join con la tabla de usuarios
+                ->where('o.usuario IN (:users)')
+                ->andWhere('o.estado = :estado')
+                ->setParameter('users', $userIds)
+                ->setParameter('estado', Objeto::ESTADO_DISPONIBLE)
+                ->orderBy('o.fecha_creacion', 'DESC')
+                ->setMaxResults(10);
+            
+            error_log('Query productos: ' . $qb->getQuery()->getSQL());
+            error_log('Parámetros: ' . json_encode([
+                'users' => $userIds,
+                'estado' => Objeto::ESTADO_DISPONIBLE
+            ]));
+            
+            $products = $qb->getQuery()->getResult();
+            error_log('Productos encontrados: ' . count($products));
+
+            $productsData = array_map(function($product) {
+                return [
+                    'id' => $product->getId_objeto(),
+                    'name' => $product->getTitulo(),
+                    'description' => $product->getDescripcion(),
+                    'price' => $product->getCreditos(),
+                    'image' => $product->getImagen(),
+                    'user' => [
+                        'id' => $product->getUsuario()->getId_usuario(),
+                        'username' => $product->getUsuario()->getNombreUsuario(),
+                        'rating' => $product->getUsuario()->getValoracionPromedio()
+                    ]
+                ];
+            }, $products);
+
+            error_log('Datos procesados correctamente');
+            return $this->json([
+                'success' => true,
+                'data' => $productsData
+            ]);
+        } catch (\Exception $e) {
+            error_log('Error en getProductsFromTopRatedUsers: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al obtener productos de usuarios mejor valorados',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     #[Route('/products/{id}', name: 'product_get', methods: ['GET'])]
     public function getProduct(int $id): JsonResponse
     {
-        $product = $this->objetoRepository->find($id);
-        
-        if (!$product) {
+        try {
+            error_log('Iniciando getProduct con ID: ' . $id);
+            $product = $this->objetoRepository->find($id);
+            
+            if (!$product) {
+                error_log('Producto no encontrado con ID: ' . $id);
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Producto no encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            error_log('Producto encontrado: ' . $product->getId_objeto());
+            return $this->json([
+                'success' => true,
+                'data' => [
+                    'id' => $product->getId_objeto(),
+                    'title' => $product->getTitulo(),
+                    'description' => $product->getDescripcion(),
+                    'credits' => $product->getCreditos(),
+                    'image' => $product->getImagen(),
+                    'estado' => $product->getEstado(),
+                    'seller' => [
+                        'id' => $product->getUsuario()->getId_usuario(),
+                        'name' => $product->getUsuario()->getNombreUsuario()
+                    ],
+                    'created_at' => $product->getFechaCreacion()->format('c')
+                ]
+            ]);
+        } catch (\Exception $e) {
+            error_log('Error en getProduct: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
             return $this->json([
                 'success' => false,
-                'message' => 'Producto no encontrado'
-            ], Response::HTTP_NOT_FOUND);
+                'message' => 'Error al obtener el producto',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->json([
-            'success' => true,
-            'data' => [
-                'id' => $product->getId_objeto(),
-                'title' => $product->getTitulo(),
-                'description' => $product->getDescripcion(),
-                'credits' => $product->getCreditos(),
-                'image' => $product->getImagen(),
-                'seller' => [
-                    'id' => $product->getUsuario()->getId_usuario(),
-                    'name' => $product->getUsuario()->getNombreUsuario()
-                ],
-                'created_at' => $product->getFechaCreacion()->format('c')
-            ]
-        ]);
     }
 
     #[Route('/products', name: 'product_create', methods: ['POST'])]
@@ -612,5 +711,40 @@ class ApiController extends AbstractController
             'success' => true,
             'message' => 'Precio propuesto con éxito'
         ]);
+    }
+
+    #[Route('/users/top-rated', name: 'users_top_rated', methods: ['GET'])]
+    public function getTopRatedUsers(): JsonResponse
+    {
+        try {
+            $qb = $this->usuarioRepository->createQueryBuilder('u')
+                ->orderBy('u.valoracion_promedio', 'DESC')
+                ->setMaxResults(10);
+            
+            $topUsers = $qb->getQuery()->getResult();
+            
+            $usersData = array_map(function($user) {
+                return [
+                    'id' => $user->getId_usuario(),
+                    'username' => $user->getNombreUsuario(),
+                    'profession' => $user->getProfesion(),
+                    'rating' => $user->getValoracionPromedio(),
+                    'sales' => $user->getVentasRealizadas(),
+                    'profilePhoto' => $user->getFotoPerfil(),
+                    'description' => $user->getDescripcion()
+                ];
+            }, $topUsers);
+
+            return $this->json([
+                'success' => true,
+                'data' => $usersData
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al obtener usuarios mejor valorados',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

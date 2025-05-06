@@ -66,7 +66,7 @@ const ProductSearch = () => {
         state: product.estado || 1,
         seller: {
           id: product.seller?.id || 0,
-          username: product.seller?.name || 'Vendedor desconocido'
+          username: product.seller?.username || 'Vendedor desconocido'
         }
       }));
       
@@ -211,7 +211,7 @@ const ProductSearch = () => {
                   </div>
                   <div className="card-footer bg-transparent">
                     <Link 
-                      to={`/products/${product.id}`}
+                      to={`/product/${product.id}`}
                       className="btn btn-primary w-100"
                     >
                       Ver detalles

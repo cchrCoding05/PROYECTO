@@ -15,26 +15,58 @@ const ProductDetail = () => {
   const [proposedPrice, setProposedPrice] = useState('');
   const [negotiationError, setNegotiationError] = useState(null);
   const [negotiationSuccess, setNegotiationSuccess] = useState(false);
-  const [productState, setProductState] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
       loadProduct();
-      loadProductState();
     }
   }, [isAuthenticated, id]);
 
-  const loadProductState = async () => {
+  const loadProduct = async () => {
     try {
-      const state = await productService.getState(id);
-      setProductState(state.state);
+      setLoading(true);
+      setError(null);
+      
+      const result = await productService.get(id);
+      console.log('Resultado completo de la API:', result);
+      
+      if (result && result.success === false) {
+        setError(result.message || 'Error al cargar el producto');
+        return;
+      }
+      
+      // Asegurarnos de que el estado sea un número
+      const estado = parseInt(result.estado) || parseInt(result.state) || 1;
+      console.log('Estado parseado:', estado);
+      
+      const productData = {
+        id: result.id || 0,
+        name: result.title || result.name || 'Producto sin nombre',
+        description: result.description || 'Sin descripción',
+        credits: result.credits || 0,
+        imageUrl: result.image || result.imageUrl || 'https://via.placeholder.com/150',
+        state: estado,
+        seller: {
+          id: result.seller?.id || 0,
+          username: result.seller?.username || result.seller?.name || 'Vendedor desconocido'
+        }
+      };
+      
+      console.log('Datos del producto a guardar:', productData);
+      setProduct(productData);
+      
     } catch (err) {
-      console.error('Error al cargar el estado del producto:', err);
+      console.error('Error al cargar el producto:', err);
+      setError('Error al cargar el producto');
+    } finally {
+      setLoading(false);
     }
   };
 
   const getStateText = (state) => {
-    switch (state) {
+    const estadoNum = parseInt(state);
+    console.log('Estado para texto:', estadoNum);
+    switch (estadoNum) {
       case 1: return 'Disponible';
       case 2: return 'Reservado';
       case 3: return 'Intercambiado';
@@ -43,42 +75,13 @@ const ProductDetail = () => {
   };
 
   const getStateClass = (state) => {
-    switch (state) {
+    const estadoNum = parseInt(state);
+    console.log('Estado para clase:', estadoNum);
+    switch (estadoNum) {
       case 1: return 'text-success';
       case 2: return 'text-warning';
       case 3: return 'text-danger';
       default: return 'text-muted';
-    }
-  };
-
-  const loadProduct = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const result = await productService.get(id);
-      
-      if (result && result.success === false) {
-        setError(result.message || 'Error al cargar el producto');
-        return;
-      }
-      
-      setProduct({
-        id: result.id || 0,
-        name: result.name || 'Producto sin nombre',
-        description: result.description || 'Sin descripción',
-        credits: result.credits || 0,
-        imageUrl: result.imageUrl || 'https://via.placeholder.com/150',
-        seller: {
-          id: result.seller?.id || 0,
-          username: result.seller?.username || 'Vendedor desconocido'
-        }
-      });
-    } catch (err) {
-      console.error('Error al cargar el producto:', err);
-      setError('Error al cargar el producto');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -99,7 +102,6 @@ const ProductDetail = () => {
       
       setNegotiationSuccess(true);
       setProposedPrice('');
-      await loadProductState();
     } catch (err) {
       console.error('Error al proponer precio:', err);
       setNegotiationError(err.message || 'Error al proponer precio');
@@ -145,7 +147,7 @@ const ProductDetail = () => {
   }
 
   const isOwner = user && user.id === product.seller.id;
-  const isAvailable = productState === 1;
+  const isAvailable = product.state === 1;
 
   return (
     <div className="container py-4">
@@ -156,20 +158,22 @@ const ProductDetail = () => {
             className="img-fluid rounded shadow" 
             alt={product.name}
             style={{ maxHeight: '400px', objectFit: 'cover' }}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://via.placeholder.com/400?text=Sin+Imagen';
+            }}
           />
         </div>
         <div className="col-md-6">
           <h1 className="display-4 mb-4">{product.name}</h1>
           <p className="lead">{product.description}</p>
           <p className="h3 mb-4">{product.credits} créditos</p>
+          <p className={`h5 mb-4 ${getStateClass(product.state)}`}>
+            Estado: {getStateText(product.state)} ({product.state})
+          </p>
           <p className="text-muted">
             Vendedor: {product.seller.username}
           </p>
-          {productState !== null && (
-            <p className={`h5 mb-4 ${getStateClass(productState)}`}>
-              Estado: {getStateText(productState)}
-            </p>
-          )}
           
           {!isOwner && (
             <div className="mt-4">
@@ -186,7 +190,7 @@ const ProductDetail = () => {
                   type="danger" 
                 />
               )}
-              {!isAvailable && (
+              {product.state !== 1 && (
                 <AlertMessage 
                   message="Este producto no está disponible para negociación" 
                   type="warning" 
@@ -202,12 +206,12 @@ const ProductDetail = () => {
                     placeholder="Ingresa tu oferta en créditos"
                     min="1"
                     required
-                    disabled={!isAvailable}
+                    disabled={product.state !== 1}
                   />
                   <button 
                     className="btn btn-primary" 
                     type="submit"
-                    disabled={!isAvailable}
+                    disabled={product.state !== 1}
                   >
                     Proponer
                   </button>

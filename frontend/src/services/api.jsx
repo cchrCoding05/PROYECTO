@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const API_URL = 'http://localhost:8000/api';
 
 // Función fetch mejorada con mejor gestión de errores
 const fetchApi = async (endpoint, options = {}) => {
+  console.log('Iniciando fetchApi para endpoint:', endpoint);
   const token = localStorage.getItem('token');
   const headers = {
     'Content-Type': 'application/json',
@@ -12,24 +14,32 @@ const fetchApi = async (endpoint, options = {}) => {
     ...(token && { 'Authorization': `Bearer ${token}` }),
     ...options.headers,
   };
+  console.log('Headers configurados:', headers);
 
   try {
+    console.log('Realizando petición a:', `${API_URL}${endpoint}`);
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
       mode: 'cors',
       cache: 'no-cache',
     });
+    console.log('Respuesta recibida:', response.status, response.statusText);
 
     if (response.status === 204) {
       return { success: true };
     }
 
     const data = await response.json();
+    console.log('Datos recibidos:', data);
 
     if (!response.ok) {
+      console.error('Error en la respuesta:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: data
+      });
       if (response.status === 401) {
-        // Si recibimos un 401, limpiamos el token
         localStorage.removeItem('token');
         const error = new Error(data.message || 'Sesión expirada o inválida');
         error.status = 401;
@@ -42,7 +52,11 @@ const fetchApi = async (endpoint, options = {}) => {
 
     return data;
   } catch (error) {
-    console.error('Error en la petición:', error);
+    console.error('Error en fetchApi:', {
+      message: error.message,
+      stack: error.stack,
+      endpoint: endpoint
+    });
     if (error.message.includes('Failed to fetch')) {
       throw new Error('No se pudo conectar con el servidor. Por favor, verifica tu conexión.');
     }
@@ -219,6 +233,20 @@ export const professionalService = {
   getRatings: async (id) => {
     return fetchApi(`/professionals/${id}/ratings`);
   },
+
+  // Nueva función para obtener usuarios mejor valorados
+  getTopRated: async () => {
+    try {
+      const response = await fetchApi('/users/top-rated');
+      if (!response.success) {
+        throw new Error(response.message || 'Error al obtener usuarios mejor valorados');
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Error en getTopRated:', error);
+      throw error;
+    }
+  }
 };
 
 // Servicios de productos
@@ -334,6 +362,27 @@ export const productService = {
     return fetchApi(`/products/${productId}/negotiations/${negotiationId}/reject`, {
       method: 'POST'
     });
+  },
+
+  // Nueva función para obtener productos de usuarios mejor valorados
+  getFromTopRatedUsers: async () => {
+    console.log('Iniciando getFromTopRatedUsers');
+    try {
+      const response = await fetchApi('/products/top-rated-users');
+      console.log('Respuesta de getFromTopRatedUsers:', response);
+      if (!response.success) {
+        console.error('Error en la respuesta:', response);
+        throw new Error(response.message || 'Error al obtener productos de usuarios mejor valorados');
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Error detallado en getFromTopRatedUsers:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
+      });
+      throw error;
+    }
   }
 };
 

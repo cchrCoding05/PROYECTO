@@ -23,21 +23,24 @@ class UsuarioFixtures extends Fixture
                 'correo' => 'juan@example.com',
                 'contrasena' => 'Password123',
                 'profesion' => 'Desarrollador Web',
-                'descripcion' => 'Apasionado por la programación y el desarrollo web'
+                'descripcion' => 'Apasionado por la programación y el desarrollo web',
+                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519718/l4x5zw2vezhieigtw9il.png'
             ],
             [
                 'nombre_usuario' => 'mariagarcia',
                 'correo' => 'maria@example.com',
                 'contrasena' => 'Password123',
                 'profesion' => 'Diseñadora Gráfica',
-                'descripcion' => 'Especialista en diseño UI/UX'
+                'descripcion' => 'Especialista en diseño UI/UX',
+                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519692/wxzhqwn9aejcnqlklaoh.png'
             ],
             [
                 'nombre_usuario' => 'carloslopez',
                 'correo' => 'carlos@example.com',
                 'contrasena' => 'Password123',
                 'profesion' => 'Marketing Digital',
-                'descripcion' => 'Experto en estrategias de marketing online'
+                'descripcion' => 'Experto en estrategias de marketing online',
+                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519663/thm9qdlxgfuqblbtnorp.png'
             ]
         ];
 
@@ -50,7 +53,7 @@ class UsuarioFixtures extends Fixture
             $usuario->setDescripcion($usuarioData['descripcion']);
             $usuario->setFechaRegistro(new \DateTimeImmutable());
             $usuario->setCreditos(100);
-
+            $usuario->setFotoPerfil($usuarioData['foto_perfil']);
             $manager->persist($usuario);
             $this->addReference('usuario_' . $usuarioData['nombre_usuario'], $usuario);
         }
