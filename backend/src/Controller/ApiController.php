@@ -358,6 +358,46 @@ class ApiController extends AbstractController
         ]);
     }
 
+    #[Route('/users/top-rated', name: 'users_top_rated', methods: ['GET'])]
+    public function getTopRatedUsers(): JsonResponse
+    {
+        try {
+            error_log('Iniciando getTopRatedUsers');
+            
+            $qb = $this->usuarioRepository->createQueryBuilder('u')
+                ->orderBy('u.valoracion_promedio', 'DESC')
+                ->setMaxResults(10);
+            
+            $topUsers = $qb->getQuery()->getResult();
+            error_log('Usuarios encontrados: ' . count($topUsers));
+            
+            $usersData = array_map(function($user) {
+                return [
+                    'id' => $user->getId_usuario(),
+                    'username' => $user->getNombreUsuario(),
+                    'profession' => $user->getProfesion(),
+                    'rating' => $user->getValoracionPromedio(),
+                    'sales' => $user->getVentasRealizadas(),
+                    'profilePhoto' => $user->getFotoPerfil(),
+                    'description' => $user->getDescripcion()
+                ];
+            }, $topUsers);
+
+            return $this->json([
+                'success' => true,
+                'data' => $usersData
+            ]);
+        } catch (\Exception $e) {
+            error_log('Error en getTopRatedUsers: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al obtener usuarios mejor valorados',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     #[Route('/products/top-rated-users', name: 'products_top_rated_users', methods: ['GET'])]
     public function getProductsFromTopRatedUsers(): JsonResponse
     {
@@ -432,20 +472,84 @@ class ApiController extends AbstractController
             return $this->json([
                 'success' => false,
                 'message' => 'Error al obtener productos de usuarios mejor valorados',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/products/my-products', name: 'products_my_products', methods: ['GET'])]
+    public function getMyProducts(): JsonResponse
+    {
+        try {
+            error_log('Iniciando getMyProducts');
+            
+            $user = $this->getUser();
+            error_log('Usuario obtenido: ' . ($user ? 'Sí' : 'No'));
+            
+            if (!$user) {
+                error_log('Usuario no autenticado');
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario no autenticado'
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+
+            error_log('Buscando productos para usuario ID: ' . $user->getId_usuario());
+            $products = $this->objetoRepository->findBy(['usuario' => $user]);
+            error_log('Productos encontrados: ' . count($products));
+            
+            $data = array_map(function(Objeto $objeto) {
+                error_log('Procesando objeto ID: ' . $objeto->getId_objeto());
+                $id = (int)$objeto->getId_objeto();
+                $estado = (int)$objeto->getEstado();
+                error_log("ID convertido: $id, Estado convertido: $estado");
+                
+                return [
+                    'id' => $id,
+                    'name' => $objeto->getTitulo(),
+                    'description' => $objeto->getDescripcion(),
+                    'price' => $objeto->getCreditos(),
+                    'state' => $estado,
+                    'image' => $objeto->getImagen(),
+                    'created_at' => $objeto->getFechaCreacion()->format('c')
+                ];
+            }, $products);
+
+            error_log('Datos procesados: ' . json_encode($data));
+            return $this->json([
+                'success' => true,
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            error_log('Error en getMyProducts: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            error_log('Línea del error: ' . $e->getLine());
+            error_log('Archivo del error: ' . $e->getFile());
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al obtener mis productos',
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'debug' => [
+                    'line' => $e->getLine(),
+                    'file' => $e->getFile(),
+                    'trace' => $e->getTraceAsString()
+                ]
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/products/{id}', name: 'product_get', methods: ['GET'])]
-    public function getProduct(int $id): JsonResponse
+    public function getProduct(string $id): JsonResponse
     {
         try {
             error_log('Iniciando getProduct con ID: ' . $id);
+            error_log('Tipo de ID: ' . gettype($id));
+            
+            $id = (int)$id;
+            error_log('ID convertido a entero: ' . $id);
+            
             $product = $this->objetoRepository->find($id);
+            error_log('Producto encontrado: ' . ($product ? 'Sí' : 'No'));
             
             if (!$product) {
                 error_log('Producto no encontrado con ID: ' . $id);
@@ -456,32 +560,39 @@ class ApiController extends AbstractController
             }
 
             error_log('Producto encontrado: ' . $product->getId_objeto());
-            return $this->json([
+            $response = [
                 'success' => true,
                 'data' => [
-                    'id' => $product->getId_objeto(),
+                    'id' => (int)$product->getId_objeto(),
                     'title' => $product->getTitulo(),
                     'description' => $product->getDescripcion(),
                     'credits' => $product->getCreditos(),
                     'image' => $product->getImagen(),
-                    'estado' => $product->getEstado(),
+                    'estado' => (int)$product->getEstado(),
                     'seller' => [
-                        'id' => $product->getUsuario()->getId_usuario(),
+                        'id' => (int)$product->getUsuario()->getId_usuario(),
                         'name' => $product->getUsuario()->getNombreUsuario()
                     ],
                     'created_at' => $product->getFechaCreacion()->format('c')
                 ]
-            ]);
+            ];
+            error_log('Respuesta preparada: ' . json_encode($response));
+            
+            return $this->json($response);
         } catch (\Exception $e) {
             error_log('Error en getProduct: ' . $e->getMessage());
             error_log('Stack trace: ' . $e->getTraceAsString());
+            error_log('Línea del error: ' . $e->getLine());
+            error_log('Archivo del error: ' . $e->getFile());
             return $this->json([
                 'success' => false,
                 'message' => 'Error al obtener el producto',
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'debug' => [
+                    'line' => $e->getLine(),
+                    'file' => $e->getFile(),
+                    'trace' => $e->getTraceAsString()
+                ]
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -711,40 +822,5 @@ class ApiController extends AbstractController
             'success' => true,
             'message' => 'Precio propuesto con éxito'
         ]);
-    }
-
-    #[Route('/users/top-rated', name: 'users_top_rated', methods: ['GET'])]
-    public function getTopRatedUsers(): JsonResponse
-    {
-        try {
-            $qb = $this->usuarioRepository->createQueryBuilder('u')
-                ->orderBy('u.valoracion_promedio', 'DESC')
-                ->setMaxResults(10);
-            
-            $topUsers = $qb->getQuery()->getResult();
-            
-            $usersData = array_map(function($user) {
-                return [
-                    'id' => $user->getId_usuario(),
-                    'username' => $user->getNombreUsuario(),
-                    'profession' => $user->getProfesion(),
-                    'rating' => $user->getValoracionPromedio(),
-                    'sales' => $user->getVentasRealizadas(),
-                    'profilePhoto' => $user->getFotoPerfil(),
-                    'description' => $user->getDescripcion()
-                ];
-            }, $topUsers);
-
-            return $this->json([
-                'success' => true,
-                'data' => $usersData
-            ]);
-        } catch (\Exception $e) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Error al obtener usuarios mejor valorados',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
     }
 }

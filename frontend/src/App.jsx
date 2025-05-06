@@ -27,6 +27,7 @@ import ProductNegotiation from './components/Negotiation/ProductNegotiation';
 // Componentes de subida de productos
 import ProductUpload from './components/Product/ProductUpload';
 import ProductDetail from './components/Products/ProductDetail';
+import MyProducts from './components/Products/MyProducts';
 
 // Componente principal de la navegación
 const AppNavigation = () => {
@@ -96,6 +97,8 @@ const AppNavigation = () => {
               </ProtectedRoute>
             } 
           />
+
+          <Route path="/my-products" element={<MyProducts />} />
         </Routes>
       </main>
 

@@ -65,8 +65,8 @@ const ProductSearch = () => {
         imageUrl: product.image || 'https://via.placeholder.com/150',
         state: product.estado || 1,
         seller: {
-          id: product.seller?.id || 0,
-          username: product.seller?.username || 'Vendedor desconocido'
+          id: product.seller?.id || product.user?.id || 0,
+          username: product.seller?.name || product.user?.name || 'Vendedor desconocido'
         }
       }));
       

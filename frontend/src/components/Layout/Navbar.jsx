@@ -80,14 +80,12 @@ const Navbar = () => {
               <div className="d-flex align-items-center gap-3">
                 <div className="text-nowrap d-none d-md-block">
                   ¡Bienvenido, {currentUser?.data?.username || 'Usuario'}! 👋
+                  {currentUser?.data?.credits !== undefined && (
+                    <span className="ms-2 badge bg-warning text-dark">
+                      💰 {currentUser.data.credits} créditos
+                    </span>
+                  )}
                 </div>
-                
-                {currentUser?.credits !== undefined && (
-                  <div className="badge bg-warning text-dark d-flex align-items-center p-2">
-                    <span className="me-1">💰</span>
-                    <span>{currentUser.credits} créditos</span>
-                  </div>
-                )}
                 
                 <div className="dropdown">
                   <button 

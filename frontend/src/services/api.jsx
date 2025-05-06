@@ -241,7 +241,7 @@ export const professionalService = {
       if (!response.success) {
         throw new Error(response.message || 'Error al obtener usuarios mejor valorados');
       }
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Error en getTopRated:', error);
       throw error;
@@ -374,7 +374,7 @@ export const productService = {
         console.error('Error en la respuesta:', response);
         throw new Error(response.message || 'Error al obtener productos de usuarios mejor valorados');
       }
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Error detallado en getFromTopRatedUsers:', {
         message: error.message,
@@ -383,7 +383,27 @@ export const productService = {
       });
       throw error;
     }
-  }
+  },
+
+  getMyProducts: async () => {
+    console.log('Iniciando getMyProducts en productService');
+    try {
+      const response = await fetchApi('/products/my-products');
+      console.log('Respuesta raw de getMyProducts:', response);
+      
+      if (!response.success) {
+        console.error('Error en getMyProducts:', response);
+        throw new Error(response.message || 'Error al obtener mis productos');
+      }
+      
+      console.log('Datos de productos obtenidos:', response.data);
+      return response;
+    } catch (error) {
+      console.error('Error en getMyProducts:', error);
+      console.error('Stack trace:', error.stack);
+      throw error;
+    }
+  },
 };
 
 // Servicios de créditos

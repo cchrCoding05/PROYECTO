@@ -41,6 +41,14 @@ class UsuarioFixtures extends Fixture
                 'profesion' => 'Marketing Digital',
                 'descripcion' => 'Experto en estrategias de marketing online',
                 'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519663/thm9qdlxgfuqblbtnorp.png'
+            ],
+            [
+                'nombre_usuario' => 'anaperez',
+                'correo' => 'ana@example.com',
+                'contrasena' => 'Password123',
+                'profesion' => 'Estudiante',
+                'descripcion' => 'Estudiante de informática buscando objetos para aprender',
+                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746534302/nzu6vroi6fhlybr6zbhu.png'
             ]
         ];
 
