@@ -8,6 +8,7 @@ import Footer from '../components/Layout/Footer';
 import { useAuth } from '../hooks/useAuth';
 import Login from '../components/Auth/Login';
 import Register from '../components/Auth/Register';
+import ProductNegotiation from '../components/Negotiation/ProductNegotiation';
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
@@ -53,6 +54,14 @@ const AppRouter = () => {
             element={
               <ProtectedRoute>
                 <EditProduct />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/negotiation/:id" 
+            element={
+              <ProtectedRoute>
+                <ProductNegotiation />
               </ProtectedRoute>
             } 
           />

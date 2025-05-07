@@ -90,6 +90,15 @@ const AppNavigation = () => {
           />
           
           <Route 
+            path="/negotiation/:id" 
+            element={
+              <ProtectedRoute>
+                <ProductNegotiation />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
             path="/upload-product" 
             element={
               <ProtectedRoute>

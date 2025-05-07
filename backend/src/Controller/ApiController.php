@@ -4,8 +4,12 @@ namespace App\Controller;
 
 use App\Entity\Usuario;
 use App\Entity\Objeto;
+use App\Entity\NegociacionPrecio;
+use App\Entity\IntercambioObjeto;
 use App\Repository\UsuarioRepository;
 use App\Repository\ObjetoRepository;
+use App\Repository\NegociacionPrecioRepository;
+use App\Repository\IntercambioObjetoRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,11 +21,19 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/api', name: 'api_')]
 class ApiController extends AbstractController
 {
+    private NegociacionPrecioRepository $negociacionPrecioRepository;
+    private IntercambioObjetoRepository $intercambioObjetoRepository;
+
     public function __construct(
         private UsuarioRepository $usuarioRepository,
         private ObjetoRepository $objetoRepository,
-        private EntityManagerInterface $em
-    ) {}
+        private EntityManagerInterface $em,
+        NegociacionPrecioRepository $negociacionPrecioRepository,
+        IntercambioObjetoRepository $intercambioObjetoRepository
+    ) {
+        $this->negociacionPrecioRepository = $negociacionPrecioRepository;
+        $this->intercambioObjetoRepository = $intercambioObjetoRepository;
+    }
 
     #[Route('/register', name: 'register', methods: ['POST'])]
     public function register(Request $request, UserPasswordHasherInterface $passwordHasher): JsonResponse
@@ -788,6 +800,49 @@ class ApiController extends AbstractController
         ]);
     }
 
+    #[Route('/products/{id}/negotiations', name: 'product_negotiations', methods: ['GET'])]
+    public function getNegotiations(int $id): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+        $product = $this->objetoRepository->find($id);
+        if (!$product) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Producto no encontrado'
+            ], Response::HTTP_NOT_FOUND);
+        }
+        $intercambio = $this->intercambioObjetoRepository->findOneBy(['objeto' => $product]);
+        if (!$intercambio) {
+            return $this->json([
+                'success' => true,
+                'data' => []
+            ]);
+        }
+        $negociaciones = $this->negociacionPrecioRepository->findBy(['intercambio' => $intercambio], ['fecha_creacion' => 'ASC']);
+        $data = array_map(function($neg) {
+            return [
+                'id' => $neg->getId_negociacion(),
+                'user' => [
+                    'id' => $neg->getUsuario()->getId_usuario(),
+                    'username' => $neg->getUsuario()->getNombreUsuario(),
+                ],
+                'proposedCredits' => $neg->getPrecioPropuesto(),
+                'accepted' => $neg->isAceptado(),
+                'createdAt' => $neg->getFechaCreacion()->format('c'),
+            ];
+        }, $negociaciones);
+        return $this->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
+
     #[Route('/products/{id}/propose-price', name: 'product_propose_price', methods: ['POST'])]
     public function proposePrice(Request $request, int $id): JsonResponse
     {
@@ -798,29 +853,200 @@ class ApiController extends AbstractController
                 'message' => 'Usuario no autenticado'
             ], Response::HTTP_UNAUTHORIZED);
         }
-
         $product = $this->objetoRepository->find($id);
-        
         if (!$product) {
             return $this->json([
                 'success' => false,
                 'message' => 'Producto no encontrado'
             ], Response::HTTP_NOT_FOUND);
         }
-
         $data = json_decode($request->getContent(), true);
-        
-        if (!isset($data['price'])) {
+        if (!isset($data['price']) || !is_numeric($data['price']) || $data['price'] < 1) {
             return $this->json([
                 'success' => false,
-                'message' => 'Falta el precio propuesto'
+                'message' => 'Precio inválido'
             ], Response::HTTP_BAD_REQUEST);
         }
-
-        // TODO: Implementar propuesta de precio
+        $price = (int)$data['price'];
+        // Validar saldo si es comprador
+        if ($user->getId_usuario() !== $product->getUsuario()->getId_usuario() && $user->getCreditos() < $price) {
+            return $this->json([
+                'success' => false,
+                'message' => 'No tienes suficientes puntos para ofertar'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        // Buscar o crear intercambio
+        $intercambio = $this->intercambioObjetoRepository->findOneBy(['objeto' => $product]);
+        if (!$intercambio) {
+            $intercambio = new IntercambioObjeto();
+            $intercambio->setObjeto($product);
+            $intercambio->setVendedor($product->getUsuario());
+            $intercambio->setComprador($user);
+            $intercambio->setPrecioPropuesto($price);
+            $this->em->persist($intercambio);
+        } else {
+            // Si ya hay una oferta aceptada, bloquear
+            foreach ($intercambio->getNegociaciones() as $neg) {
+                if ($neg->isAceptado()) {
+                    return $this->json([
+                        'success' => false,
+                        'message' => 'La negociación ya ha sido aceptada'
+                    ], Response::HTTP_BAD_REQUEST);
+                }
+            }
+        }
+        // Cambiar estado a reservado si está disponible
+        if ($product->getEstado() === Objeto::ESTADO_DISPONIBLE) {
+            $product->setEstado(Objeto::ESTADO_RESERVADO);
+        }
+        // Crear nueva negociación
+        $neg = new NegociacionPrecio();
+        $neg->setUsuario($user);
+        $neg->setIntercambio($intercambio);
+        $neg->setPrecioPropuesto($price);
+        $neg->setAceptado(false);
+        $neg->setAceptadoVendedor(false);
+        $neg->setAceptadoComprador(false);
+        $this->em->persist($neg);
+        $this->em->flush();
         return $this->json([
             'success' => true,
-            'message' => 'Precio propuesto con éxito'
+            'message' => 'Oferta enviada',
+            'data' => [
+                'id' => $neg->getId_negociacion(),
+                'proposedCredits' => $neg->getPrecioPropuesto(),
+                'createdAt' => $neg->getFechaCreacion()->format('c'),
+            ]
+        ]);
+    }
+
+    #[Route('/products/{productId}/negotiations/{negotiationId}/accept', name: 'negotiation_accept', methods: ['POST'])]
+    public function acceptNegotiation(int $productId, int $negotiationId): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+        $neg = $this->negociacionPrecioRepository->find($negotiationId);
+        if (!$neg) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Negociación no encontrada'
+            ], Response::HTTP_NOT_FOUND);
+        }
+        $intercambio = $neg->getIntercambio();
+        $product = $intercambio->getObjeto();
+        if ($product->getId_objeto() !== $productId) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Producto incorrecto'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        // Solo vendedor o comprador pueden aceptar
+        $isVendedor = $user->getId_usuario() === $intercambio->getVendedor()->getId_usuario();
+        $isComprador = $user->getId_usuario() === $intercambio->getComprador()->getId_usuario();
+        if (!$isVendedor && !$isComprador) {
+            return $this->json([
+                'success' => false,
+                'message' => 'No tienes permiso para aceptar esta negociación'
+            ], Response::HTTP_FORBIDDEN);
+        }
+        // Si ya hay una aceptada, bloquear
+        foreach ($intercambio->getNegociaciones() as $n) {
+            if ($n->isAceptado()) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Ya hay una negociación aceptada'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+        }
+        // Registrar aceptación
+        if ($isVendedor) {
+            $neg->setAceptadoVendedor(true);
+        }
+        if ($isComprador) {
+            $neg->setAceptadoComprador(true);
+        }
+        // Si ambos han aceptado, completar el intercambio
+        if ($neg->isAceptadoVendedor() && $neg->isAceptadoComprador()) {
+            $neg->setAceptado(true);
+            $intercambio->setPrecioPropuesto($neg->getPrecioPropuesto());
+            $intercambio->marcarComoCompletado();
+            $product->marcarComoIntercambiado();
+            // Transferir puntos
+            $comprador = $intercambio->getComprador();
+            $vendedor = $intercambio->getVendedor();
+            $monto = $neg->getPrecioPropuesto();
+            if ($comprador->getCreditos() >= $monto) {
+                $comprador->setCreditos($comprador->getCreditos() - $monto);
+                $vendedor->setCreditos($vendedor->getCreditos() + $monto);
+            }
+        }
+        $this->em->flush();
+        return $this->json([
+            'success' => true,
+            'message' => 'Negociación aceptada'
+        ]);
+    }
+
+    #[Route('/products/{productId}/negotiations/{negotiationId}/reject', name: 'negotiation_reject', methods: ['POST'])]
+    public function rejectNegotiation(int $productId, int $negotiationId): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+        $neg = $this->negociacionPrecioRepository->find($negotiationId);
+        if (!$neg) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Negociación no encontrada'
+            ], Response::HTTP_NOT_FOUND);
+        }
+        $intercambio = $neg->getIntercambio();
+        $product = $intercambio->getObjeto();
+        if ($product->getId_objeto() !== $productId) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Producto incorrecto'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        // Solo vendedor o comprador pueden rechazar
+        $isVendedor = $user->getId_usuario() === $intercambio->getVendedor()->getId_usuario();
+        $isComprador = $user->getId_usuario() === $intercambio->getComprador()->getId_usuario();
+        if (!$isVendedor && !$isComprador) {
+            return $this->json([
+                'success' => false,
+                'message' => 'No tienes permiso para rechazar esta negociación'
+            ], Response::HTTP_FORBIDDEN);
+        }
+        // Si ya hay una aceptada, bloquear
+        foreach ($intercambio->getNegociaciones() as $n) {
+            if ($n->isAceptado()) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Ya hay una negociación aceptada'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+        }
+        // Eliminar la negociación rechazada
+        $this->em->remove($neg);
+        $this->em->flush();
+        // Si no quedan negociaciones pendientes, volver a disponible
+        $negociacionesRestantes = $this->negociacionPrecioRepository->findBy(['intercambio' => $intercambio]);
+        if (count($negociacionesRestantes) === 0) {
+            $product->setEstado(Objeto::ESTADO_DISPONIBLE);
+            $this->em->flush();
+        }
+        return $this->json([
+            'success' => true,
+            'message' => 'Negociación rechazada'
         ]);
     }
 }

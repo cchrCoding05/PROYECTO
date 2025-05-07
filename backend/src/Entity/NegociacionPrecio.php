@@ -30,6 +30,12 @@ class NegociacionPrecio
     #[ORM\Column]
     private ?bool $aceptado = false;
 
+    #[ORM\Column(type: 'boolean')]
+    private $aceptadoVendedor = false;
+
+    #[ORM\Column(type: 'boolean')]
+    private $aceptadoComprador = false;
+
     #[ORM\Column]
     private ?\DateTimeImmutable $fecha_creacion;
 
@@ -99,6 +105,28 @@ class NegociacionPrecio
     {
         $this->aceptado = $aceptado;
 
+        return $this;
+    }
+
+    public function isAceptadoVendedor(): bool
+    {
+        return $this->aceptadoVendedor;
+    }
+
+    public function setAceptadoVendedor(bool $valor): self
+    {
+        $this->aceptadoVendedor = $valor;
+        return $this;
+    }
+
+    public function isAceptadoComprador(): bool
+    {
+        return $this->aceptadoComprador;
+    }
+
+    public function setAceptadoComprador(bool $valor): self
+    {
+        $this->aceptadoComprador = $valor;
         return $this;
     }
 

@@ -332,11 +332,7 @@ export const productService = {
 
   // Endpoints de negociación con validaciones
   proposePrice: async (productId, data) => {
-    // Primero verificamos el estado del producto
-    const productState = await fetchApi(`/products/${productId}/state`);
-    if (productState.state !== 1) { // 1 = Disponible
-      throw new Error('No se puede proponer precio para un producto no disponible');
-    }
+    // Eliminar comprobación de estado, llamar directamente
     return fetchApi(`/products/${productId}/propose-price`, {
       method: 'POST',
       body: JSON.stringify(data)
@@ -348,11 +344,7 @@ export const productService = {
   },
 
   acceptOffer: async (productId, negotiationId) => {
-    // Verificamos el estado antes de aceptar
-    const productState = await fetchApi(`/products/${productId}/state`);
-    if (productState.state !== 1) { // 1 = Disponible
-      throw new Error('No se puede aceptar una oferta para un producto no disponible');
-    }
+    // Eliminar comprobación de estado, llamar directamente
     return fetchApi(`/products/${productId}/negotiations/${negotiationId}/accept`, {
       method: 'POST'
     });

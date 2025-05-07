@@ -177,46 +177,19 @@ const ProductDetail = () => {
           
           {!isOwner && (
             <div className="mt-4">
-              <h4>Proponer precio</h4>
-              {negotiationSuccess && (
-                <AlertMessage 
-                  message="Precio propuesto con éxito" 
-                  type="success" 
-                />
-              )}
-              {negotiationError && (
-                <AlertMessage 
-                  message={negotiationError} 
-                  type="danger" 
-                />
-              )}
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate(`/negotiation/${product.id}`)}
+                disabled={product.state !== 1}
+              >
+                Negociar
+              </button>
               {product.state !== 1 && (
                 <AlertMessage 
                   message="Este producto no está disponible para negociación" 
                   type="warning" 
                 />
               )}
-              <form onSubmit={handleProposePrice}>
-                <div className="input-group mb-3">
-                  <input
-                    type="number"
-                    className="form-control"
-                    value={proposedPrice}
-                    onChange={(e) => setProposedPrice(e.target.value)}
-                    placeholder="Ingresa tu oferta en créditos"
-                    min="1"
-                    required
-                    disabled={product.state !== 1}
-                  />
-                  <button 
-                    className="btn btn-primary" 
-                    type="submit"
-                    disabled={product.state !== 1}
-                  >
-                    Proponer
-                  </button>
-                </div>
-              </form>
             </div>
           )}
           

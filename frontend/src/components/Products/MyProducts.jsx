@@ -33,6 +33,16 @@ const MyProducts = () => {
     }
   };
 
+  const handleDelete = async (productId) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este producto?')) return;
+    try {
+      await productService.delete(productId);
+      loadProducts();
+    } catch (err) {
+      alert('Error al eliminar el producto');
+    }
+  };
+
   useEffect(() => {
     console.log('MyProducts montado, iniciando carga...');
     loadProducts();
@@ -96,9 +106,14 @@ const MyProducts = () => {
                     <strong>Estado:</strong> {product.state === 1 ? 'Disponible' : 
                       product.state === 2 ? 'Reservado' : 'Intercambiado'}
                   </Card.Text>
-                  <Link to={`/product/${product.id}`} className="btn btn-primary">
-                    Ver Detalles
+                  <Link to={`/negotiation/${product.id}`} className="btn btn-primary">
+                    Ver Negociación
                   </Link>
+                  {product.state === 1 && (
+                    <Button variant="danger" className="ms-2" onClick={() => handleDelete(product.id)}>
+                      Eliminar
+                    </Button>
+                  )}
                 </Card.Body>
               </Card>
             </Col>
@@ -109,4 +124,4 @@ const MyProducts = () => {
   );
 };
 
-export default MyProducts; 
+export default MyProducts;
