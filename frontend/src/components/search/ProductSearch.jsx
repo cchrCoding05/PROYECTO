@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { productService } from '../../services/api.jsx';
 import { useAuth } from '../../hooks/useAuth';
@@ -13,74 +13,99 @@ const ProductSearch = () => {
   const [error, setError] = useState(null);
   const [noResults, setNoResults] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      searchProducts();
+  const searchProducts = useCallback(async (query = '') => {
+    if (!isAuthenticated) {
+      console.log('Usuario no autenticado, saltando búsqueda de productos');
+      return;
     }
-  }, [isAuthenticated]);
 
-  const searchProducts = async (query = '') => {
+    console.log('Iniciando búsqueda de productos con query:', query);
     try {
       setLoading(true);
       setError(null);
       setNoResults(false);
       
-      console.log('Iniciando búsqueda de objetos...');
+      console.log('Llamando a productService.search...');
       const results = await productService.search(query);
-      console.log('Resultados de la búsqueda:', results);
+      console.log('Resultados de búsqueda recibidos:', results);
       
-      if (!results || (results.success === false)) {
+      if (results && results.success === false) {
         console.error('Error en la respuesta:', results);
-        setError(results?.message || 'Error desconocido en la respuesta');
+        setError(results.message || 'Error al buscar productos');
         setProducts([]);
         return;
-      } 
-      
-      const productsArray = Array.isArray(results) ? results : [];
-      console.log('Productos validados:', productsArray);
-      
-      // Filtrar objetos intercambiados y mostrarlos en consola
-      const exchangedProducts = productsArray.filter(product => product.estado === 3);
-      if (exchangedProducts.length > 0) {
-        console.log('Objetos intercambiados encontrados:', exchangedProducts);
       }
       
-      // Filtrar solo objetos disponibles y reservados
+      const productsArray = Array.isArray(results) ? results : [];
+      console.log('Número de productos encontrados:', productsArray.length);
+      
+      if (productsArray.length === 0) {
+        console.log('No se encontraron productos');
+        setNoResults(true);
+      }
+      
+      // Filtrar solo productos disponibles y reservados (estado 1 o 2)
       const filteredProducts = productsArray.filter(product => 
         product.estado === 1 || product.estado === 2
       );
       
-      if (filteredProducts.length === 0) {
-        console.log('No se encontraron productos disponibles o reservados');
-        setNoResults(true);
-        setProducts([]);
-        return;
-      }
-      
       const validatedProducts = filteredProducts.map(product => ({
-        ...product,
-        name: product.title || 'Producto sin nombre',
+        id: product.id || 0,
+        name: product.name || product.title || 'Producto sin nombre',
         description: product.description || 'Sin descripción',
         credits: product.credits || 0,
-        imageUrl: product.image || 'https://via.placeholder.com/150',
-        state: product.estado || 1,
+        imageUrl: product.imageUrl || product.image || 'https://via.placeholder.com/150',
+        state: product.estado,
         seller: {
-          id: product.seller?.id || product.user?.id || 0,
-          username: product.seller?.name || product.user?.name || 'Vendedor desconocido'
+          id: product.seller?.id || 0,
+          username: product.seller?.username || 'Vendedor desconocido',
+          name: product.seller?.name || product.seller?.username || 'Vendedor desconocido'
         }
       }));
       
-      console.log('Productos finales:', validatedProducts);
+      console.log('Productos validados:', validatedProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        seller: p.seller
+      })));
       setProducts(validatedProducts);
-      
     } catch (err) {
-      console.error('Error en la búsqueda:', err);
-      setError(err.message || 'Error al realizar la búsqueda');
+      console.error('Error al buscar productos:', err);
+      setError('Error al buscar productos');
       setProducts([]);
     } finally {
+      console.log('Finalizando búsqueda de productos');
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
+
+  // Cargar productos al iniciar y configurar actualización automática
+  useEffect(() => {
+    let intervalId;
+
+    const loadInitialData = async () => {
+      if (isAuthenticated) {
+        await searchProducts(searchQuery);
+      }
+    };
+
+    // Cargar datos iniciales
+    loadInitialData();
+
+    // Configurar actualización automática
+    if (isAuthenticated) {
+      intervalId = setInterval(() => {
+        searchProducts(searchQuery);
+      }, 20000); // 20 segundos
+    }
+
+    // Limpiar el intervalo al desmontar
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [isAuthenticated, searchQuery, searchProducts]);
 
   const getStateText = (state) => {
     switch (state) {
@@ -205,7 +230,7 @@ const ProductSearch = () => {
                     </p>
                     <p className="card-text">
                       <small className="text-muted">
-                        Vendedor: {product.seller.username}
+                        Vendedor: {product.seller.name || product.seller.username}
                       </small>
                     </p>
                   </div>

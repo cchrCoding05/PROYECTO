@@ -8,37 +8,64 @@ export const AuthProvider = ({ children, onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        if (authService.isAuthenticated) {
-          const user = await authService.getCurrentUser();
-          setCurrentUser(user);
-        } else {
-          setCurrentUser(null);
-        }
-      } catch (error) {
-        console.error('Error al verificar autenticación:', error);
-        setError(error.message);
+  const checkAuth = async () => {
+    try {
+      console.log('Verificando autenticación...');
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.log('No hay token, usuario no autenticado');
         setCurrentUser(null);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
 
+      console.log('Token encontrado, obteniendo datos del usuario...');
+      const user = await authService.getCurrentUser();
+      console.log('Datos del usuario obtenidos:', user);
+      
+      if (user) {
+        setCurrentUser(user);
+      } else {
+        console.log('No se pudo obtener datos del usuario, limpiando sesión');
+        localStorage.removeItem('token');
+        setCurrentUser(null);
+      }
+    } catch (error) {
+      console.error('Error al verificar autenticación:', error);
+      localStorage.removeItem('token');
+      setCurrentUser(null);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     checkAuth();
+    
+    // Verificar autenticación cada 5 minutos
+    const interval = setInterval(checkAuth, 300000);
+    return () => clearInterval(interval);
   }, []);
 
   const login = async (credentials) => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Iniciando proceso de login...');
+      
       const response = await authService.login(credentials);
-      const user = await authService.getCurrentUser();
-      setCurrentUser(user);
+      console.log('Respuesta del login:', response);
+      
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+        await checkAuth(); // Verificar autenticación inmediatamente después del login
+      }
+      
       if (onNavigate) onNavigate('/dashboard');
       return response;
     } catch (error) {
+      console.error('Error en login:', error);
       setError(error.message);
       throw error;
     } finally {
@@ -49,11 +76,19 @@ export const AuthProvider = ({ children, onNavigate }) => {
   const logout = async () => {
     try {
       setLoading(true);
+      console.log('Iniciando proceso de logout...');
+      
       await authService.logout();
+      localStorage.removeItem('token');
       setCurrentUser(null);
+      
       if (onNavigate) onNavigate('/login');
     } catch (error) {
+      console.error('Error en logout:', error);
       setError(error.message);
+      // Asegurarnos de que el usuario se desloguee incluso si hay error
+      localStorage.removeItem('token');
+      setCurrentUser(null);
     } finally {
       setLoading(false);
     }
@@ -81,7 +116,8 @@ export const AuthProvider = ({ children, onNavigate }) => {
     login,
     logout,
     register,
-    isAuthenticated: authService.isAuthenticated
+    isAuthenticated: !!currentUser,
+    user: currentUser?.data || null
   };
 
   return (

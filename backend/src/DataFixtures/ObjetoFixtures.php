@@ -16,10 +16,18 @@ class ObjetoFixtures extends Fixture implements DependentFixtureInterface
             [
                 'titulo' => 'Laptop HP EliteBook',
                 'descripcion' => 'Laptop en excelente estado, ideal para trabajo y estudio',
-                'creditos' => 200,
+                'creditos' => 360,
                 'usuario' => 'usuario_juanperez',
                 'estado' => Objeto::ESTADO_DISPONIBLE,
                 'imagen' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519023/huesjd27kvomjhmi3lnp.png'
+            ],
+            [
+                'titulo' => 'Toyota A86 "Trueno"',
+                'descripcion' => 'Coche de culto en los cómics, elección de leyendas del drifting y un reputado tracción trasera',
+                'creditos' => 22000,
+                'usuario' => 'usuario_juanperez',
+                'estado' => Objeto::ESTADO_DISPONIBLE,
+                'imagen' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746693003/sld3knlzq6fmf6vkikk9.png'
             ],
             [
                 'titulo' => 'Teclado Mecánico',
@@ -41,7 +49,7 @@ class ObjetoFixtures extends Fixture implements DependentFixtureInterface
             [
                 'titulo' => 'Camara Canon EOS',
                 'descripcion' => 'Camara profesional con lente 18-55mm, perfecta para fotografía',
-                'creditos' => 300,
+                'creditos' => 600,
                 'usuario' => 'usuario_mariagarcia',
                 'estado' => Objeto::ESTADO_RESERVADO,
                 'imagen' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519153/kdhdrzntstgg2karnnx6.png'
@@ -49,7 +57,7 @@ class ObjetoFixtures extends Fixture implements DependentFixtureInterface
             [
                 'titulo' => 'Monitor LG 27',
                 'descripcion' => 'Monitor 4K con excelente calidad de imagen',
-                'creditos' => 150,
+                'creditos' => 420,
                 'usuario' => 'usuario_carloslopez',
                 'estado' => Objeto::ESTADO_RESERVADO,
                 'imagen' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519178/i5xuqnltkmscwv3ihwae.png'

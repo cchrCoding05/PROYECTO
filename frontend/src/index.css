@@ -14,12 +14,28 @@ html, body {
   --bs-body-bg: #212529;
   --bs-body-bg-rgb: 33, 37, 41;
   --bs-body-color: #f8f9fa;
+  --bs-secondary-color: #adb5bd;
+  --bs-border-color: #495057;
+  --bs-tertiary-bg: #2b3035;
+  --bs-tertiary-bg-rgb: 43, 48, 53;
+  --bs-primary-rgb: 108, 92, 231;
+  --bs-primary: #6c5ce7;
+  --bs-primary-bg-subtle: #5649c0;
+  --bs-primary-border-subtle: #5649c0;
 }
 
 [data-bs-theme="light"] {
   --bs-body-bg: #ffffff;
   --bs-body-bg-rgb: 255, 255, 255;
   --bs-body-color: #212529;
+  --bs-secondary-color: #6c757d;
+  --bs-border-color: #dee2e6;
+  --bs-tertiary-bg: #f8f9fa;
+  --bs-tertiary-bg-rgb: 248, 249, 250;
+  --bs-primary-rgb: 108, 92, 231;
+  --bs-primary: #6c5ce7;
+  --bs-primary-bg-subtle: #e9ecef;
+  --bs-primary-border-subtle: #dee2e6;
 }
 
 /* Correcciones para estructuras de Bootstrap */

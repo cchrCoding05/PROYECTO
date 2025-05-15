@@ -34,7 +34,7 @@ class ApiController extends AbstractController
         $this->negociacionPrecioRepository = $negociacionPrecioRepository;
         $this->intercambioObjetoRepository = $intercambioObjetoRepository;
     }
-
+        //Registro de usuario
     #[Route('/register', name: 'register', methods: ['POST'])]
     public function register(Request $request, UserPasswordHasherInterface $passwordHasher): JsonResponse
     {
@@ -93,6 +93,7 @@ class ApiController extends AbstractController
         }
     }
 
+    //Inicio de sesión
     #[Route('/login', name: 'login', methods: ['POST'])]
     public function login(Request $request, UserPasswordHasherInterface $passwordHasher): JsonResponse
     {
@@ -143,6 +144,7 @@ class ApiController extends AbstractController
         }
     }
 
+    //Cierre de sesión
     #[Route('/logout', name: 'logout', methods: ['POST'])]
     public function logout(): JsonResponse
     {
@@ -158,6 +160,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Obtener perfil de usuario
     #[Route('/user/profile', name: 'user_profile', methods: ['GET'])]
     public function getProfile(): JsonResponse
     {
@@ -212,6 +215,7 @@ class ApiController extends AbstractController
         }
     }
 
+    //Actualizar perfil de usuario
     #[Route('/user/profile', name: 'user_profile_update', methods: ['PUT'])]
     public function updateProfile(Request $request): JsonResponse
     {
@@ -257,6 +261,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Buscar profesionales
     #[Route('/professionals/search', name: 'professionals_search', methods: ['GET'])]
     public function searchProfessionals(Request $request): JsonResponse
     {
@@ -282,6 +287,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Obtener profesional
     #[Route('/professionals/{id}', name: 'professional_get', methods: ['GET'])]
     public function getProfessional(int $id): JsonResponse
     {
@@ -308,6 +314,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Obtener valoraciones de profesional
     #[Route('/professionals/{id}/ratings', name: 'professional_ratings', methods: ['GET'])]
     public function getProfessionalRatings(int $id): JsonResponse
     {
@@ -341,6 +348,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Buscar productos
     #[Route('/products/search', name: 'products_search', methods: ['GET'])]
     public function searchProducts(Request $request): JsonResponse
     {
@@ -370,6 +378,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Obtener usuarios mejor valorados
     #[Route('/users/top-rated', name: 'users_top_rated', methods: ['GET'])]
     public function getTopRatedUsers(): JsonResponse
     {
@@ -410,6 +419,7 @@ class ApiController extends AbstractController
         }
     }
 
+    //Obtener productos de usuarios mejor valorados
     #[Route('/products/top-rated-users', name: 'products_top_rated_users', methods: ['GET'])]
     public function getProductsFromTopRatedUsers(): JsonResponse
     {
@@ -489,6 +499,7 @@ class ApiController extends AbstractController
         }
     }
 
+    //Obtener productos de usuario
     #[Route('/products/my-products', name: 'products_my_products', methods: ['GET'])]
     public function getMyProducts(): JsonResponse
     {
@@ -550,6 +561,7 @@ class ApiController extends AbstractController
         }
     }
 
+    //Obtener producto
     #[Route('/products/{id}', name: 'product_get', methods: ['GET'])]
     public function getProduct(string $id): JsonResponse
     {
@@ -609,6 +621,7 @@ class ApiController extends AbstractController
         }
     }
 
+    //Crear producto
     #[Route('/products', name: 'product_create', methods: ['POST'])]
     public function createProduct(Request $request): JsonResponse
     {
@@ -653,6 +666,7 @@ class ApiController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
+    //Actualizar producto
     #[Route('/products/{id}', name: 'product_update', methods: ['PUT'])]
     public function updateProduct(Request $request, int $id): JsonResponse
     {
@@ -700,6 +714,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Eliminar producto
     #[Route('/products/{id}', name: 'product_delete', methods: ['DELETE'])]
     public function deleteProduct(int $id): JsonResponse
     {
@@ -736,6 +751,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Obtener saldo de créditos
     #[Route('/credits/balance', name: 'credits_balance', methods: ['GET'])]
     public function getCreditsBalance(): JsonResponse
     {
@@ -755,6 +771,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Obtener historial de créditos
     #[Route('/credits/history', name: 'credits_history', methods: ['GET'])]
     public function getCreditsHistory(): JsonResponse
     {
@@ -773,6 +790,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Transferencia de créditos
     #[Route('/credits/transfer', name: 'credits_transfer', methods: ['POST'])]
     public function transferCredits(Request $request): JsonResponse
     {
@@ -800,6 +818,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Obtener negociaciones de producto
     #[Route('/products/{id}/negotiations', name: 'product_negotiations', methods: ['GET'])]
     public function getNegotiations(int $id): JsonResponse
     {
@@ -843,6 +862,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Proponer precio
     #[Route('/products/{id}/propose-price', name: 'product_propose_price', methods: ['POST'])]
     public function proposePrice(Request $request, int $id): JsonResponse
     {
@@ -860,6 +880,15 @@ class ApiController extends AbstractController
                 'message' => 'Producto no encontrado'
             ], Response::HTTP_NOT_FOUND);
         }
+
+        // Validar que el usuario no sea el vendedor
+        if ($user->getId_usuario() === $product->getUsuario()->getId_usuario()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'El vendedor no puede hacer la primera oferta'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         $data = json_decode($request->getContent(), true);
         if (!isset($data['price']) || !is_numeric($data['price']) || $data['price'] < 1) {
             return $this->json([
@@ -920,6 +949,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Aceptar negociación
     #[Route('/products/{productId}/negotiations/{negotiationId}/accept', name: 'negotiation_accept', methods: ['POST'])]
     public function acceptNegotiation(int $productId, int $negotiationId): JsonResponse
     {
@@ -992,6 +1022,7 @@ class ApiController extends AbstractController
         ]);
     }
 
+    //Rechazar negociación
     #[Route('/products/{productId}/negotiations/{negotiationId}/reject', name: 'negotiation_reject', methods: ['POST'])]
     public function rejectNegotiation(int $productId, int $negotiationId): JsonResponse
     {

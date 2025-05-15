@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { productService } from '../../services/api.jsx';
 import { useAuth } from '../../hooks/useAuth';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 import AlertMessage from '../Layout/AlertMessage';
 import './Products.css';
 
@@ -11,48 +12,57 @@ const ProductList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadProducts();
+  const loadProducts = useCallback(async () => {
+    if (!isAuthenticated) {
+      console.log('Usuario no autenticado, saltando carga de productos');
+      return;
     }
-  }, [isAuthenticated]);
 
-  const loadProducts = async () => {
+    console.log('Iniciando carga de productos...');
     try {
       setLoading(true);
       setError(null);
       
+      console.log('Llamando a productService.search...');
       const results = await productService.search('');
+      console.log('Resultados recibidos:', results);
       
       if (results && results.success === false) {
+        console.error('Error en la respuesta:', results);
         setError(results.message || 'Error al cargar productos');
         setProducts([]);
         return;
       }
       
       const productsArray = Array.isArray(results) ? results : [];
+      console.log('Número de productos encontrados:', productsArray.length);
       
       const validatedProducts = productsArray.map(product => ({
         id: product.id || 0,
-        name: product.name || 'Producto sin nombre',
+        name: product.name || product.title || 'Producto sin nombre',
         description: product.description || 'Sin descripción',
         credits: product.credits || 0,
-        imageUrl: product.imageUrl || 'https://via.placeholder.com/150',
+        imageUrl: product.imageUrl || product.image || 'https://via.placeholder.com/150',
         seller: {
-          id: product.seller?.id || 0,
-          username: product.seller?.username || 'Vendedor desconocido'
+          id: product.seller?.id || product.user?.id || 0,
+          username: product.seller?.username || product.user?.username || 'Vendedor desconocido'
         }
       }));
       
+      console.log('Productos validados:', validatedProducts.length);
       setProducts(validatedProducts);
     } catch (err) {
       console.error('Error al cargar productos:', err);
       setError('Error al cargar los productos');
       setProducts([]);
     } finally {
+      console.log('Finalizando carga de productos');
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
+
+  // Usar el hook de actualización automática
+  useAutoRefresh(loadProducts, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return (

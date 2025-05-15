@@ -17,9 +17,12 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg mb-4 border-bottom">
+    <nav className="navbar navbar-expand-lg mb-4" style={{ 
+      borderBottom: '1px solid var(--bs-border-color)',
+      backgroundColor: 'var(--bs-body-bg)'
+    }}>
       <div className="container">
-        <Link className="navbar-brand fw-bold" to="/">
+        <Link className="navbar-brand fw-bold" to="/" style={{ color: 'var(--bs-body-color)' }}>
           LaMacroEmpresa
         </Link>
         <button 
@@ -30,6 +33,7 @@ const Navbar = () => {
           aria-controls="navbarNav" 
           aria-expanded="false" 
           aria-label="Toggle navigation"
+          style={{ borderColor: 'var(--bs-border-color)' }}
         >
           <span className="navbar-toggler-icon"></span>
         </button>
@@ -42,27 +46,27 @@ const Navbar = () => {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
             <li className="nav-item">
-              <Link className="nav-link" to="/">Inicio</Link>
+              <Link className="nav-link" to="/" style={{ color: 'var(--bs-body-color)' }}>Inicio</Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/search/products">Buscar Objetos</Link>
+              <Link className="nav-link" to="/search/products" style={{ color: 'var(--bs-body-color)' }}>Buscar Objetos</Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/search/professionals">Buscar Profesionales</Link>
+              <Link className="nav-link" to="/search/professionals" style={{ color: 'var(--bs-body-color)' }}>Buscar Profesionales</Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/upload-product">Subir Producto</Link>
+              <Link className="nav-link" to="/upload-product" style={{ color: 'var(--bs-body-color)' }}>Subir Producto</Link>
             </li>
 
             {isAuthenticated && currentUser?.username === 'admin' && (
               <li className="nav-item">
-                <Link className="nav-link" to="/admin/users">Gestión de Usuarios</Link>
+                <Link className="nav-link" to="/admin/users" style={{ color: 'var(--bs-body-color)' }}>Gestión de Usuarios</Link>
               </li>
             )}
           </ul>
           
           {/* Toggle de tema solo visible en escritorio */}
-          <div className="d-none d-lg-flex align-items-center pe-3 border-end me-3">
+          <div className="d-none d-lg-flex align-items-center pe-3 border-end me-3" style={{ borderColor: 'var(--bs-border-color)' }}>
             <ThemeToggle />
           </div>
           
@@ -78,7 +82,7 @@ const Navbar = () => {
               </div>
             ) : (
               <div className="d-flex align-items-center gap-3">
-                <div className="text-nowrap d-none d-md-block">
+                <div className="text-nowrap d-none d-md-block" style={{ color: 'var(--bs-body-color)' }}>
                   ¡Bienvenido, {currentUser?.data?.username || 'Usuario'}! 👋
                   {currentUser?.data?.credits !== undefined && (
                     <span className="ms-2 badge bg-warning text-dark">
@@ -94,21 +98,25 @@ const Navbar = () => {
                     id="userMenuDropdown" 
                     data-bs-toggle="dropdown" 
                     aria-expanded="false"
+                    style={{ borderColor: 'var(--bs-border-color)', color: 'var(--bs-body-color)' }}
                   >
                     Mi cuenta
                   </button>
-                  <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuDropdown">
+                  <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuDropdown" style={{ 
+                    backgroundColor: 'var(--bs-body-bg)',
+                    borderColor: 'var(--bs-border-color)'
+                  }}>
                     <li>
-                      <Link className="dropdown-item" to="/profile">
+                      <Link className="dropdown-item" to="/profile" style={{ color: 'var(--bs-body-color)' }}>
                         Mi perfil
                       </Link>
                     </li>
                     <li>
-                      <Link className="dropdown-item" to="/my-products">
+                      <Link className="dropdown-item" to="/my-products" style={{ color: 'var(--bs-body-color)' }}>
                         Mis productos
                       </Link>
                     </li>
-                    <li><hr className="dropdown-divider" /></li>
+                    <li><hr className="dropdown-divider" style={{ borderColor: 'var(--bs-border-color)' }} /></li>
                     <li>
                       <button className="dropdown-item text-danger" onClick={handleLogout}>
                         Cerrar sesión

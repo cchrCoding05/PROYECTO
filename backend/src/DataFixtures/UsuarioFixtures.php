@@ -24,7 +24,8 @@ class UsuarioFixtures extends Fixture
                 'contrasena' => 'Password123',
                 'profesion' => 'Desarrollador Web',
                 'descripcion' => 'Apasionado por la programación y el desarrollo web',
-                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519718/l4x5zw2vezhieigtw9il.png'
+                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519718/l4x5zw2vezhieigtw9il.png',
+                'creditos' => 12300
             ],
             [
                 'nombre_usuario' => 'mariagarcia',
@@ -32,7 +33,8 @@ class UsuarioFixtures extends Fixture
                 'contrasena' => 'Password123',
                 'profesion' => 'Diseñadora Gráfica',
                 'descripcion' => 'Especialista en diseño UI/UX',
-                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519692/wxzhqwn9aejcnqlklaoh.png'
+                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519692/wxzhqwn9aejcnqlklaoh.png',
+                'creditos' => 112323
             ],
             [
                 'nombre_usuario' => 'carloslopez',
@@ -40,7 +42,8 @@ class UsuarioFixtures extends Fixture
                 'contrasena' => 'Password123',
                 'profesion' => 'Marketing Digital',
                 'descripcion' => 'Experto en estrategias de marketing online',
-                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519663/thm9qdlxgfuqblbtnorp.png'
+                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746519663/thm9qdlxgfuqblbtnorp.png',
+                'creditos' => 4567
             ],
             [
                 'nombre_usuario' => 'anaperez',
@@ -48,7 +51,8 @@ class UsuarioFixtures extends Fixture
                 'contrasena' => 'Password123',
                 'profesion' => 'Estudiante',
                 'descripcion' => 'Estudiante de informática buscando objetos para aprender',
-                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746534302/nzu6vroi6fhlybr6zbhu.png'
+                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1746534302/nzu6vroi6fhlybr6zbhu.png',
+                'creditos' => 1263478
             ]
         ];
 
@@ -60,7 +64,8 @@ class UsuarioFixtures extends Fixture
             $usuario->setProfesion($usuarioData['profesion']);
             $usuario->setDescripcion($usuarioData['descripcion']);
             $usuario->setFechaRegistro(new \DateTimeImmutable());
-            $usuario->setCreditos(100);
+            $usuario->setCreditos($usuarioData['creditos']);
+
             $usuario->setFotoPerfil($usuarioData['foto_perfil']);
             $manager->persist($usuario);
             $this->addReference('usuario_' . $usuarioData['nombre_usuario'], $usuario);

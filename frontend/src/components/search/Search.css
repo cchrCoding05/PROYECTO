@@ -7,15 +7,16 @@
 .search-container h2 {
   text-align: center;
   margin-bottom: 2rem;
-  color: #333;
+  color: var(--bs-body-color);
 }
 
 .search-form {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg);
   padding: 2rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
+  border: 1px solid var(--bs-border-color);
 }
 
 .form-group {
@@ -31,15 +32,38 @@
 .form-control {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bs-border-color);
   border-radius: 4px;
   font-size: 1rem;
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+.form-control::placeholder {
+  color: var(--bs-secondary-color);
+  opacity: 0.7;
 }
 
 .form-control:focus {
   outline: none;
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+.input-group .form-control {
+  border-right: none;
+}
+
+.input-group .btn {
+  border-left: none;
+  background-color: var(--bs-primary);
+  color: white;
+}
+
+.input-group .btn:hover {
+  background-color: var(--bs-primary-bg-subtle);
 }
 
 .btn-primary {
@@ -78,11 +102,12 @@
 }
 
 .product-card {
-  background-color: white;
+  background-color: var(--bs-body-bg);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: transform 0.2s;
+  border: 1px solid var(--bs-border-color);
 }
 
 .product-card:hover {
@@ -99,19 +124,19 @@
   padding: 1rem;
   margin: 0;
   font-size: 1.25rem;
-  color: #333;
+  color: var(--bs-body-color);
 }
 
 .product-card p {
   padding: 0 1rem;
   margin: 0;
-  color: #666;
+  color: var(--bs-secondary-color);
 }
 
 .product-card .price {
   padding: 1rem;
   font-weight: bold;
-  color: #007bff;
+  color: var(--bs-primary);
   margin-top: 0.5rem;
 }
 
