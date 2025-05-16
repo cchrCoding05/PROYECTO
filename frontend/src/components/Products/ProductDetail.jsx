@@ -197,7 +197,7 @@ const ProductDetail = () => {
             <div className="mt-4">
               <button 
                 className="btn btn-primary me-2"
-                onClick={() => navigate(`/products/${id}/edit`)}
+                onClick={() => navigate(`/edit-product/${id}`)}
                 disabled={!isAvailable}
               >
                 Editar producto

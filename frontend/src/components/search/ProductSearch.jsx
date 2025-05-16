@@ -44,9 +44,9 @@ const ProductSearch = () => {
         setNoResults(true);
       }
       
-      // Filtrar solo productos disponibles y reservados (estado 1 o 2)
+      // Filtrar solo productos disponibles (estado 1)
       const filteredProducts = productsArray.filter(product => 
-        product.estado === 1 || product.estado === 2
+        product.estado === 1
       );
       
       const validatedProducts = filteredProducts.map(product => ({
@@ -198,7 +198,7 @@ const ProductSearch = () => {
       {!loading && !error && !noResults && products.length > 0 && (
         <div className="mt-4">
           <h3 className="text-center mb-4">
-            {searchQuery ? `Resultados para "${searchQuery}"` : 'Objetos disponibles y reservados'}
+            {searchQuery ? `Resultados para "${searchQuery}"` : 'Objetos disponibles'}
           </h3>
           
           <div className="row g-4">

@@ -200,34 +200,39 @@ const ProfessionalSearch = () => {
                     <div className="d-flex flex-column align-items-center mb-3">
                       <div className="mb-1">
                         {[1, 2, 3, 4, 5].map((starIndex) => {
-                          const rating = parseFloat(professional.rating) || 0;
-                          
-                          if (rating >= starIndex) {
-                            return <span key={starIndex} className="text-warning">★</span>;
-                          } else if (rating >= starIndex - 0.5) {
-                            return (
-                              <span 
-                                key={starIndex}
-                                className="position-relative"
-                                style={{ fontSize: '1.1rem' }}
-                              >
-                                <span className="text-body-tertiary position-absolute">★</span>
-                                <span 
-                                  className="text-warning"
-                                  style={{ 
-                                    clipPath: 'inset(0 50% 0 0)',
-                                    position: 'relative'
-                                  }}
-                                >★</span>
-                              </span>
-                            );
-                          } else {
+                          // Si no hay rating, mostrar estrella vacía
+                          if (!professional.rating) {
                             return <span key={starIndex} className="text-body-tertiary">★</span>;
                           }
+
+                          const rating = Number(professional.rating);
+                          
+                          // Si el rating es menor que el índice actual, mostrar estrella vacía
+                          if (rating < starIndex - 0.5) {
+                            return <span key={starIndex} className="text-body-tertiary">★</span>;
+                          }
+                          
+                          // Si el rating está entre el índice actual y el siguiente, mostrar media estrella
+                          if (rating >= starIndex - 0.5 && rating < starIndex) {
+                            return (
+                              <span key={starIndex} className="text-warning" style={{ position: 'relative' }}>
+                                <span style={{ position: 'absolute', clipPath: 'inset(0 50% 0 0)' }}>★</span>
+                                <span style={{ position: 'relative', clipPath: 'inset(0 0 0 50%)' }} className="text-body-tertiary">★</span>
+                              </span>
+                            );
+                          }
+                          
+                          // Si el rating es mayor o igual al índice actual, mostrar estrella completa
+                          return <span key={starIndex} className="text-warning">★</span>;
                         })}
                       </div>
                       <small className="text-muted">
-                        {professional.ratingCount || 0} valoraciones
+                        {professional.reviews_count || 0} valoraciones
+                        {professional.rating && (
+                          <span className="ms-1">
+                            ({Number(professional.rating).toFixed(1)})
+                          </span>
+                        )}
                       </small>
                     </div>
                     

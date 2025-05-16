@@ -43,20 +43,43 @@ const ProductUpload = () => {
     try {
       // Validar campos obligatorios
       if (!productData.name.trim()) {
-        throw new Error('El nombre del producto es obligatorio');
+        setAlert({
+          type: 'danger',
+          message: 'El nombre del producto es obligatorio'
+        });
+        setLoading(false);
+        return;
       }
+
       if (!productData.description.trim()) {
-        throw new Error('La descripción es obligatoria');
+        setAlert({
+          type: 'danger',
+          message: 'La descripción es obligatoria'
+        });
+        setLoading(false);
+        return;
       }
+
       if (!productData.price || isNaN(parseInt(productData.price)) || parseInt(productData.price) <= 0) {
-        throw new Error('El precio debe ser un número mayor que 0');
+        setAlert({
+          type: 'danger',
+          message: 'El precio debe ser un número mayor que 0'
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Validar imagen
+      if (!image) {
+        setAlert({
+          type: 'danger',
+          message: 'Por favor, selecciona una imagen para el producto'
+        });
+        setLoading(false);
+        return;
       }
 
       // Primero subir la imagen a Cloudinary
-      if (!image) {
-        throw new Error('Por favor, selecciona una imagen para el producto');
-      }
-
       console.log('Subiendo imagen a Cloudinary...');
       const formData = new FormData();
       formData.append('file', image);
@@ -112,18 +135,9 @@ const ProductUpload = () => {
       }
     } catch (error) {
       console.error('Error en handleSubmit:', error);
-      let errorMessage = 'Error al subir el producto';
-      
-      if (error.response) {
-        console.error('Detalles del error:', error.response);
-        errorMessage = error.response.message || errorMessage;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
       setAlert({
         type: 'danger',
-        message: errorMessage
+        message: error.message || 'Error al subir el producto'
       });
     } finally {
       setLoading(false);
@@ -153,7 +167,7 @@ const ProductUpload = () => {
               value={productData.name}
               onChange={handleChange}
               className="form-control"
-              required
+              placeholder="Nombre del producto"
             />
           </div>
 
@@ -166,13 +180,13 @@ const ProductUpload = () => {
               onChange={handleChange}
               className="form-control"
               rows="4"
-              required
+              placeholder="Describe tu producto"
             />
           </div>
 
           <div className="form-row">
             <div className="form-group col-md-6">
-              <label htmlFor="price">Precio (€)</label>
+              <label htmlFor="price">Precio (créditos)</label>
               <input
                 type="number"
                 id="price"
@@ -180,9 +194,9 @@ const ProductUpload = () => {
                 value={productData.price}
                 onChange={handleChange}
                 className="form-control"
-                step="0.01"
-                min="0"
-                required
+                step="1"
+                min="1"
+                placeholder="Precio en créditos"
               />
             </div>
           </div>
@@ -209,7 +223,6 @@ const ProductUpload = () => {
                 accept="image/*"
                 onChange={handleImageChange}
                 className="image-input"
-                required
               />
             </div>
           </div>

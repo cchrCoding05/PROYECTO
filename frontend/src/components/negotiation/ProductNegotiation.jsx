@@ -227,6 +227,10 @@ const ProductNegotiation = () => {
     }
   };
 
+  const handleEditProduct = () => {
+    navigate(`/edit-product/${id}`);
+  };
+
   if (authLoading || loading) {
     return (
       <div className="container py-4">

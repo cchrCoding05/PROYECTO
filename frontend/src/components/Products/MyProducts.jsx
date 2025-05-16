@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, Button, Container, Row, Col, Alert } from 'react-bootstrap';
 import { productService } from '../../services/api.jsx';
 
@@ -7,6 +7,7 @@ const MyProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const loadProducts = async () => {
     try {
@@ -106,9 +107,21 @@ const MyProducts = () => {
                     <strong>Estado:</strong> {product.state === 1 ? 'Disponible' : 
                       product.state === 2 ? 'Reservado' : 'Intercambiado'}
                   </Card.Text>
-                  <Link to={`/negotiation/${product.id}`} className="btn btn-primary">
-                    Ver Negociación
-                  </Link>
+                  <div className="product-actions">
+                    <Button 
+                      variant="primary" 
+                      onClick={() => navigate(`/negotiation/${product.id}`)}
+                      className="me-2"
+                    >
+                      Ver Negociación
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => navigate(`/edit-product/${product.id}`)}
+                    >
+                      Editar Producto
+                    </Button>
+                  </div>
                   {product.state === 1 && (
                     <Button variant="danger" className="ms-2" onClick={() => handleDelete(product.id)}>
                       Eliminar

@@ -112,8 +112,13 @@ const Navbar = () => {
                       </Link>
                     </li>
                     <li>
-                      <Link className="dropdown-item" to="/my-products" style={{ color: 'var(--bs-body-color)' }}>
+                      <Link className="dropdown-item" to="/profile?tab=products" style={{ color: 'var(--bs-body-color)' }}>
                         Mis productos
+                      </Link>
+                    </li>
+                    <li>
+                      <Link className="dropdown-item" to="/profile?tab=negotiations" style={{ color: 'var(--bs-body-color)' }}>
+                        Mis negociaciones
                       </Link>
                     </li>
                     <li><hr className="dropdown-divider" style={{ borderColor: 'var(--bs-border-color)' }} /></li>

@@ -28,6 +28,39 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validación de campos vacíos
+    if (!formData.username.trim()) {
+      setAlert({ 
+        message: 'El nombre de usuario es obligatorio', 
+        type: 'danger' 
+      });
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setAlert({ 
+        message: 'El correo electrónico es obligatorio', 
+        type: 'danger' 
+      });
+      return;
+    }
+
+    if (!formData.password.trim()) {
+      setAlert({ 
+        message: 'La contraseña es obligatoria', 
+        type: 'danger' 
+      });
+      return;
+    }
+
+    if (!formData.repeatPassword.trim()) {
+      setAlert({ 
+        message: 'Debes repetir la contraseña', 
+        type: 'danger' 
+      });
+      return;
+    }
+    
     // Validación de contraseña
     if (!validatePassword(formData.password)) {
       setAlert({ 
@@ -47,8 +80,8 @@ const Register = () => {
 
     try {
       const userData = {
-        username: formData.username,
-        email: formData.email,
+        username: formData.username.trim(),
+        email: formData.email.trim(),
         password: formData.password
       };
       
@@ -93,7 +126,7 @@ const Register = () => {
               value={formData.username}
               onChange={handleChange}
               className="form-control"
-              required
+              placeholder="Tu nombre de usuario"
             />
           </div>
 
@@ -106,7 +139,7 @@ const Register = () => {
               value={formData.email}
               onChange={handleChange}
               className="form-control"
-              required
+              placeholder="tu@email.com"
             />
           </div>
           
@@ -119,7 +152,6 @@ const Register = () => {
               value={formData.password}
               onChange={handleChange}
               className="form-control"
-              required
               placeholder="Debe contener una mayúscula y un número"
             />
           </div>
@@ -133,7 +165,7 @@ const Register = () => {
               value={formData.repeatPassword}
               onChange={handleChange}
               className="form-control"
-              required
+              placeholder="Repite tu contraseña"
             />
           </div>
           

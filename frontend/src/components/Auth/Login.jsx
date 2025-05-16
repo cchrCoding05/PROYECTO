@@ -26,38 +26,38 @@ const Login = () => {
   
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
-    
-    try {
-      if (!credentials.email || !credentials.password) {
-        setError('Por favor, introduce tu correo electrónico y contraseña');
-        setIsLoading(false);
-        return;
-      }
+    setError('');
 
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credentials.email)) {
-        setError('Por favor, introduce un correo electrónico válido');
-        setIsLoading(false);
-        return;
-      }
+    // Validación de campos vacíos
+    if (!credentials.email.trim()) {
+      setError('El correo electrónico es obligatorio');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!credentials.password.trim()) {
+      setError('La contraseña es obligatoria');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const result = await login({
+        email: credentials.email.trim(),
+        password: credentials.password
+      });
       
-      const response = await login(credentials);
-      
-      if (response.success) {
+      if (result.success) {
         // Redirigir a la página que intentaba visitar o a la página principal
         const from = location.state?.from?.pathname || '/';
         navigate(from, { replace: true });
       } else {
-        setError(response.message || 'Error al iniciar sesión. Verifica tus credenciales.');
+        setError(result.message || 'Error al iniciar sesión');
       }
-    } catch (err) {
-      console.error('Error durante el inicio de sesión:', err);
-      setAlert({ 
-        message: 'Email o contraseña incorrectos', 
-        type: 'danger' 
-      });
-      setError('Error de conexión al servidor. Por favor, intenta nuevamente.');
+    } catch (error) {
+      console.error('Error durante el inicio de sesión:', error);
+      setError('Error de conexión al servidor');
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +80,6 @@ const Login = () => {
               value={credentials.email}
               onChange={handleChange}
               className="form-control"
-              required
               placeholder="tu@email.com"
             />
           </div>
@@ -94,7 +93,6 @@ const Login = () => {
               value={credentials.password}
               onChange={handleChange}
               className="form-control"
-              required
               placeholder="Tu contraseña"
             />
           </div>

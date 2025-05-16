@@ -396,6 +396,22 @@ export const productService = {
       throw error;
     }
   },
+
+  updateProduct: async (productId, productData) => {
+    try {
+      const response = await fetchApi(`/products/${productId}`, {
+        method: 'PUT',
+        body: JSON.stringify(productData)
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Error al actualizar el producto'
+      };
+    }
+  },
 };
 
 // Servicios de créditos
@@ -414,4 +430,20 @@ export const creditService = {
       body: JSON.stringify(data)
     });
   },
+};
+
+// Servicios de negociación
+export const negotiationService = {
+  getMyNegotiations: async () => {
+    try {
+      const response = await fetchApi('/negotiations/my-negotiations');
+      if (!response.success) {
+        throw new Error(response.message || 'Error al obtener las negociaciones');
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Error en getMyNegotiations:', error);
+      throw error;
+    }
+  }
 };

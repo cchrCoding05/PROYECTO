@@ -670,48 +670,101 @@ class ApiController extends AbstractController
     #[Route('/products/{id}', name: 'product_update', methods: ['PUT'])]
     public function updateProduct(Request $request, int $id): JsonResponse
     {
-        $user = $this->getUser();
-        if (!$user) {
+        try {
+            $user = $this->getUser();
+            if (!$user) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario no autenticado'
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+
+            $product = $this->objetoRepository->find($id);
+            if (!$product) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Producto no encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Verificar que el usuario es el propietario
+            if ($product->getUsuario()->getId_usuario() !== $user->getId_usuario()) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para modificar este producto'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            
+            // Validaciones básicas
+            if (isset($data['name']) && empty(trim($data['name']))) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'El nombre del producto no puede estar vacío'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            if (isset($data['credits']) && (!is_numeric($data['credits']) || $data['credits'] < 1)) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'El precio debe ser al menos 1 crédito'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Actualizar campos
+            if (isset($data['name'])) {
+                $product->setTitulo($data['name']);
+            }
+            if (isset($data['description'])) {
+                $product->setDescripcion($data['description']);
+            }
+            if (isset($data['credits'])) {
+                $product->setCreditos((int)$data['credits']);
+            }
+            if (isset($data['image'])) {
+                $product->setImagen($data['image']);
+            }
+            if (isset($data['state'])) {
+                $newState = (int)$data['state'];
+                // Validar que el estado es válido (1, 2 o 3)
+                if ($newState >= 1 && $newState <= 3) {
+                    $product->setEstado($newState);
+                } else {
+                    return $this->json([
+                        'success' => false,
+                        'message' => 'Estado de producto inválido'
+                    ], Response::HTTP_BAD_REQUEST);
+                }
+            }
+
+            $this->em->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Producto actualizado con éxito',
+                'data' => [
+                    'id' => $product->getId_objeto(),
+                    'name' => $product->getTitulo(),
+                    'description' => $product->getDescripcion(),
+                    'credits' => $product->getCreditos(),
+                    'image' => $product->getImagen(),
+                    'state' => $product->getEstado(),
+                    'seller' => [
+                        'id' => $product->getUsuario()->getId_usuario(),
+                        'name' => $product->getUsuario()->getNombreUsuario()
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            error_log('Error al actualizar producto: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
             return $this->json([
                 'success' => false,
-                'message' => 'Usuario no autenticado'
-            ], Response::HTTP_UNAUTHORIZED);
+                'message' => 'Error al actualizar el producto',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        $product = $this->objetoRepository->find($id);
-        
-        if (!$product) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Producto no encontrado'
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        if ($product->getUsuario()->getId_usuario() !== $user->getId_usuario()) {
-            return $this->json([
-                'success' => false,
-                'message' => 'No tienes permiso para modificar este producto'
-            ], Response::HTTP_FORBIDDEN);
-        }
-
-        $data = json_decode($request->getContent(), true);
-        
-        if (isset($data['title'])) {
-            $product->setTitulo($data['title']);
-        }
-        if (isset($data['description'])) {
-            $product->setDescripcion($data['description']);
-        }
-        if (isset($data['credits'])) {
-            $product->setCreditos($data['credits']);
-        }
-
-        $this->em->flush();
-
-        return $this->json([
-            'success' => true,
-            'message' => 'Producto actualizado con éxito'
-        ]);
     }
 
     //Eliminar producto
@@ -1079,5 +1132,77 @@ class ApiController extends AbstractController
             'success' => true,
             'message' => 'Negociación rechazada'
         ]);
+    }
+
+    //Obtener negociaciones del usuario
+    #[Route('/negotiations/my-negotiations', name: 'get_my_negotiations', methods: ['GET'])]
+    public function getMyNegotiations(): JsonResponse
+    {
+        try {
+            $user = $this->getUser();
+            if (!$user) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario no autenticado'
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+
+            // Obtener todas las negociaciones donde el usuario es comprador o vendedor
+            $qb = $this->em->createQueryBuilder();
+            $qb->select('n', 'i', 'o', 'v', 'c')
+               ->from('App\Entity\NegociacionPrecio', 'n')
+               ->join('n.intercambio', 'i')
+               ->join('i.objeto', 'o')
+               ->join('o.usuario', 'v')
+               ->join('i.comprador', 'c')
+               ->where('i.comprador = :userId OR v.id_usuario = :userId')
+               ->setParameter('userId', $user->getId_usuario())
+               ->orderBy('n.fecha_creacion', 'DESC');
+
+            $negotiations = $qb->getQuery()->getResult();
+
+            $formattedNegotiations = array_map(function($negotiation) use ($user) {
+                $intercambio = $negotiation->getIntercambio();
+                $producto = $intercambio->getObjeto();
+                $isSeller = $producto->getUsuario()->getId_usuario() === $user->getId_usuario();
+                
+                return [
+                    'id' => $negotiation->getId_negociacion(),
+                    'product' => [
+                        'id' => $producto->getId_objeto(),
+                        'name' => $producto->getTitulo(),
+                        'image' => $producto->getImagen(),
+                        'credits' => $producto->getCreditos()
+                    ],
+                    'seller' => [
+                        'id' => $producto->getUsuario()->getId_usuario(),
+                        'name' => $producto->getUsuario()->getNombreUsuario()
+                    ],
+                    'buyer' => [
+                        'id' => $intercambio->getComprador()->getId_usuario(),
+                        'name' => $intercambio->getComprador()->getNombreUsuario()
+                    ],
+                    'proposedCredits' => $negotiation->getPrecioPropuesto(),
+                    'status' => $negotiation->isAceptado() ? 2 : ($negotiation->isAceptadoVendedor() || $negotiation->isAceptadoComprador() ? 1 : 3),
+                    'date' => $negotiation->getFechaCreacion()->format('Y-m-d H:i:s'),
+                    'isSeller' => $isSeller,
+                    'isActive' => !$negotiation->isAceptado() && ($negotiation->isAceptadoVendedor() || $negotiation->isAceptadoComprador())
+                ];
+            }, $negotiations);
+
+            return $this->json([
+                'success' => true,
+                'data' => $formattedNegotiations
+            ]);
+
+        } catch (\Exception $e) {
+            error_log('Error al obtener negociaciones: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al obtener las negociaciones',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

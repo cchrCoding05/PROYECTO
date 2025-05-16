@@ -81,6 +81,13 @@ class ValoracionFixtures extends Fixture implements DependentFixtureInterface
 
         $manager->flush();
 
+        // Actualizar las valoraciones promedio de todos los usuarios
+        $usuarios = $manager->getRepository(Usuario::class)->findAll();
+        foreach ($usuarios as $usuario) {
+            $usuario->actualizarValoracionPromedio();
+        }
+        $manager->flush();
+
         // Crear referencias después de tener los IDs
         $valoracionesGuardadas = $manager->getRepository(Valoracion::class)->findAll();
         foreach ($valoracionesGuardadas as $valoracion) {
