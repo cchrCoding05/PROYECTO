@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { professionalService } from '../../services/api.jsx';
+import { useAuth } from '../../hooks/useAuth';
 import AlertMessage from '../Layout/AlertMessage.jsx';
 import { Cloudinary } from '@cloudinary/url-gen';
 import { AdvancedImage } from '@cloudinary/react';
 
 const ProfessionalSearch = () => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -55,8 +57,10 @@ const ProfessionalSearch = () => {
         return;
       }
 
-      // Validar que results.data es un array
-      const professionalsArray = Array.isArray(results.data) ? results.data : [];
+      // Validar que results.data es un array y filtrar el usuario actual
+      const professionalsArray = Array.isArray(results.data) 
+        ? results.data.filter(prof => prof.id !== user?.id)
+        : [];
       console.log('Profesionales procesados:', professionalsArray);
       
       // Verificar las URLs de las fotos

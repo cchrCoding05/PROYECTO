@@ -6,7 +6,7 @@ import AlertMessage from '../Layout/AlertMessage';
 import './Search.css';
 
 const ProductSearch = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -14,7 +14,7 @@ const ProductSearch = () => {
   const [noResults, setNoResults] = useState(false);
 
   const searchProducts = useCallback(async (query = '') => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       console.log('Usuario no autenticado, saltando búsqueda de productos');
       return;
     }
@@ -44,9 +44,9 @@ const ProductSearch = () => {
         setNoResults(true);
       }
       
-      // Filtrar solo productos disponibles (estado 1)
+      // Filtrar productos disponibles (estado 1) y que no sean del usuario actual
       const filteredProducts = productsArray.filter(product => 
-        product.estado === 1
+        product.estado === 1 && product.seller?.id !== user.id
       );
       
       const validatedProducts = filteredProducts.map(product => ({
@@ -77,7 +77,7 @@ const ProductSearch = () => {
       console.log('Finalizando búsqueda de productos');
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   // Cargar productos al iniciar y configurar actualización automática
   useEffect(() => {

@@ -934,12 +934,12 @@ class ApiController extends AbstractController
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Validar que el usuario no sea el vendedor
-        if ($user->getId_usuario() === $product->getUsuario()->getId_usuario()) {
+        // Solo validar que el producto no esté intercambiado
+        if ($product->getEstado() === Objeto::ESTADO_INTERCAMBIADO) {
             return $this->json([
                 'success' => false,
-                'message' => 'El vendedor no puede hacer la primera oferta'
-            ], Response::HTTP_FORBIDDEN);
+                'message' => 'Este producto ya ha sido intercambiado'
+            ], Response::HTTP_BAD_REQUEST);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -950,6 +950,7 @@ class ApiController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
         $price = (int)$data['price'];
+
         // Validar saldo si es comprador
         if ($user->getId_usuario() !== $product->getUsuario()->getId_usuario() && $user->getCreditos() < $price) {
             return $this->json([
@@ -957,6 +958,7 @@ class ApiController extends AbstractController
                 'message' => 'No tienes suficientes puntos para ofertar'
             ], Response::HTTP_BAD_REQUEST);
         }
+
         // Buscar o crear intercambio
         $intercambio = $this->intercambioObjetoRepository->findOneBy(['objeto' => $product]);
         if (!$intercambio) {
@@ -967,7 +969,7 @@ class ApiController extends AbstractController
             $intercambio->setPrecioPropuesto($price);
             $this->em->persist($intercambio);
         } else {
-            // Si ya hay una oferta aceptada, bloquear
+            // Solo validar si ya hay una oferta aceptada
             foreach ($intercambio->getNegociaciones() as $neg) {
                 if ($neg->isAceptado()) {
                     return $this->json([
@@ -977,10 +979,12 @@ class ApiController extends AbstractController
                 }
             }
         }
+
         // Cambiar estado a reservado si está disponible
         if ($product->getEstado() === Objeto::ESTADO_DISPONIBLE) {
             $product->setEstado(Objeto::ESTADO_RESERVADO);
         }
+
         // Crear nueva negociación
         $neg = new NegociacionPrecio();
         $neg->setUsuario($user);
@@ -989,8 +993,34 @@ class ApiController extends AbstractController
         $neg->setAceptado(false);
         $neg->setAceptadoVendedor(false);
         $neg->setAceptadoComprador(false);
+        
+        // Si es la primera oferta del comprador, marcar como activa
+        if ($user->getId_usuario() !== $product->getUsuario()->getId_usuario() && 
+            count($intercambio->getNegociaciones()) === 0) {
+            $neg->setAceptadoComprador(true);
+        } else {
+            // Si no es la primera oferta, verificar si la negociación está activa
+            $ultimaNegociacion = $this->negociacionPrecioRepository->findOneBy(
+                ['intercambio' => $intercambio],
+                ['fecha_creacion' => 'DESC']
+            );
+            
+            if ($ultimaNegociacion) {
+                // Si la última negociación está activa (aceptada por el comprador o vendedor)
+                if ($ultimaNegociacion->isAceptadoComprador() || $ultimaNegociacion->isAceptadoVendedor()) {
+                    // Marcar la nueva oferta como aceptada por el usuario que la propone
+                    if ($user->getId_usuario() === $product->getUsuario()->getId_usuario()) {
+                        $neg->setAceptadoVendedor(true);
+                    } else {
+                        $neg->setAceptadoComprador(true);
+                    }
+                }
+            }
+        }
+        
         $this->em->persist($neg);
         $this->em->flush();
+
         return $this->json([
             'success' => true,
             'message' => 'Oferta enviada',
@@ -998,6 +1028,7 @@ class ApiController extends AbstractController
                 'id' => $neg->getId_negociacion(),
                 'proposedCredits' => $neg->getPrecioPropuesto(),
                 'createdAt' => $neg->getFechaCreacion()->format('c'),
+                'isActive' => $neg->isAceptadoComprador() || $neg->isAceptadoVendedor()
             ]
         ]);
     }
@@ -1028,6 +1059,7 @@ class ApiController extends AbstractController
                 'message' => 'Producto incorrecto'
             ], Response::HTTP_BAD_REQUEST);
         }
+
         // Solo vendedor o comprador pueden aceptar
         $isVendedor = $user->getId_usuario() === $intercambio->getVendedor()->getId_usuario();
         $isComprador = $user->getId_usuario() === $intercambio->getComprador()->getId_usuario();
@@ -1037,6 +1069,7 @@ class ApiController extends AbstractController
                 'message' => 'No tienes permiso para aceptar esta negociación'
             ], Response::HTTP_FORBIDDEN);
         }
+
         // Si ya hay una aceptada, bloquear
         foreach ($intercambio->getNegociaciones() as $n) {
             if ($n->isAceptado()) {
@@ -1046,6 +1079,7 @@ class ApiController extends AbstractController
                 ], Response::HTTP_BAD_REQUEST);
             }
         }
+
         // Registrar aceptación
         if ($isVendedor) {
             $neg->setAceptadoVendedor(true);
@@ -1053,21 +1087,32 @@ class ApiController extends AbstractController
         if ($isComprador) {
             $neg->setAceptadoComprador(true);
         }
+
         // Si ambos han aceptado, completar el intercambio
         if ($neg->isAceptadoVendedor() && $neg->isAceptadoComprador()) {
             $neg->setAceptado(true);
             $intercambio->setPrecioPropuesto($neg->getPrecioPropuesto());
             $intercambio->marcarComoCompletado();
-            $product->marcarComoIntercambiado();
+            
+            // Cambiar estado del producto a intercambiado
+            $product->setEstado(Objeto::ESTADO_INTERCAMBIADO);
+            
             // Transferir puntos
             $comprador = $intercambio->getComprador();
             $vendedor = $intercambio->getVendedor();
             $monto = $neg->getPrecioPropuesto();
+            
             if ($comprador->getCreditos() >= $monto) {
                 $comprador->setCreditos($comprador->getCreditos() - $monto);
                 $vendedor->setCreditos($vendedor->getCreditos() + $monto);
+            } else {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'El comprador no tiene suficientes créditos'
+                ], Response::HTTP_BAD_REQUEST);
             }
         }
+
         $this->em->flush();
         return $this->json([
             'success' => true,

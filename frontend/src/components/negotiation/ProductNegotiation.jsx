@@ -323,7 +323,7 @@ const ProductNegotiation = () => {
               )}
             </div>
           </div>
-          {!isOwnerValue && product.state === 1 && (
+          {product.state !== 3 && (
             <div className="card shadow-sm">
               <div className="card-body">
                 <h5 className="card-title">Proponer nuevo precio</h5>
@@ -406,7 +406,7 @@ const ProductNegotiation = () => {
                     
                     // Modificar la lógica de mostrarBotones
                     const mostrarBotonesVendedor = esVendedor && !yaAceptado && product.state !== 3;
-                    const mostrarBotonesComprador = esComprador && !yaAceptado && product.state === 1;
+                    const mostrarBotonesComprador = esComprador && !yaAceptado && product.state !== 3;
                     const mostrarBotones = mostrarBotonesVendedor || mostrarBotonesComprador;
 
                     console.log('Renderizando negociación:', {
