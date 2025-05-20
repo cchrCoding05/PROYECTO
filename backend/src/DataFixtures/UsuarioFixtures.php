@@ -19,6 +19,15 @@ class UsuarioFixtures extends Fixture
     {
         $usuarios = [
             [
+                'nombre_usuario' => 'ADMIN',
+                'correo' => 'admin@example.com',
+                'contrasena' => 'Admin123',
+                'profesion' => 'Administrador',
+                'descripcion' => 'Administrador del sistema',
+                'foto_perfil' => 'https://res.cloudinary.com/dhi3vddex/image/upload/v1747741177/k2frrjzbcgpyibv47l8m.png',
+                'creditos' => 999999
+            ],
+            [
                 'nombre_usuario' => 'juanperez',
                 'correo' => 'juan@example.com',
                 'contrasena' => 'Password123',

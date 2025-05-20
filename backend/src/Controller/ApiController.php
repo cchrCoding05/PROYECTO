@@ -17,22 +17,26 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Psr\Log\LoggerInterface;
 
 #[Route('/api', name: 'api_')]
 class ApiController extends AbstractController
 {
     private NegociacionPrecioRepository $negociacionPrecioRepository;
     private IntercambioObjetoRepository $intercambioObjetoRepository;
+    private LoggerInterface $logger;
 
     public function __construct(
         private UsuarioRepository $usuarioRepository,
         private ObjetoRepository $objetoRepository,
         private EntityManagerInterface $em,
         NegociacionPrecioRepository $negociacionPrecioRepository,
-        IntercambioObjetoRepository $intercambioObjetoRepository
+        IntercambioObjetoRepository $intercambioObjetoRepository,
+        LoggerInterface $logger
     ) {
         $this->negociacionPrecioRepository = $negociacionPrecioRepository;
         $this->intercambioObjetoRepository = $intercambioObjetoRepository;
+        $this->logger = $logger;
     }
         //Registro de usuario
     #[Route('/register', name: 'register', methods: ['POST'])]
@@ -267,7 +271,18 @@ class ApiController extends AbstractController
     {
         $query = $request->query->get('query', '');
         
-        $professionals = $this->usuarioRepository->findByProfession($query);
+        $qb = $this->em->createQueryBuilder();
+        $qb->select('u')
+           ->from(Usuario::class, 'u')
+           ->where('u.nombre_usuario != :admin')
+           ->setParameter('admin', 'ADMIN');
+
+        if ($query) {
+            $qb->andWhere('u.profesion LIKE :query OR u.nombre_usuario LIKE :query')
+               ->setParameter('query', '%' . $query . '%');
+        }
+        
+        $professionals = $qb->getQuery()->getResult();
         
         $data = array_map(function(Usuario $usuario) {
             return [
@@ -386,6 +401,8 @@ class ApiController extends AbstractController
             error_log('Iniciando getTopRatedUsers');
             
             $qb = $this->usuarioRepository->createQueryBuilder('u')
+                ->where('u.nombre_usuario != :admin')
+                ->setParameter('admin', 'ADMIN')
                 ->orderBy('u.valoracion_promedio', 'DESC')
                 ->setMaxResults(10);
             
@@ -767,32 +784,24 @@ class ApiController extends AbstractController
         }
     }
 
-    //Eliminar producto
-    #[Route('/products/{id}', name: 'product_delete', methods: ['DELETE'])]
-    public function deleteProduct(int $id): JsonResponse
+    //Eliminar producto (admin)
+    #[Route('/admin/products/{id}', name: 'admin_delete_product', methods: ['DELETE'])]
+    public function deleteProductAdmin(int $id): JsonResponse
     {
         $user = $this->getUser();
-        if (!$user) {
+        if (!$user || $user->getNombreUsuario() !== 'ADMIN') {
             return $this->json([
                 'success' => false,
-                'message' => 'Usuario no autenticado'
-            ], Response::HTTP_UNAUTHORIZED);
+                'message' => 'Acceso no autorizado'
+            ], Response::HTTP_FORBIDDEN);
         }
 
         $product = $this->objetoRepository->find($id);
-        
         if (!$product) {
             return $this->json([
                 'success' => false,
                 'message' => 'Producto no encontrado'
             ], Response::HTTP_NOT_FOUND);
-        }
-
-        if ($product->getUsuario()->getId_usuario() !== $user->getId_usuario()) {
-            return $this->json([
-                'success' => false,
-                'message' => 'No tienes permiso para eliminar este producto'
-            ], Response::HTTP_FORBIDDEN);
         }
 
         $this->em->remove($product);
@@ -1249,5 +1258,128 @@ class ApiController extends AbstractController
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    // Listar usuarios (admin)
+    #[Route('/admin/users', name: 'admin_list_users', methods: ['GET'])]
+    public function listUsers(Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user || $user->getNombreUsuario() !== 'ADMIN') {
+            return $this->json([
+                'success' => false,
+                'message' => 'Acceso no autorizado'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $search = $request->query->get('search', '');
+        $qb = $this->em->createQueryBuilder();
+        $qb->select('u')
+           ->from(Usuario::class, 'u')
+           ->where('u.nombre_usuario != :admin')
+           ->setParameter('admin', 'ADMIN');
+
+        if ($search) {
+            $qb->andWhere('u.nombre_usuario LIKE :search OR u.correo LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        $users = $qb->getQuery()->getResult();
+
+        $formattedUsers = array_map(function($user) {
+            return [
+                'id' => $user->getId_usuario(),
+                'username' => $user->getNombreUsuario(),
+                'email' => $user->getCorreo(),
+                'credits' => $user->getCreditos(),
+                'foto_perfil' => $user->getFotoPerfil()
+            ];
+        }, $users);
+
+        return $this->json([
+            'success' => true,
+            'data' => $formattedUsers
+        ]);
+    }
+
+    // Eliminar usuario (admin)
+    #[Route('/admin/users/{id}', name: 'admin_delete_user', methods: ['DELETE'])]
+    public function deleteUser(int $id): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user || $user->getNombreUsuario() !== 'ADMIN') {
+            return $this->json([
+                'success' => false,
+                'message' => 'Acceso no autorizado'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $userToDelete = $this->usuarioRepository->find($id);
+        if (!$userToDelete) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Usuario no encontrado'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($userToDelete->getNombreUsuario() === 'ADMIN') {
+            return $this->json([
+                'success' => false,
+                'message' => 'No se puede eliminar al administrador'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $this->em->remove($userToDelete);
+        $this->em->flush();
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Usuario eliminado con éxito'
+        ]);
+    }
+
+    // Listar productos (admin)
+    #[Route('/admin/products', name: 'admin_list_products', methods: ['GET'])]
+    public function listProducts(Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user || $user->getNombreUsuario() !== 'ADMIN') {
+            return $this->json([
+                'success' => false,
+                'message' => 'Acceso no autorizado'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $search = $request->query->get('search', '');
+        $qb = $this->em->createQueryBuilder();
+        $qb->select('o', 'u')
+           ->from(Objeto::class, 'o')
+           ->join('o.usuario', 'u');
+
+        if ($search) {
+            $qb->andWhere('o.titulo LIKE :search OR u.nombre_usuario LIKE :search OR o.creditos LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        $products = $qb->getQuery()->getResult();
+
+        $formattedProducts = array_map(function($product) {
+            return [
+                'id' => $product->getId_objeto(),
+                'name' => $product->getTitulo(),
+                'credits' => $product->getCreditos(),
+                'state' => $product->getEstado(),
+                'image' => $product->getImagen(),
+                'seller' => [
+                    'id' => $product->getUsuario()->getId_usuario(),
+                    'username' => $product->getUsuario()->getNombreUsuario()
+                ]
+            ];
+        }, $products);
+
+        return $this->json([
+            'success' => true,
+            'data' => $formattedProducts
+        ]);
     }
 }

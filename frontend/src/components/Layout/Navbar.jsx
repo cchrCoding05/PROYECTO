@@ -58,9 +58,9 @@ const Navbar = () => {
               <Link className="nav-link" to="/upload-product" style={{ color: 'var(--bs-body-color)' }}>Subir Producto</Link>
             </li>
 
-            {isAuthenticated && currentUser?.username === 'admin' && (
+            {isAuthenticated && currentUser?.data?.username === 'ADMIN' && (
               <li className="nav-item">
-                <Link className="nav-link" to="/admin/users" style={{ color: 'var(--bs-body-color)' }}>Gestión de Usuarios</Link>
+                <Link className="nav-link" to="/admin" style={{ color: 'var(--bs-body-color)' }}>Gestión</Link>
               </li>
             )}
           </ul>

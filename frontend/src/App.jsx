@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
+import { ChakraProvider } from '@chakra-ui/react';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 import CookieConsent from './components/CookieConsent';
 import Footer from './components/Layout/Footer';
@@ -30,6 +32,9 @@ import ProductDetail from './components/Products/ProductDetail';
 import MyProducts from './components/Products/MyProducts';
 import EditProduct from './components/Product/EditProduct';
 import ProductList from './components/Products/ProductList';
+
+// Componentes de administración
+import AdminPanel from './components/Admin/AdminPanel';
 
 // Componente principal de la navegación
 const AppNavigation = () => {
@@ -119,6 +124,16 @@ const AppNavigation = () => {
               </ProtectedRoute>
             } 
           />
+
+          {/* Ruta de administración */}
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute>
+                <AdminPanel />
+              </ProtectedRoute>
+            } 
+          />
         </Routes>
       </main>
 
@@ -130,11 +145,13 @@ const AppNavigation = () => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppNavigation />
-      </AuthProvider>
-    </BrowserRouter>
+    <ChakraProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppNavigation />
+        </AuthProvider>
+      </BrowserRouter>
+    </ChakraProvider>
   );
 }
 
