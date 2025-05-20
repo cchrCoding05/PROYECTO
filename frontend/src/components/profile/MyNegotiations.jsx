@@ -15,7 +15,23 @@ const MyNegotiations = () => {
       setLoading(true);
       setError(null);
       const data = await negotiationService.getMyNegotiations();
-      setNegotiations(data);
+      
+      // Agrupar negociaciones por producto y mantener solo la más reciente
+      const negociacionesAgrupadas = data.reduce((acc, negotiation) => {
+        const productId = negotiation.product.id;
+        
+        // Si no existe una negociación para este producto o la actual es más reciente
+        if (!acc[productId] || new Date(negotiation.date) > new Date(acc[productId].date)) {
+          acc[productId] = negotiation;
+        }
+        
+        return acc;
+      }, {});
+      
+      // Convertir el objeto agrupado en un array
+      const negociacionesFiltradas = Object.values(negociacionesAgrupadas);
+      
+      setNegotiations(negociacionesFiltradas);
     } catch (err) {
       console.error('Error al cargar negociaciones:', err);
       setError(err.message || 'Error al cargar las negociaciones');
@@ -68,72 +84,64 @@ const MyNegotiations = () => {
     );
   }
 
-  if (negotiations.length === 0) {
-    return (
-      <Container className="mt-4">
-        <Alert variant="info">
-          No tienes negociaciones activas.
-        </Alert>
-      </Container>
-    );
-  }
-
   return (
     <Container className="mt-4">
-      <h3>Mis Negociaciones</h3>
-      <Row>
-        {negotiations.map(negotiation => (
-          <Col key={negotiation.id} md={6} className="mb-4">
-            <Card>
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-start mb-2">
-                  {getStatusBadge(negotiation.status, negotiation.isActive)}
-                  {getRoleBadge(negotiation.isSeller)}
-                </div>
-                
-                <div className="d-flex align-items-center mb-3">
-                  {negotiation.product.image && (
-                    <img 
-                      src={negotiation.product.image} 
-                      alt={negotiation.product.name}
-                      className="negotiation-product-image me-3"
-                      style={{ width: '80px', height: '80px', objectFit: 'cover' }}
-                    />
-                  )}
-                  <div>
-                    <Card.Title>{negotiation.product.name}</Card.Title>
-                    <Card.Text>
-                      <small className="text-muted">
-                        {new Date(negotiation.date).toLocaleDateString()}
-                      </small>
-                    </Card.Text>
+      <h2 className="mb-4">Mis Negociaciones</h2>
+      {negotiations.length === 0 ? (
+        <Alert variant="info">
+          No tienes negociaciones activas
+        </Alert>
+      ) : (
+        <Row xs={1} md={2} lg={3} className="g-4">
+          {negotiations.map((negotiation) => (
+            <Col key={negotiation.id}>
+              <Card className="h-100 shadow-sm">
+                <Card.Img
+                  variant="top"
+                  src={negotiation.product.image}
+                  alt={negotiation.product.name}
+                  style={{ height: '200px', objectFit: 'cover' }}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://via.placeholder.com/300?text=Sin+Imagen';
+                  }}
+                />
+                <Card.Body>
+                  <div className="d-flex justify-content-between align-items-start mb-2">
+                    {getRoleBadge(negotiation.isSeller)}
+                    {getStatusBadge(negotiation.status, negotiation.isActive)}
                   </div>
-                </div>
+                  <Card.Title className="mb-3">{negotiation.product.name}</Card.Title>
+                  <Card.Text>
+                    <strong>Precio original:</strong> {negotiation.product.credits} créditos
+                  </Card.Text>
+                  <Card.Text>
+                    <strong>Precio propuesto:</strong> {negotiation.proposedCredits} créditos
+                  </Card.Text>
+                  <Card.Text>
+                    <strong>
+                      {negotiation.isSeller ? 'Comprador:' : 'Vendedor:'}
+                    </strong> {negotiation.isSeller ? negotiation.buyer.name : negotiation.seller.name}
+                  </Card.Text>
+                  <Card.Text>
+                    <small className="text-muted">
+                      Última actualización: {new Date(negotiation.date).toLocaleString()}
+                    </small>
+                  </Card.Text>
 
-                <Card.Text>
-                  <strong>Precio original:</strong> {negotiation.product.credits} créditos
-                </Card.Text>
-                <Card.Text>
-                  <strong>Precio propuesto:</strong> {negotiation.proposedCredits} créditos
-                </Card.Text>
-                <Card.Text>
-                  <strong>
-                    {negotiation.isSeller ? 'Comprador:' : 'Vendedor:'}
-                  </strong> {negotiation.isSeller ? negotiation.buyer.name : negotiation.seller.name}
-                </Card.Text>
-
-                <Button 
-                  variant="primary" 
-                  onClick={() => navigate(`/negotiation/${negotiation.product.id}`)}
-                  className="mt-2"
-                >
-                  Ver Detalles
-                </Button>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+                  <Button 
+                    variant="primary" 
+                    onClick={() => navigate(`/negotiation/${negotiation.product.id}`)}
+                    className="mt-2 w-100"
+                  >
+                    Ver Detalles
+                  </Button>
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      )}
     </Container>
   );
 };

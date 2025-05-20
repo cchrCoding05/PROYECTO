@@ -406,7 +406,7 @@ const ProductNegotiation = () => {
                     
                     // Modificar la lógica de mostrarBotones
                     const mostrarBotonesVendedor = esVendedor && !yaAceptado && product.state !== 3;
-                    const mostrarBotonesComprador = esComprador && !yaAceptado && product.state !== 3;
+                    const mostrarBotonesComprador = esComprador && !yaAceptado && product.state !== 3 && !esVendedor;
                     const mostrarBotones = mostrarBotonesVendedor || mostrarBotonesComprador;
 
                     console.log('Renderizando negociación:', {
@@ -462,13 +462,13 @@ const ProductNegotiation = () => {
                             </small>
                             {mostrarBotones && (
                               <div className="mt-2">
-                                {esVendedor && (
+                                {esVendedor && !esComprador && (
                                   <p className="text-info small mb-1">
                                     <i className="bi bi-info-circle me-1"></i>
                                     Como vendedor, puedes aceptar o rechazar esta oferta
                                   </p>
                                 )}
-                                {esComprador && (
+                                {esComprador && !esVendedor && (
                                   <p className="text-info small mb-1">
                                     <i className="bi bi-info-circle me-1"></i>
                                     Como comprador, puedes rechazar esta oferta
