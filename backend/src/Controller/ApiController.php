@@ -1020,8 +1020,8 @@ class ApiController extends AbstractController
             return [
                 'id' => $neg->getId_negociacion(),
                 'user' => [
-                    'id' => $neg->getUsuario()->getId_usuario(),
-                    'username' => $neg->getUsuario()->getNombreUsuario(),
+                    'id' => $neg->getComprador()->getId_usuario(),
+                    'username' => $neg->getComprador()->getNombreUsuario(),
                 ],
                 'proposedCredits' => $neg->getPrecioPropuesto(),
                 'accepted' => $neg->isAceptado(),
@@ -1106,36 +1106,15 @@ class ApiController extends AbstractController
 
         // Crear nueva negociación
         $neg = new NegociacionPrecio();
-        $neg->setUsuario($user);
-        $neg->setIntercambio($intercambio);
+        $neg->setComprador($user);
+        $neg->setVendedor($product->getUsuario());
         $neg->setPrecioPropuesto($price);
         $neg->setAceptado(false);
         $neg->setAceptadoVendedor(false);
         $neg->setAceptadoComprador(false);
         
-        // Si es la primera oferta del comprador, marcar como activa
-        if ($user->getId_usuario() !== $product->getUsuario()->getId_usuario() && 
-            count($intercambio->getNegociaciones()) === 0) {
-            $neg->setAceptadoComprador(true);
-        } else {
-            // Si no es la primera oferta, verificar si la negociación está activa
-            $ultimaNegociacion = $this->negociacionPrecioRepository->findOneBy(
-                ['intercambio' => $intercambio],
-                ['fecha_creacion' => 'DESC']
-            );
-            
-            if ($ultimaNegociacion) {
-                // Si la última negociación está activa (aceptada por el comprador o vendedor)
-                if ($ultimaNegociacion->isAceptadoComprador() || $ultimaNegociacion->isAceptadoVendedor()) {
-                    // Marcar la nueva oferta como aceptada por el usuario que la propone
-                    if ($user->getId_usuario() === $product->getUsuario()->getId_usuario()) {
-                        $neg->setAceptadoVendedor(true);
-                    } else {
-                        $neg->setAceptadoComprador(true);
-                    }
-                }
-            }
-        }
+        // Agregar la negociación al intercambio usando el método addNegociacion
+        $intercambio->addNegociacion($neg);
         
         $this->em->persist($neg);
         $this->em->flush();
@@ -1147,7 +1126,7 @@ class ApiController extends AbstractController
                 'id' => $neg->getId_negociacion(),
                 'proposedCredits' => $neg->getPrecioPropuesto(),
                 'createdAt' => $neg->getFechaCreacion()->format('c'),
-                'isActive' => $neg->isAceptadoComprador() || $neg->isAceptadoVendedor()
+                'isActive' => $neg->isAceptado()
             ]
         ]);
     }
@@ -1202,6 +1181,8 @@ class ApiController extends AbstractController
         // Registrar aceptación
         if ($isVendedor) {
             $neg->setAceptadoVendedor(true);
+            // Si el vendedor acepta, cambiar estado del producto a intercambiado
+            $product->setEstado(Objeto::ESTADO_INTERCAMBIADO);
         }
         if ($isComprador) {
             $neg->setAceptadoComprador(true);
@@ -1212,9 +1193,6 @@ class ApiController extends AbstractController
             $neg->setAceptado(true);
             $intercambio->setPrecioPropuesto($neg->getPrecioPropuesto());
             $intercambio->marcarComoCompletado();
-            
-            // Cambiar estado del producto a intercambiado
-            $product->setEstado(Objeto::ESTADO_INTERCAMBIADO);
             
             // Transferir puntos
             $comprador = $intercambio->getComprador();
@@ -1313,14 +1291,9 @@ class ApiController extends AbstractController
 
             // Obtener todas las negociaciones donde el usuario es comprador o vendedor
             $qb = $this->em->createQueryBuilder();
-            $qb->select('n', 'i', 'o', 'v', 'c')
+            $qb->select('n')
                ->from('App\Entity\NegociacionPrecio', 'n')
-               ->join('n.intercambio', 'i')
-               ->join('i.objeto', 'o')
-               ->join('o.usuario', 'v')
-               ->join('i.comprador', 'c')
-               ->where('i.comprador = :userId OR v.id_usuario = :userId')
-               ->andWhere('o IS NOT NULL')  // Solo negociaciones con objetos
+               ->where('n.comprador = :userId OR n.vendedor = :userId')
                ->setParameter('userId', $user->getId_usuario())
                ->orderBy('n.fecha_creacion', 'DESC');
 
@@ -1328,30 +1301,65 @@ class ApiController extends AbstractController
 
             $formattedNegotiations = [];
             foreach ($negotiations as $negotiation) {
-                $isBuyer = $negotiation->getComprador()->getId_usuario() === $user->getId_usuario();
-                $otherUser = $isBuyer ? $negotiation->getVendedor() : $negotiation->getComprador();
+                $intercambio = $negotiation->getIntercambio();
+                $objeto = $intercambio ? $intercambio->getObjeto() : null;
+                
+                // Debug de los estados
+                $this->logger->info('Estado de negociación', [
+                    'id' => $negotiation->getId_negociacion(),
+                    'aceptado' => $negotiation->isAceptado(),
+                    'aceptado_vendedor' => $negotiation->isAceptadoVendedor(),
+                    'aceptado_comprador' => $negotiation->isAceptadoComprador(),
+                    'estado_objeto' => $objeto ? $objeto->getEstado() : null
+                ]);
+
+                // Determinar el estado de la negociación
+                $status = 1; // Por defecto: activa
+                
+                // Si el objeto está reservado, la negociación está activa
+                if ($objeto && $objeto->getEstado() === Objeto::ESTADO_RESERVADO) {
+                    $status = 1; // Activa
+                }
+                // Si el vendedor ha aceptado, la negociación está finalizada
+                else if ($negotiation->isAceptadoVendedor()) {
+                    $status = 2; // Finalizada
+                }
+                // Si el comprador o vendedor han rechazado, la negociación está finalizada
+                else if (!$negotiation->isAceptadoVendedor() && !$negotiation->isAceptadoComprador()) {
+                    $status = 3; // Finalizada (rechazada)
+                }
+
+                // Determinar si está activa
+                $isActive = $status === 1;
+                
+                $this->logger->info('Estado final', [
+                    'id' => $negotiation->getId_negociacion(),
+                    'status' => $status,
+                    'isActive' => $isActive
+                ]);
                 
                 $formattedNegotiations[] = [
                     'id' => $negotiation->getId_negociacion(),
                     'product' => [
-                        'id' => $negotiation->getObjeto()->getId_objeto(),
-                        'name' => $negotiation->getObjeto()->getTitulo(),
-                        'image' => $negotiation->getObjeto()->getImagen(),
-                        'credits' => $negotiation->getObjeto()->getCreditos()
+                        'id' => $objeto ? $objeto->getId_objeto() : null,
+                        'name' => $objeto ? $objeto->getTitulo() : 'Producto no disponible',
+                        'image' => $objeto ? $objeto->getImagen() : null,
+                        'credits' => $objeto ? $objeto->getCreditos() : 0,
+                        'state' => $objeto ? $objeto->getEstado() : null
                     ],
                     'seller' => [
-                        'id' => $negotiation->getObjeto()->getUsuario()->getId_usuario(),
-                        'name' => $negotiation->getObjeto()->getUsuario()->getNombreUsuario()
+                        'id' => $negotiation->getVendedor()->getId_usuario(),
+                        'name' => $negotiation->getVendedor()->getNombreUsuario()
                     ],
                     'buyer' => [
                         'id' => $negotiation->getComprador()->getId_usuario(),
                         'name' => $negotiation->getComprador()->getNombreUsuario()
                     ],
                     'proposedCredits' => $negotiation->getPrecioPropuesto(),
-                    'status' => $negotiation->isAceptado() ? 2 : ($negotiation->isAceptadoVendedor() || $negotiation->isAceptadoComprador() ? 1 : 3),
+                    'status' => $status,
                     'date' => $negotiation->getFechaCreacion()->format('Y-m-d H:i:s'),
-                    'isSeller' => $negotiation->getObjeto()->getUsuario()->getId_usuario() === $user->getId_usuario(),
-                    'isActive' => !$negotiation->isAceptado() && ($negotiation->isAceptadoVendedor() || $negotiation->isAceptadoComprador())
+                    'isSeller' => $negotiation->getVendedor()->getId_usuario() === $user->getId_usuario(),
+                    'isActive' => $isActive
                 ];
             }
 

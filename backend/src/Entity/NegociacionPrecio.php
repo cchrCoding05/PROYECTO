@@ -28,7 +28,17 @@ class NegociacionPrecio
     private ?bool $aceptado = false;
 
     #[ORM\Column]
+    private ?bool $aceptado_vendedor = false;
+
+    #[ORM\Column]
+    private ?bool $aceptado_comprador = false;
+
+    #[ORM\Column]
     private ?\DateTimeImmutable $fecha_creacion;
+
+    #[ORM\ManyToOne(inversedBy: 'negociaciones')]
+    #[ORM\JoinColumn(name: 'id_intercambio', referencedColumnName: 'id_intercambio', nullable: true)]
+    private ?IntercambioObjeto $intercambio = null;
 
     public function __construct()
     {
@@ -84,6 +94,28 @@ class NegociacionPrecio
         return $this;
     }
 
+    public function isAceptadoVendedor(): ?bool
+    {
+        return $this->aceptado_vendedor;
+    }
+
+    public function setAceptadoVendedor(bool $aceptado_vendedor): self
+    {
+        $this->aceptado_vendedor = $aceptado_vendedor;
+        return $this;
+    }
+
+    public function isAceptadoComprador(): ?bool
+    {
+        return $this->aceptado_comprador;
+    }
+
+    public function setAceptadoComprador(bool $aceptado_comprador): self
+    {
+        $this->aceptado_comprador = $aceptado_comprador;
+        return $this;
+    }
+
     public function getFechaCreacion(): ?\DateTimeImmutable
     {
         return $this->fecha_creacion;
@@ -92,6 +124,17 @@ class NegociacionPrecio
     public function setFechaCreacion(\DateTimeImmutable $fecha_creacion): self
     {
         $this->fecha_creacion = $fecha_creacion;
+        return $this;
+    }
+
+    public function getIntercambio(): ?IntercambioObjeto
+    {
+        return $this->intercambio;
+    }
+
+    public function setIntercambio(?IntercambioObjeto $intercambio): self
+    {
+        $this->intercambio = $intercambio;
         return $this;
     }
 }

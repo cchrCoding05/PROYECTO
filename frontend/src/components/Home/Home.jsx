@@ -5,6 +5,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { Link } from "react-router-dom";
 import { Carousel, Card, Row, Col } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import './Home.css';
 
 const Home = () => {
   const { user: currentUser } = useAuth();
@@ -86,16 +87,27 @@ const Home = () => {
   };
 
   const renderStars = (rating) => {
-    // Redondear el rating al número entero más cercano para las estrellas
-    const roundedRating = Math.round(rating);
-    return [1, 2, 3, 4, 5].map((star) => (
-      <span
-        key={star}
-        className={`star ${star <= roundedRating ? 'filled' : ''}`}
-      >
-        ★
-      </span>
-    ));
+    // Convertir el rating a número y redondear al decimal más cercano
+    const numericRating = parseFloat(rating) || 0;
+    
+    return [1, 2, 3, 4, 5].map((star) => {
+      // Calcular la diferencia entre el rating y la estrella actual
+      const difference = numericRating - (star - 1);
+      
+      // Determinar el tipo de estrella a mostrar
+      let starClass = 'star';
+      if (difference >= 1) {
+        starClass += ' filled'; // Estrella completa
+      } else if (difference > 0) {
+        starClass += ' half-filled'; // Media estrella
+      }
+      
+      return (
+        <span key={star} className={starClass}>
+          ★
+        </span>
+      );
+    });
   };
 
   if (loading) {
