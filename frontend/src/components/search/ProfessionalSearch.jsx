@@ -61,21 +61,46 @@ const ProfessionalSearch = () => {
       
       console.log('Profesionales procesados:', professionalsArray);
       
-      // Procesar las valoraciones
+      // Procesar las valoraciones y normalizar los datos
       const processedProfessionals = professionalsArray.map(prof => {
         // Asegurarse de que rating y reviews_count sean números
         const rating = parseFloat(prof.rating) || 0;
         const reviewsCount = parseInt(prof.reviews_count) || 0;
         
+        // Normalizar los textos
+        const normalizedName = prof.name ? prof.name.trim() : '';
+        const normalizedProfession = prof.profession ? prof.profession.trim() : '';
+        const normalizedDescription = prof.description ? prof.description.trim() : '';
+        
         return {
           ...prof,
+          name: normalizedName,
+          profession: normalizedProfession,
+          description: normalizedDescription,
           rating,
           reviews_count: reviewsCount
         };
       });
 
-      setProfessionals(processedProfessionals);
-      setNoResults(processedProfessionals.length === 0);
+      // Si hay una consulta de búsqueda, filtrar los resultados
+      if (query.trim()) {
+        const normalizedQuery = normalizeText(query);
+        const filteredProfessionals = processedProfessionals.filter(prof => {
+          const normalizedName = normalizeText(prof.name);
+          const normalizedProfession = normalizeText(prof.profession);
+          const normalizedDescription = normalizeText(prof.description);
+          
+          return normalizedName.includes(normalizedQuery) ||
+                 normalizedProfession.includes(normalizedQuery) ||
+                 normalizedDescription.includes(normalizedQuery);
+        });
+        
+        setProfessionals(filteredProfessionals);
+        setNoResults(filteredProfessionals.length === 0);
+      } else {
+        setProfessionals(processedProfessionals);
+        setNoResults(processedProfessionals.length === 0);
+      }
     } catch (error) {
       console.error('Error en la búsqueda:', error);
       setError('Error al buscar profesionales. Por favor, inténtalo de nuevo.');
