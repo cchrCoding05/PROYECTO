@@ -1,11 +1,13 @@
 // components/home/HomePage.jsx
 import React, { useState, useEffect } from "react";
 import { professionalService, productService } from "../../services/api";
+import { useAuth } from "../../hooks/useAuth";
 import { Link } from "react-router-dom";
 import { Carousel, Card, Row, Col } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Home = () => {
+  const { user: currentUser } = useAuth();
   const [topUsers, setTopUsers] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,15 +25,42 @@ const Home = () => {
           productService.getFromTopRatedUsers()
         ]);
         
-        console.log('Respuesta de usuarios:', usersResponse);
-        console.log('Respuesta de productos:', productsResponse);
-        
         if (usersResponse?.data) {
-          setTopUsers(usersResponse.data);
+          // Filtrar el usuario actual y el usuario admin
+          const filteredUsers = usersResponse.data.filter(prof => 
+            prof.id !== currentUser?.id && 
+            prof.username?.toLowerCase() !== 'admin'
+          );
+          
+          // Procesar los datos para que coincidan con la estructura de ProfessionalSearch
+          const processedProfessionals = filteredUsers.map(prof => ({
+            id: prof.id,
+            name: prof.name,
+            profession: prof.profession,
+            description: prof.description,
+            foto_perfil: prof.photo,
+            photo: prof.photo,
+            rating: parseFloat(prof.rating) || 0,
+            reviews_count: parseInt(prof.reviews_count) || 0
+          }));
+
+          // Ordenar usuarios por rating
+          const sortedUsers = processedProfessionals.sort((a, b) => b.rating - a.rating);
+          setTopUsers(sortedUsers);
         }
         
         if (productsResponse?.data) {
-          setTopProducts(productsResponse.data);
+          // Filtrar productos del usuario actual y procesar las valoraciones
+          const filteredProducts = productsResponse.data
+            .filter(product => product.user?.id !== currentUser?.id)
+            .map(product => ({
+              ...product,
+              user: {
+                id: product.user?.id,
+                name: product.user?.name || product.user?.username || 'Anónimo'
+              }
+            }));
+          setTopProducts(filteredProducts);
         }
       } catch (err) {
         console.error('Error al cargar datos:', err);
@@ -44,7 +73,7 @@ const Home = () => {
     };
 
     fetchData();
-  }, []);
+  }, [currentUser]);
 
   // Función para dividir el array en grupos de 3
   const chunkArray = (array, size) => {
@@ -54,6 +83,19 @@ const Home = () => {
       chunked.push(array.slice(i, i + size));
     }
     return chunked;
+  };
+
+  const renderStars = (rating) => {
+    // Redondear el rating al número entero más cercano para las estrellas
+    const roundedRating = Math.round(rating);
+    return [1, 2, 3, 4, 5].map((star) => (
+      <span
+        key={star}
+        className={`star ${star <= roundedRating ? 'filled' : ''}`}
+      >
+        ★
+      </span>
+    ));
   };
 
   if (loading) {
@@ -92,13 +134,13 @@ const Home = () => {
             {userChunks.map((chunk, index) => (
               <Carousel.Item key={index}>
                 <Row className="justify-content-center">
-                  {chunk.map((user) => (
-                    <Col key={user.id} xs={12} md={4} className="mb-3">
+                  {chunk.map((professional) => (
+                    <Col key={professional.id} xs={12} md={4} className="mb-3">
                       <Card className="h-100">
                         <Card.Img 
                           variant="top" 
-                          src={user.profilePhoto || '/default-profile.png'} 
-                          alt={user.username}
+                          src={professional.photo || '/default-profile.png'} 
+                          alt={professional.name}
                           style={{ height: '200px', objectFit: 'cover' }}
                           onError={(e) => {
                             e.target.onerror = null;
@@ -106,13 +148,22 @@ const Home = () => {
                           }}
                         />
                         <Card.Body className="text-center">
-                          <Card.Title>{user.username}</Card.Title>
-                          <Card.Text>{user.profession}</Card.Text>
-                          <div className="d-flex justify-content-center align-items-center mb-2">
-                            <i className="bi bi-star-fill text-warning me-1"></i>
-                            <span>{user.rating ? user.rating.toFixed(1) : '0.0'}</span>
+                          <Card.Title>{professional.name}</Card.Title>
+                          <Card.Text>{professional.profession}</Card.Text>
+                          <div className="d-flex flex-column align-items-center mb-3">
+                            <div className="mb-1">
+                              {renderStars(professional.rating)}
+                            </div>
+                            <small className="text-muted">
+                              {professional.reviews_count} valoraciones
+                              {professional.rating > 0 && (
+                                <span className="ms-1">
+                                  ({professional.rating.toFixed(1)})
+                                </span>
+                              )}
+                            </small>
                           </div>
-                          <Link to={`/search/professionals/${user.id}`} className="btn btn-primary">
+                          <Link to={`/search/professionals/${professional.id}`} className="btn btn-primary">
                             Ver Perfil
                           </Link>
                         </Card.Body>
@@ -157,7 +208,9 @@ const Home = () => {
                             </Link>
                           </div>
                           <div className="mt-2 text-muted">
-                            <small>Vendedor: {product.user?.username || 'Anónimo'} ⭐ {product.user?.rating ? product.user.rating.toFixed(1) : '0.0'}</small>
+                            <small>
+                              Vendedor: {product.user?.name}
+                            </small>
                           </div>
                         </Card.Body>
                       </Card>

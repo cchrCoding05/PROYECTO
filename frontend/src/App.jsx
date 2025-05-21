@@ -25,6 +25,7 @@ import ProductSearch from './components/Search/ProductSearch';
 
 // Componentes de negociación
 import ProductNegotiation from './components/Negotiation/ProductNegotiation';
+import ProfessionalNegotiation from './components/Negotiation/ProfessionalNegotiation';
 
 // Componentes de productos
 import ProductUpload from './components/Product/ProductUpload';
@@ -94,6 +95,15 @@ const AppNavigation = () => {
             element={
               <ProtectedRoute>
                 <ProductNegotiation />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/professional-chat/:id" 
+            element={
+              <ProtectedRoute>
+                <ProfessionalNegotiation />
               </ProtectedRoute>
             } 
           />

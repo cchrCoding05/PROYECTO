@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/useAuth';
 import AlertMessage from '../Layout/AlertMessage.jsx';
 import { Cloudinary } from '@cloudinary/url-gen';
 import { AdvancedImage } from '@cloudinary/react';
+import { Link } from 'react-router-dom';
+import './ProfessionalSearch.css';
 
 const ProfessionalSearch = () => {
   const { user } = useAuth();
@@ -41,15 +43,10 @@ const ProfessionalSearch = () => {
       setError(null);
       setNoResults(false);
       
-      // Normalizar la consulta para eliminar tildes y acentos
-      const normalizedQuery = normalizeText(query);
-      
-      // Enviar la consulta original al servidor
       console.log('Buscando profesionales con query:', query);
       const results = await professionalService.search(query);
       console.log('Resultados de búsqueda:', results);
 
-      // Comprobar si la respuesta indica un error
       if (results && results.success === false) {
         setError(results.message || 'Error en la búsqueda de profesionales');
         setProfessionals([]);
@@ -61,15 +58,24 @@ const ProfessionalSearch = () => {
       const professionalsArray = Array.isArray(results.data) 
         ? results.data.filter(prof => prof.id !== user?.id)
         : [];
+      
       console.log('Profesionales procesados:', professionalsArray);
       
-      // Verificar las URLs de las fotos
-      professionalsArray.forEach(prof => {
-        console.log('Foto de perfil para', prof.name, ':', prof.foto_perfil);
+      // Procesar las valoraciones
+      const processedProfessionals = professionalsArray.map(prof => {
+        // Asegurarse de que rating y reviews_count sean números
+        const rating = parseFloat(prof.rating) || 0;
+        const reviewsCount = parseInt(prof.reviews_count) || 0;
+        
+        return {
+          ...prof,
+          rating,
+          reviews_count: reviewsCount
+        };
       });
 
-      setProfessionals(professionalsArray);
-      setNoResults(professionalsArray.length === 0);
+      setProfessionals(processedProfessionals);
+      setNoResults(processedProfessionals.length === 0);
     } catch (error) {
       console.error('Error en la búsqueda:', error);
       setError('Error al buscar profesionales. Por favor, inténtalo de nuevo.');
@@ -93,6 +99,19 @@ const ProfessionalSearch = () => {
     if (!query.trim()) {
       searchProfessionals('');
     }
+  };
+
+  const renderStars = (rating) => {
+    // Redondear el rating al número entero más cercano para las estrellas
+    const roundedRating = Math.round(rating);
+    return [1, 2, 3, 4, 5].map((star) => (
+      <span
+        key={star}
+        className={`star ${star <= roundedRating ? 'filled' : ''}`}
+      >
+        ★
+      </span>
+    ));
   };
 
   // Renderiza un mensaje cuando no hay resultados
@@ -203,48 +222,25 @@ const ProfessionalSearch = () => {
                     
                     <div className="d-flex flex-column align-items-center mb-3">
                       <div className="mb-1">
-                        {[1, 2, 3, 4, 5].map((starIndex) => {
-                          // Si no hay rating, mostrar estrella vacía
-                          if (!professional.rating) {
-                            return <span key={starIndex} className="text-body-tertiary">★</span>;
-                          }
-
-                          const rating = Number(professional.rating);
-                          
-                          // Si el rating es menor que el índice actual, mostrar estrella vacía
-                          if (rating < starIndex - 0.5) {
-                            return <span key={starIndex} className="text-body-tertiary">★</span>;
-                          }
-                          
-                          // Si el rating está entre el índice actual y el siguiente, mostrar media estrella
-                          if (rating >= starIndex - 0.5 && rating < starIndex) {
-                            return (
-                              <span key={starIndex} className="text-warning" style={{ position: 'relative' }}>
-                                <span style={{ position: 'absolute', clipPath: 'inset(0 50% 0 0)' }}>★</span>
-                                <span style={{ position: 'relative', clipPath: 'inset(0 0 0 50%)' }} className="text-body-tertiary">★</span>
-                              </span>
-                            );
-                          }
-                          
-                          // Si el rating es mayor o igual al índice actual, mostrar estrella completa
-                          return <span key={starIndex} className="text-warning">★</span>;
-                        })}
+                        {renderStars(professional.rating)}
                       </div>
                       <small className="text-muted">
-                        {professional.reviews_count || 0} valoraciones
-                        {professional.rating && (
+                        {professional.reviews_count} valoraciones
+                        {professional.rating > 0 && (
                           <span className="ms-1">
-                            ({Number(professional.rating).toFixed(1)})
+                            ({professional.rating.toFixed(1)})
                           </span>
                         )}
                       </small>
                     </div>
                     
                     <div className="d-flex justify-content-center gap-3">
-                      <button className="btn btn-primary">Contactar</button>
-                      <button className="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', padding: 0 }}>
-                        <i className="bi bi-chat"></i>
-                      </button>
+                      <Link 
+                        to={`/professional-chat/${professional.id}`}
+                        className="btn btn-primary"
+                      >
+                        Contactar
+                      </Link>
                     </div>
                   </div>
                 </div>

@@ -252,6 +252,11 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->valoraciones;
     }
 
+    public function getValoracionesRecibidas(): Collection
+    {
+        return $this->valoracionesRecibidas;
+    }
+
     public function addValoracion(Valoracion $valoracion): self
     {
         if (!$this->valoraciones->contains($valoracion)) {
@@ -336,9 +341,12 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getValoracionPromedio(): ?float
+    public function getValoracionPromedio(): float
     {
-        return $this->valoracion_promedio;
+        if ($this->valoracion_promedio === null) {
+            $this->actualizarValoracionPromedio();
+        }
+        return $this->valoracion_promedio ?? 0.0;
     }
 
     public function setValoracionPromedio(?float $valoracion_promedio): self
@@ -364,21 +372,20 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function actualizarValoracionPromedio(): self
+    public function actualizarValoracionPromedio(): void
     {
-        $totalValoraciones = $this->valoraciones->count();
-        if ($totalValoraciones === 0) {
-            $this->valoracion_promedio = null;
-            return $this;
+        $valoraciones = $this->getValoraciones();
+        if ($valoraciones->isEmpty()) {
+            $this->setValoracionPromedio(0);
+            return;
         }
 
-        $sumaValoraciones = 0;
-        foreach ($this->valoraciones as $valoracion) {
-            $sumaValoraciones += $valoracion->getPuntuacion();
+        $suma = 0;
+        foreach ($valoraciones as $valoracion) {
+            $suma += $valoracion->getPuntuacion();
         }
-
-        $this->valoracion_promedio = round($sumaValoraciones / $totalValoraciones, 1);
-        return $this;
+        
+        $this->setValoracionPromedio($suma / $valoraciones->count());
     }
 
     public function getRoles(): array

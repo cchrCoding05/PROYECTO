@@ -7,11 +7,26 @@ const API_URL = 'http://localhost:8000/api';
 const fetchApi = async (endpoint, options = {}) => {
   console.log('Iniciando fetchApi para endpoint:', endpoint);
   const token = localStorage.getItem('token');
+  
+  // Lista de endpoints públicos que no requieren token
+  const publicEndpoints = [
+    '/login',
+    '/register',
+    '/products/search',
+    '/professionals/search',
+    '/users/top-rated',
+    '/products/top-rated-users',
+    '/home'
+  ];
+
+  // Verificar si el endpoint es público
+  const isPublicEndpoint = publicEndpoints.some(publicEndpoint => endpoint.startsWith(publicEndpoint));
+
   const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     'Origin': window.location.origin,
-    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...(token && !isPublicEndpoint && { 'Authorization': `Bearer ${token}` }),
     ...options.headers,
   };
   console.log('Headers configurados:', headers);

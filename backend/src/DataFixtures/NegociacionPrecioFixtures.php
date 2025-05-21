@@ -3,7 +3,6 @@ namespace App\DataFixtures;
 
 use App\Entity\NegociacionPrecio;
 use App\Entity\Usuario;
-use App\Entity\IntercambioObjeto;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -12,40 +11,28 @@ class NegociacionPrecioFixtures extends Fixture implements DependentFixtureInter
 {
     public function load(ObjectManager $manager): void
     {
-        $negociaciones = [
-            [
-                'precio_propuesto' => 180,
-                'mensaje' => '¿Podrías considerar este precio por la laptop?',
-                'aceptado' => true,
-                'usuario' => 'usuario_mariagarcia',
-                'intercambio' => 'intercambio_objeto_laptop_hp_elitebook'
-            ],
-            [
-                'precio_propuesto' => 120,
-                'mensaje' => '¿Podemos negociar el precio del monitor?',
-                'aceptado' => true,
-                'usuario' => 'usuario_mariagarcia',
-                'intercambio' => 'intercambio_objeto_monitor_lg_27'
-            ]
-        ];
-
-        foreach ($negociaciones as $negociacionData) {
-            try {
-                $intercambio = $this->getReference($negociacionData['intercambio'], IntercambioObjeto::class);
-                
-                $negociacion = new NegociacionPrecio();
-                $negociacion->setPrecioPropuesto($negociacionData['precio_propuesto']);
-                $negociacion->setMensaje($negociacionData['mensaje']);
-                $negociacion->setAceptado($negociacionData['aceptado']);
-                $negociacion->setUsuario($this->getReference($negociacionData['usuario'], Usuario::class));
-                $negociacion->setIntercambio($intercambio);
-                $negociacion->setFechaCreacion(new \DateTimeImmutable());
+        // Obtener usuarios para crear negociaciones
+        $usuarios = $manager->getRepository(Usuario::class)->findAll();
+        
+        // Crear algunas negociaciones de ejemplo
+        for ($i = 0; $i < 5; $i++) {
+            $negociacion = new NegociacionPrecio();
+            
+            // Seleccionar comprador y vendedor aleatorios
+            $comprador = $usuarios[array_rand($usuarios)];
+            $vendedor = $usuarios[array_rand($usuarios)];
+            
+            // Asegurarse de que no sean el mismo usuario
+            while ($vendedor === $comprador) {
+                $vendedor = $usuarios[array_rand($usuarios)];
+            }
+            
+            $negociacion->setComprador($comprador);
+            $negociacion->setVendedor($vendedor);
+            $negociacion->setPrecioPropuesto(rand(50, 500));
+            $negociacion->setAceptado(false);
 
                 $manager->persist($negociacion);
-            } catch (\Exception $e) {
-                // Si el intercambio no existe, continuamos con el siguiente
-                continue;
-            }
         }
 
         $manager->flush();
@@ -55,7 +42,6 @@ class NegociacionPrecioFixtures extends Fixture implements DependentFixtureInter
     {
         return [
             UsuarioFixtures::class,
-            IntercambioObjetoFixtures::class,
         ];
     }
 }

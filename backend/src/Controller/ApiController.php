@@ -6,6 +6,7 @@ use App\Entity\Usuario;
 use App\Entity\Objeto;
 use App\Entity\NegociacionPrecio;
 use App\Entity\IntercambioObjeto;
+use App\Entity\Valoracion;
 use App\Repository\UsuarioRepository;
 use App\Repository\ObjetoRepository;
 use App\Repository\NegociacionPrecioRepository;
@@ -169,26 +170,71 @@ class ApiController extends AbstractController
     public function getProfile(): JsonResponse
     {
         try {
-            error_log('Iniciando getProfile');
-            $request = $this->container->get('request_stack')->getCurrentRequest();
-            error_log('Headers: ' . json_encode($request->headers->all()));
-            
             $user = $this->getUser();
-            error_log('Usuario: ' . ($user ? 'encontrado' : 'no encontrado'));
-            
             if (!$user) {
-                error_log('Usuario no autenticado');
                 return $this->json([
                     'success' => false,
-                    'message' => 'Usuario no autenticado',
-                    'debug' => [
-                        'token' => $request->headers->get('Authorization'),
-                        'method' => $request->getMethod(),
-                    ]
+                    'message' => 'Usuario no autenticado'
                 ], Response::HTTP_UNAUTHORIZED);
             }
 
-            error_log('Preparando respuesta de usuario');
+            // Obtener negociaciones como comprador
+            $qb = $this->em->createQueryBuilder();
+            $qb->select('n')
+               ->from('App\Entity\NegociacionPrecio', 'n')
+               ->where('n.comprador = :userId')
+               ->setParameter('userId', $user->getId_usuario());
+
+            $buyerNegotiations = $qb->getQuery()->getResult();
+
+            // Obtener negociaciones como vendedor
+            $qb = $this->em->createQueryBuilder();
+            $qb->select('n')
+               ->from('App\Entity\NegociacionPrecio', 'n')
+               ->where('n.vendedor = :userId')
+               ->setParameter('userId', $user->getId_usuario());
+
+            $sellerNegotiations = $qb->getQuery()->getResult();
+
+            // Formatear las negociaciones
+            $formattedNegotiations = [];
+            
+            // Negociaciones como comprador
+            foreach ($buyerNegotiations as $negotiation) {
+                $formattedNegotiations[] = [
+                    'id' => $negotiation->getId_negociacion(),
+                    'type' => 'buyer',
+                    'professional' => [
+                        'id' => $negotiation->getVendedor()->getId_usuario(),
+                        'name' => $negotiation->getVendedor()->getNombreUsuario(),
+                        'email' => $negotiation->getVendedor()->getCorreo()
+                    ],
+                    'price' => $negotiation->getPrecioPropuesto(),
+                    'status' => [
+                        'accepted' => $negotiation->isAceptado()
+                    ],
+                    'createdAt' => $negotiation->getFechaCreacion()->format('Y-m-d H:i:s')
+                ];
+            }
+
+            // Negociaciones como vendedor
+            foreach ($sellerNegotiations as $negotiation) {
+                $formattedNegotiations[] = [
+                    'id' => $negotiation->getId_negociacion(),
+                    'type' => 'seller',
+                    'professional' => [
+                        'id' => $negotiation->getComprador()->getId_usuario(),
+                        'name' => $negotiation->getComprador()->getNombreUsuario(),
+                        'email' => $negotiation->getComprador()->getCorreo()
+                    ],
+                    'price' => $negotiation->getPrecioPropuesto(),
+                    'status' => [
+                        'accepted' => $negotiation->isAceptado()
+                    ],
+                    'createdAt' => $negotiation->getFechaCreacion()->format('Y-m-d H:i:s')
+                ];
+            }
+
             return $this->json([
                 'success' => true,
                 'data' => [
@@ -200,21 +246,17 @@ class ApiController extends AbstractController
                     'rating' => $user->getValoracionPromedio(),
                     'sales' => $user->getVentasRealizadas(),
                     'profilePhoto' => $user->getFotoPerfil(),
-                    'description' => $user->getDescripcion()
+                    'description' => $user->getDescripcion(),
+                    'negotiations' => $formattedNegotiations
                 ]
             ]);
         } catch (\Exception $e) {
-            error_log('Error en getProfile: ' . $e->getMessage());
-            error_log('Stack trace: ' . $e->getTraceAsString());
+            $this->logger->error('Error en getProfile: ' . $e->getMessage());
+            $this->logger->error('Stack trace: ' . $e->getTraceAsString());
             return $this->json([
                 'success' => false,
-                'message' => 'Error interno del servidor',
-                'debug' => [
-                    'error' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'trace' => $e->getTraceAsString()
-                ]
+                'message' => 'Error al obtener el perfil',
+                'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -266,40 +308,79 @@ class ApiController extends AbstractController
     }
 
     //Buscar profesionales
-    #[Route('/professionals/search', name: 'professionals_search', methods: ['GET'])]
+    #[Route('/professionals/search', name: 'search_professionals', methods: ['GET'])]
     public function searchProfessionals(Request $request): JsonResponse
     {
-        $query = $request->query->get('query', '');
-        
-        $qb = $this->em->createQueryBuilder();
-        $qb->select('u')
-           ->from(Usuario::class, 'u')
-           ->where('u.nombre_usuario != :admin')
-           ->setParameter('admin', 'ADMIN');
+        try {
+            $query = $request->query->get('query', '');
+            $this->logger->info('Buscando profesionales', ['query' => $query]);
 
-        if ($query) {
-            $qb->andWhere('u.profesion LIKE :query OR u.nombre_usuario LIKE :query')
-               ->setParameter('query', '%' . $query . '%');
+            $currentUser = $this->getUser();
+            $currentUserId = $currentUser ? $currentUser->getId_usuario() : null;
+
+            $qb = $this->em->createQueryBuilder();
+            $qb->select('u')
+               ->from(Usuario::class, 'u')
+               ->where('u.profesion IS NOT NULL')
+               ->andWhere('u.nombre_usuario != :admin')
+               ->setParameter('admin', 'ADMIN');
+
+            if ($currentUserId) {
+                $qb->andWhere('u.id_usuario != :currentUserId')
+                   ->setParameter('currentUserId', $currentUserId);
+            }
+
+            if (!empty($query)) {
+                $normalizedQuery = $this->normalizeText($query);
+                $qb->andWhere(
+                    $qb->expr()->orX(
+                        $qb->expr()->like('LOWER(u.nombre_usuario)', ':query'),
+                        $qb->expr()->like('LOWER(u.profesion)', ':query')
+                    )
+                )
+                ->setParameter('query', '%' . $normalizedQuery . '%');
+            }
+
+            $professionals = $qb->getQuery()->getResult();
+            
+            $result = [];
+            foreach ($professionals as $professional) {
+                // Obtener valoraciones del profesional
+                $valoraciones = $this->em->getRepository(Valoracion::class)->findBy(['profesional' => $professional]);
+                $sumaPuntuaciones = 0;
+                foreach ($valoraciones as $valoracion) {
+                    $sumaPuntuaciones += $valoracion->getPuntuacion();
+                }
+                $mediaValoraciones = count($valoraciones) > 0 ? $sumaPuntuaciones / count($valoraciones) : 0;
+
+                $result[] = [
+                    'id' => $professional->getId_usuario(),
+                    'name' => $professional->getNombreUsuario(),
+                    'profession' => $professional->getProfesion(),
+                    'email' => $professional->getCorreo(),
+                    'description' => $professional->getDescripcion(),
+                    'photo' => $professional->getFotoPerfil(),
+                    'rating' => $mediaValoraciones,
+                    'reviews_count' => count($valoraciones)
+                ];
+            }
+
+            return $this->json([
+                'success' => true,
+                'data' => $result
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error en la búsqueda de profesionales', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al buscar profesionales',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        
-        $professionals = $qb->getQuery()->getResult();
-        
-        $data = array_map(function(Usuario $usuario) {
-            return [
-                'id' => $usuario->getId_usuario(),
-                'name' => $usuario->getNombreUsuario(),
-                'profession' => $usuario->getProfesion(),
-                'rating' => $usuario->getValoracionPromedio(),
-                'reviews_count' => $usuario->getValoraciones()->count(),
-                'description' => $usuario->getDescripcion(),
-                'photo' => $usuario->getFotoPerfil()
-            ];
-        }, $professionals);
-
-        return $this->json([
-            'success' => true,
-            'data' => $data
-        ]);
     }
 
     //Obtener profesional
@@ -400,24 +481,42 @@ class ApiController extends AbstractController
         try {
             error_log('Iniciando getTopRatedUsers');
             
+            $currentUser = $this->getUser();
+            $currentUserId = $currentUser ? $currentUser->getId_usuario() : null;
+            
             $qb = $this->usuarioRepository->createQueryBuilder('u')
                 ->where('u.nombre_usuario != :admin')
-                ->setParameter('admin', 'ADMIN')
-                ->orderBy('u.valoracion_promedio', 'DESC')
-                ->setMaxResults(10);
+                ->setParameter('admin', 'ADMIN');
+            
+            if ($currentUserId) {
+                $qb->andWhere('u.id_usuario != :currentUserId')
+                   ->setParameter('currentUserId', $currentUserId);
+            }
+            
+            $qb->orderBy('u.valoracion_promedio', 'DESC')
+               ->setMaxResults(10);
             
             $topUsers = $qb->getQuery()->getResult();
             error_log('Usuarios encontrados: ' . count($topUsers));
             
             $usersData = array_map(function($user) {
+                // Obtener valoraciones del profesional
+                $valoraciones = $this->em->getRepository(Valoracion::class)->findBy(['profesional' => $user]);
+                $sumaPuntuaciones = 0;
+                foreach ($valoraciones as $valoracion) {
+                    $sumaPuntuaciones += $valoracion->getPuntuacion();
+                }
+                $mediaValoraciones = count($valoraciones) > 0 ? $sumaPuntuaciones / count($valoraciones) : 0;
+
                 return [
                     'id' => $user->getId_usuario(),
-                    'username' => $user->getNombreUsuario(),
+                    'name' => $user->getNombreUsuario(),
                     'profession' => $user->getProfesion(),
-                    'rating' => $user->getValoracionPromedio(),
-                    'sales' => $user->getVentasRealizadas(),
-                    'profilePhoto' => $user->getFotoPerfil(),
-                    'description' => $user->getDescripcion()
+                    'email' => $user->getCorreo(),
+                    'description' => $user->getDescripcion(),
+                    'photo' => $user->getFotoPerfil(),
+                    'rating' => $mediaValoraciones,
+                    'reviews_count' => count($valoraciones)
                 ];
             }, $topUsers);
 
@@ -443,10 +542,21 @@ class ApiController extends AbstractController
         try {
             error_log('Iniciando getProductsFromTopRatedUsers');
             
+            $currentUser = $this->getUser();
+            $currentUserId = $currentUser ? $currentUser->getId_usuario() : null;
+            
             // Primero obtenemos los usuarios mejor valorados
             $qb = $this->usuarioRepository->createQueryBuilder('u')
-                ->orderBy('u.valoracion_promedio', 'DESC')
-                ->setMaxResults(5);
+                ->where('u.nombre_usuario != :admin')
+                ->setParameter('admin', 'ADMIN');
+            
+            if ($currentUserId) {
+                $qb->andWhere('u.id_usuario != :currentUserId')
+                   ->setParameter('currentUserId', $currentUserId);
+            }
+            
+            $qb->orderBy('u.valoracion_promedio', 'DESC')
+               ->setMaxResults(5);
             
             error_log('Query usuarios: ' . $qb->getQuery()->getSQL());
             $topUsers = $qb->getQuery()->getResult();
@@ -1210,39 +1320,40 @@ class ApiController extends AbstractController
                ->join('o.usuario', 'v')
                ->join('i.comprador', 'c')
                ->where('i.comprador = :userId OR v.id_usuario = :userId')
+               ->andWhere('o IS NOT NULL')  // Solo negociaciones con objetos
                ->setParameter('userId', $user->getId_usuario())
                ->orderBy('n.fecha_creacion', 'DESC');
 
             $negotiations = $qb->getQuery()->getResult();
 
-            $formattedNegotiations = array_map(function($negotiation) use ($user) {
-                $intercambio = $negotiation->getIntercambio();
-                $producto = $intercambio->getObjeto();
-                $isSeller = $producto->getUsuario()->getId_usuario() === $user->getId_usuario();
+            $formattedNegotiations = [];
+            foreach ($negotiations as $negotiation) {
+                $isBuyer = $negotiation->getComprador()->getId_usuario() === $user->getId_usuario();
+                $otherUser = $isBuyer ? $negotiation->getVendedor() : $negotiation->getComprador();
                 
-                return [
+                $formattedNegotiations[] = [
                     'id' => $negotiation->getId_negociacion(),
                     'product' => [
-                        'id' => $producto->getId_objeto(),
-                        'name' => $producto->getTitulo(),
-                        'image' => $producto->getImagen(),
-                        'credits' => $producto->getCreditos()
+                        'id' => $negotiation->getObjeto()->getId_objeto(),
+                        'name' => $negotiation->getObjeto()->getTitulo(),
+                        'image' => $negotiation->getObjeto()->getImagen(),
+                        'credits' => $negotiation->getObjeto()->getCreditos()
                     ],
                     'seller' => [
-                        'id' => $producto->getUsuario()->getId_usuario(),
-                        'name' => $producto->getUsuario()->getNombreUsuario()
+                        'id' => $negotiation->getObjeto()->getUsuario()->getId_usuario(),
+                        'name' => $negotiation->getObjeto()->getUsuario()->getNombreUsuario()
                     ],
                     'buyer' => [
-                        'id' => $intercambio->getComprador()->getId_usuario(),
-                        'name' => $intercambio->getComprador()->getNombreUsuario()
+                        'id' => $negotiation->getComprador()->getId_usuario(),
+                        'name' => $negotiation->getComprador()->getNombreUsuario()
                     ],
                     'proposedCredits' => $negotiation->getPrecioPropuesto(),
                     'status' => $negotiation->isAceptado() ? 2 : ($negotiation->isAceptadoVendedor() || $negotiation->isAceptadoComprador() ? 1 : 3),
                     'date' => $negotiation->getFechaCreacion()->format('Y-m-d H:i:s'),
-                    'isSeller' => $isSeller,
+                    'isSeller' => $negotiation->getObjeto()->getUsuario()->getId_usuario() === $user->getId_usuario(),
                     'isActive' => !$negotiation->isAceptado() && ($negotiation->isAceptadoVendedor() || $negotiation->isAceptadoComprador())
                 ];
-            }, $negotiations);
+            }
 
             return $this->json([
                 'success' => true,
@@ -1250,8 +1361,8 @@ class ApiController extends AbstractController
             ]);
 
         } catch (\Exception $e) {
-            error_log('Error al obtener negociaciones: ' . $e->getMessage());
-            error_log('Stack trace: ' . $e->getTraceAsString());
+            $this->logger->error('Error al obtener negociaciones: ' . $e->getMessage());
+            $this->logger->error('Stack trace: ' . $e->getTraceAsString());
             return $this->json([
                 'success' => false,
                 'message' => 'Error al obtener las negociaciones',
@@ -1381,5 +1492,327 @@ class ApiController extends AbstractController
             'success' => true,
             'data' => $formattedProducts
         ]);
+    }
+
+    //Obtener chat con profesional
+    #[Route('/professional-chat/{id}', name: 'professional_chat', methods: ['GET'])]
+    public function getProfessionalChat(int $id): JsonResponse
+    {
+        try {
+            $this->logger->info('Iniciando getProfessionalChat', ['id' => $id]);
+            
+            $profesional = $this->usuarioRepository->find($id);
+            if (!$profesional) {
+                $this->logger->warning('Profesional no encontrado', ['id' => $id]);
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Profesional no encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Obtener todas las valoraciones del profesional
+            $valoraciones = $this->em->getRepository(Valoracion::class)->findBy(['profesional' => $profesional]);
+            $valoracionesArray = [];
+            $sumaPuntuaciones = 0;
+            
+            foreach ($valoraciones as $valoracion) {
+                $valoracionesArray[] = [
+                    'id' => $valoracion->getId_valoracion(),
+                    'puntuacion' => $valoracion->getPuntuacion(),
+                    'comentario' => $valoracion->getComentario(),
+                    'fecha' => $valoracion->getFechaCreacion()->format('Y-m-d H:i:s'),
+                    'usuario' => [
+                        'id' => $valoracion->getUsuario()->getId_usuario(),
+                        'name' => $valoracion->getUsuario()->getNombreUsuario()
+                    ]
+                ];
+                $sumaPuntuaciones += $valoracion->getPuntuacion();
+            }
+
+            $mediaValoraciones = count($valoraciones) > 0 ? $sumaPuntuaciones / count($valoraciones) : 0;
+
+            $result = [
+                'success' => true,
+                'data' => [
+                    'professional' => [
+                        'id' => $profesional->getId_usuario(),
+                        'name' => $profesional->getNombreUsuario(),
+                        'profession' => $profesional->getProfesion(),
+                        'email' => $profesional->getCorreo(),
+                        'description' => $profesional->getDescripcion(),
+                        'photo' => $profesional->getFotoPerfil(),
+                        'rating' => $mediaValoraciones,
+                        'reviews_count' => count($valoraciones)
+                    ],
+                    'valoraciones' => $valoracionesArray
+                ]
+            ];
+
+            $this->logger->info('Información del profesional obtenida exitosamente', ['id' => $id]);
+            return $this->json($result);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error al obtener información del profesional', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al obtener información del profesional',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    //Valorar profesional
+    #[Route('/professionals/{id}/rate', name: 'professional_rate', methods: ['POST'])]
+    public function rateProfessional(Request $request, int $id): JsonResponse
+    {
+        try {
+            $this->logger->info('Iniciando rateProfessional', ['id' => $id]);
+            
+            $user = $this->getUser();
+            if (!$user) {
+                $this->logger->warning('Usuario no autenticado');
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario no autenticado'
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+
+            $profesional = $this->usuarioRepository->find($id);
+            if (!$profesional) {
+                $this->logger->warning('Profesional no encontrado', ['id' => $id]);
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Profesional no encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Verificar si el usuario está intentando valorarse a sí mismo
+            if ($user->getId_usuario() === $profesional->getId_usuario()) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'No puedes valorarte a ti mismo'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Verificar si ya existe una valoración del usuario al profesional
+            $valoracionExistente = $this->em->getRepository(Valoracion::class)->findOneBy([
+                'usuario' => $user,
+                'profesional' => $profesional
+            ]);
+
+            if ($valoracionExistente) {
+                $this->logger->warning('Ya existe una valoración del usuario al profesional');
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Ya has valorado a este profesional'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            $this->logger->info('Datos recibidos', ['data' => $data]);
+
+            if (!isset($data['puntuacion']) || !isset($data['comentario'])) {
+                $this->logger->warning('Datos incompletos', ['data' => $data]);
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Se requiere puntuación y comentario'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Validar que la puntuación esté entre 1 y 5
+            if (!is_numeric($data['puntuacion']) || $data['puntuacion'] < 1 || $data['puntuacion'] > 5) {
+                $this->logger->warning('Puntuación inválida', ['puntuacion' => $data['puntuacion']]);
+                return $this->json([
+                    'success' => false,
+                    'message' => 'La puntuación debe estar entre 1 y 5'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Validar que el comentario no esté vacío
+            if (empty(trim($data['comentario']))) {
+                $this->logger->warning('Comentario vacío');
+                return $this->json([
+                    'success' => false,
+                    'message' => 'El comentario no puede estar vacío'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $valoracion = new Valoracion();
+            $valoracion->setUsuario($user);
+            $valoracion->setProfesional($profesional);
+            $valoracion->setPuntuacion((int)$data['puntuacion']);
+            $valoracion->setComentario(trim($data['comentario']));
+            $valoracion->setFechaCreacion(new \DateTimeImmutable());
+
+            $this->em->persist($valoracion);
+            $this->em->flush();
+
+            // Actualizar la valoración promedio del profesional
+            $profesional->actualizarValoracionPromedio();
+            $this->em->flush();
+
+            $this->logger->info('Valoración creada exitosamente', [
+                'id' => $valoracion->getId_valoracion(),
+                'usuario' => $user->getId_usuario(),
+                'profesional' => $profesional->getId_usuario()
+            ]);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Valoración creada exitosamente',
+                'data' => [
+                    'id' => $valoracion->getId_valoracion(),
+                    'puntuacion' => $valoracion->getPuntuacion(),
+                    'comentario' => $valoracion->getComentario(),
+                    'fecha' => $valoracion->getFechaCreacion()->format('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error al crear valoración', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al crear la valoración',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    //Iniciar chat con profesional
+    #[Route('/professional-chat/{id}/start', name: 'professional_chat_start', methods: ['POST'])]
+    public function startProfessionalChat(int $id): JsonResponse
+    {
+        try {
+            $this->logger->info('Iniciando startProfessionalChat', ['id' => $id]);
+            
+            if (!$this->getUser()) {
+                $this->logger->warning('Usuario no autenticado');
+                return $this->json(['error' => 'Usuario no autenticado'], 401);
+            }
+
+            $profesional = $this->usuarioRepository->find($id);
+            if (!$profesional) {
+                $this->logger->warning('Profesional no encontrado', ['id' => $id]);
+                return $this->json(['error' => 'Profesional no encontrado'], 404);
+            }
+
+            // Verificar si ya existe una negociación activa
+            $qb = $this->em->createQueryBuilder();
+            $qb->select('n')
+               ->from(NegociacionPrecio::class, 'n')
+               ->where('n.comprador = :comprador')
+               ->andWhere('n.vendedor = :vendedor')
+               ->andWhere('n.aceptado = false')
+               ->setParameter('comprador', $this->getUser())
+               ->setParameter('vendedor', $profesional);
+
+            $negociacionExistente = $qb->getQuery()->getOneOrNullResult();
+
+            if ($negociacionExistente) {
+                $this->logger->info('Ya existe una negociación activa', [
+                    'id' => $negociacionExistente->getId_negociacion()
+                ]);
+                return $this->json([
+                    'message' => 'Ya existe una negociación activa',
+                    'negociacion_id' => $negociacionExistente->getId_negociacion()
+                ]);
+            }
+
+            // Crear nueva negociación directa entre usuario y profesional
+            $negociacion = new NegociacionPrecio();
+            $negociacion->setComprador($this->getUser());
+            $negociacion->setVendedor($profesional);
+            $negociacion->setPrecioPropuesto(0);
+            $negociacion->setAceptado(false);
+            $negociacion->setFechaCreacion(new \DateTimeImmutable());
+
+            $this->em->persist($negociacion);
+            $this->em->flush();
+
+            $this->logger->info('Negociación creada exitosamente', [
+                'id' => $negociacion->getId_negociacion(),
+                'comprador' => $this->getUser()->getId_usuario(),
+                'vendedor' => $profesional->getId_usuario()
+            ]);
+
+            return $this->json([
+                'message' => 'Chat iniciado exitosamente',
+                'negociacion_id' => $negociacion->getId_negociacion()
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error al iniciar chat', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->json(['error' => 'Error al iniciar el chat'], 500);
+        }
+    }
+
+    #[Route('/professionals', name: 'get_professionals', methods: ['GET'])]
+    public function getProfessionals(Request $request): JsonResponse
+    {
+        try {
+            $this->logger->info('Iniciando getProfessionals');
+            
+            $professionals = $this->usuarioRepository->findBy(['tipo_usuario' => 'profesional']);
+            $result = [];
+
+            foreach ($professionals as $professional) {
+                // Obtener todas las valoraciones del profesional
+                $valoraciones = $this->em->getRepository(Valoracion::class)->findBy(['profesional' => $professional]);
+                $valoracionesArray = [];
+                
+                foreach ($valoraciones as $valoracion) {
+                    $valoracionesArray[] = [
+                        'id' => $valoracion->getId_valoracion(),
+                        'puntuacion' => $valoracion->getPuntuacion(),
+                        'comentario' => $valoracion->getComentario(),
+                        'fecha' => $valoracion->getFechaCreacion()->format('Y-m-d H:i:s'),
+                        'usuario' => [
+                            'id' => $valoracion->getUsuario()->getId_usuario(),
+                            'nombre' => $valoracion->getUsuario()->getNombre(),
+                            'apellidos' => $valoracion->getUsuario()->getApellidos()
+                        ]
+                    ];
+                }
+
+                $result[] = [
+                    'id' => $professional->getId_usuario(),
+                    'nombre' => $professional->getNombre(),
+                    'apellidos' => $professional->getApellidos(),
+                    'email' => $professional->getEmail(),
+                    'telefono' => $professional->getTelefono(),
+                    'descripcion' => $professional->getDescripcion(),
+                    'valoracion_promedio' => $professional->getValoracionPromedio(),
+                    'valoraciones' => $valoracionesArray,
+                    'servicios' => $this->getServiciosArray($professional),
+                    'objetos' => $this->getObjetosArray($professional)
+                ];
+            }
+
+            $this->logger->info('Profesionales obtenidos exitosamente', ['count' => count($result)]);
+            return $this->json([
+                'success' => true,
+                'data' => $result
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error al obtener profesionales', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al obtener profesionales',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

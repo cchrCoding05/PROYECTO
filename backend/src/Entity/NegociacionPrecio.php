@@ -14,27 +14,18 @@ class NegociacionPrecio
     private ?int $id_negociacion = null;
 
     #[ORM\ManyToOne(inversedBy: 'negociaciones_precio')]
-    #[ORM\JoinColumn(name: 'id_usuario', referencedColumnName: 'id_usuario', nullable: false)]
-    private ?Usuario $usuario = null;
+    #[ORM\JoinColumn(name: 'id_comprador', referencedColumnName: 'id_usuario', nullable: false)]
+    private ?Usuario $comprador = null;
 
-    #[ORM\ManyToOne(inversedBy: 'negociaciones')]
-    #[ORM\JoinColumn(name: 'id_intercambio', referencedColumnName: 'id_intercambio', nullable: false)]
-    private ?IntercambioObjeto $intercambio = null;
+    #[ORM\ManyToOne(inversedBy: 'negociaciones_precio')]
+    #[ORM\JoinColumn(name: 'id_vendedor', referencedColumnName: 'id_usuario', nullable: false)]
+    private ?Usuario $vendedor = null;
 
     #[ORM\Column]
     private ?int $precio_propuesto = null;
 
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $mensaje = null;
-
     #[ORM\Column]
     private ?bool $aceptado = false;
-
-    #[ORM\Column(type: 'boolean')]
-    private $aceptadoVendedor = false;
-
-    #[ORM\Column(type: 'boolean')]
-    private $aceptadoComprador = false;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $fecha_creacion;
@@ -49,27 +40,25 @@ class NegociacionPrecio
         return $this->id_negociacion;
     }
 
-    public function getUsuario(): ?Usuario
+    public function getComprador(): ?Usuario
     {
-        return $this->usuario;
+        return $this->comprador;
     }
 
-    public function setUsuario(?Usuario $usuario): self
+    public function setComprador(?Usuario $comprador): self
     {
-        $this->usuario = $usuario;
-
+        $this->comprador = $comprador;
         return $this;
     }
 
-    public function getIntercambio(): ?IntercambioObjeto
+    public function getVendedor(): ?Usuario
     {
-        return $this->intercambio;
+        return $this->vendedor;
     }
 
-    public function setIntercambio(?IntercambioObjeto $intercambio): self
+    public function setVendedor(?Usuario $vendedor): self
     {
-        $this->intercambio = $intercambio;
-
+        $this->vendedor = $vendedor;
         return $this;
     }
 
@@ -81,18 +70,6 @@ class NegociacionPrecio
     public function setPrecioPropuesto(int $precio_propuesto): self
     {
         $this->precio_propuesto = $precio_propuesto;
-
-        return $this;
-    }
-
-    public function getMensaje(): ?string
-    {
-        return $this->mensaje;
-    }
-
-    public function setMensaje(?string $mensaje): self
-    {
-        $this->mensaje = $mensaje;
         return $this;
     }
 
@@ -104,29 +81,6 @@ class NegociacionPrecio
     public function setAceptado(bool $aceptado): self
     {
         $this->aceptado = $aceptado;
-
-        return $this;
-    }
-
-    public function isAceptadoVendedor(): bool
-    {
-        return $this->aceptadoVendedor;
-    }
-
-    public function setAceptadoVendedor(bool $valor): self
-    {
-        $this->aceptadoVendedor = $valor;
-        return $this;
-    }
-
-    public function isAceptadoComprador(): bool
-    {
-        return $this->aceptadoComprador;
-    }
-
-    public function setAceptadoComprador(bool $valor): self
-    {
-        $this->aceptadoComprador = $valor;
         return $this;
     }
 
@@ -138,7 +92,6 @@ class NegociacionPrecio
     public function setFechaCreacion(\DateTimeImmutable $fecha_creacion): self
     {
         $this->fecha_creacion = $fecha_creacion;
-
         return $this;
     }
 }

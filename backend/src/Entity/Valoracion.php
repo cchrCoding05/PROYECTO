@@ -18,6 +18,10 @@ class Valoracion
     private ?Usuario $usuario = null;
 
     #[ORM\ManyToOne(inversedBy: 'valoraciones')]
+    #[ORM\JoinColumn(name: 'id_profesional', referencedColumnName: 'id_usuario', nullable: false)]
+    private ?Usuario $profesional = null;
+
+    #[ORM\ManyToOne(inversedBy: 'valoraciones')]
     #[ORM\JoinColumn(name: 'id_intercambio_servicio', referencedColumnName: 'id_intercambio', nullable: true)]
     private ?IntercambioServicio $intercambio_servicio = null;
 
@@ -52,7 +56,17 @@ class Valoracion
     public function setUsuario(?Usuario $usuario): self
     {
         $this->usuario = $usuario;
+        return $this;
+    }
 
+    public function getProfesional(): ?Usuario
+    {
+        return $this->profesional;
+    }
+
+    public function setProfesional(?Usuario $profesional): self
+    {
+        $this->profesional = $profesional;
         return $this;
     }
 
@@ -86,7 +100,6 @@ class Valoracion
     public function setPuntuacion(int $puntuacion): self
     {
         $this->puntuacion = $puntuacion;
-
         return $this;
     }
 
@@ -98,7 +111,6 @@ class Valoracion
     public function setComentario(?string $comentario): self
     {
         $this->comentario = $comentario;
-
         return $this;
     }
 
@@ -110,7 +122,6 @@ class Valoracion
     public function setFechaCreacion(\DateTimeImmutable $fecha_creacion): self
     {
         $this->fecha_creacion = $fecha_creacion;
-
         return $this;
     }
 }

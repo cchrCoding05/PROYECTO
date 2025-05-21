@@ -9,6 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 import Login from '../components/Auth/Login';
 import Register from '../components/Auth/Register';
 import ProductNegotiation from '../components/Negotiation/ProductNegotiation';
+import ProfessionalNegotiation from '../components/Negotiation/ProfessionalNegotiation';
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
@@ -33,7 +34,7 @@ const ProtectedRoute = ({ children }) => {
 
 const AppRouter = () => {
   return (
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <BrowserRouter>
       <Navbar />
       <main className="container mt-4 mb-5">
         <Routes>
@@ -54,6 +55,14 @@ const AppRouter = () => {
             element={
               <ProtectedRoute>
                 <EditProduct />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/professional-chat/:id" 
+            element={
+              <ProtectedRoute>
+                <ProfessionalNegotiation />
               </ProtectedRoute>
             } 
           />
