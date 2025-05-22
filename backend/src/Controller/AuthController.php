@@ -33,12 +33,21 @@ class AuthController extends AbstractController
                 ], Response::HTTP_BAD_REQUEST);
             }
             
-            $usuarioExistente = $this->usuarioRepository->findOneBy(['correo' => $data['email']]);
-            
-            if ($usuarioExistente) {
+            // Verificar si el email ya existe
+            $usuarioExistenteEmail = $this->usuarioRepository->findOneBy(['correo' => $data['email']]);
+            if ($usuarioExistenteEmail) {
                 return $this->json([
                     'success' => false,
-                    'message' => 'Este email ya está registrado'
+                    'message' => 'Este correo electrónico ya está registrado'
+                ], Response::HTTP_CONFLICT);
+            }
+            
+            // Verificar si el nombre de usuario ya existe
+            $usuarioExistenteUsername = $this->usuarioRepository->findOneBy(['nombre_usuario' => $data['username']]);
+            if ($usuarioExistenteUsername) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Este nombre de usuario ya está en uso'
                 ], Response::HTTP_CONFLICT);
             }
             
@@ -105,23 +114,18 @@ class AuthController extends AbstractController
 
             return $this->json([
                 'success' => true,
+                'message' => 'Login exitoso',
                 'token' => $token,
                 'user' => [
                     'id' => $usuario->getId_usuario(),
                     'username' => $usuario->getNombreUsuario(),
-                    'email' => $usuario->getCorreo(),
-                    'credits' => $usuario->getCreditos(),
-                    'profession' => $usuario->getProfesion(),
-                    'rating' => $usuario->getValoracionPromedio(),
-                    'sales' => $usuario->getVentasRealizadas(),
-                    'profilePhoto' => $usuario->getFotoPerfil(),
-                    'description' => $usuario->getDescripcion()
+                    'email' => $usuario->getCorreo()
                 ]
             ]);
         } catch (\Exception $e) {
             return $this->json([
                 'success' => false,
-                'message' => 'Error durante el inicio de sesión',
+                'message' => 'Error al iniciar sesión',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }

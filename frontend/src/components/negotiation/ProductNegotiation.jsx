@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { productService } from '../../services/api.jsx';
+import { negotiationService } from '../../services/negotiationService';
+import { productService } from '../../services/productService';
 import { useAuth } from '../../hooks/useAuth';
 import AlertMessage from '../Layout/AlertMessage';
 import './Negotiation.css';

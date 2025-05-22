@@ -25,8 +25,7 @@ import {
     InputGroup,
     InputLeftElement
 } from '@chakra-ui/react';
-
-const API_URL = 'http://localhost:8000/api';
+import { adminService } from '../../services/adminService';
 
 const ProductManagement = () => {
     const [products, setProducts] = useState([]);
@@ -38,18 +37,22 @@ const ProductManagement = () => {
 
     const fetchProducts = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/admin/products?search=${searchTerm}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            const data = await response.json();
-            if (data.success) {
-                setProducts(data.data);
+            const response = await adminService.getAllProducts();
+            console.log('Respuesta de getAllProducts:', response);
+            if (response.success && Array.isArray(response.data)) {
+                setProducts(response.data);
+            } else {
+                console.error('Formato de respuesta inválido:', response);
+                toast({
+                    title: 'Error',
+                    description: 'Formato de datos inválido',
+                    status: 'error',
+                    duration: 3000,
+                    isClosable: true,
+                });
             }
         } catch (error) {
+            console.error('Error al cargar productos:', error);
             toast({
                 title: 'Error',
                 description: 'No se pudieron cargar los productos',
@@ -67,16 +70,8 @@ const ProductManagement = () => {
     const handleDelete = async (productId) => {
         if (window.confirm('¿Estás seguro de que deseas eliminar este producto?')) {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/admin/products/${productId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                const data = await response.json();
-                if (data.success) {
+                const response = await adminService.deleteProduct(productId);
+                if (response.success) {
                     toast({
                         title: 'Éxito',
                         description: 'Producto eliminado correctamente',
@@ -85,19 +80,11 @@ const ProductManagement = () => {
                         isClosable: true,
                     });
                     fetchProducts();
-                } else {
-                    toast({
-                        title: 'Error',
-                        description: data.message || 'No se pudo eliminar el producto',
-                        status: 'error',
-                        duration: 3000,
-                        isClosable: true,
-                    });
                 }
             } catch (error) {
                 toast({
                     title: 'Error',
-                    description: 'No se pudo eliminar el producto',
+                    description: error.message || 'No se pudo eliminar el producto',
                     status: 'error',
                     duration: 3000,
                     isClosable: true,
@@ -114,21 +101,13 @@ const ProductManagement = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/products/${selectedProduct.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name: selectedProduct.name,
-                    credits: selectedProduct.credits,
-                    state: selectedProduct.state
-                })
+            const response = await adminService.updateProduct(selectedProduct.id, {
+                name: selectedProduct.name,
+                credits: selectedProduct.credits,
+                state: selectedProduct.state
             });
-            const data = await response.json();
-            if (data.success) {
+            
+            if (response.success) {
                 toast({
                     title: 'Éxito',
                     description: 'Producto actualizado correctamente',
@@ -142,7 +121,7 @@ const ProductManagement = () => {
         } catch (error) {
             toast({
                 title: 'Error',
-                description: 'No se pudo actualizar el producto',
+                description: error.message || 'No se pudo actualizar el producto',
                 status: 'error',
                 duration: 3000,
                 isClosable: true,
@@ -164,12 +143,6 @@ const ProductManagement = () => {
         return [...products].sort((a, b) => {
             let aValue = a[sortConfig.key];
             let bValue = b[sortConfig.key];
-
-            // Manejar casos especiales
-            if (sortConfig.key === 'seller') {
-                aValue = a.seller?.username || '';
-                bValue = b.seller?.username || '';
-            }
 
             if (aValue < bValue) {
                 return sortConfig.direction === 'asc' ? -1 : 1;
@@ -237,13 +210,6 @@ const ProductManagement = () => {
                         >
                             Estado{getSortIndicator('state')}
                         </Th>
-                        <Th 
-                            cursor="pointer" 
-                            onClick={() => handleSort('seller')}
-                            _hover={{ bg: 'gray.100' }}
-                        >
-                            Vendedor{getSortIndicator('seller')}
-                        </Th>
                         <Th>Acciones</Th>
                     </Tr>
                 </Thead>
@@ -262,7 +228,6 @@ const ProductManagement = () => {
                             <Td>{product.name}</Td>
                             <Td>{product.credits}</Td>
                             <Td>{getEstadoText(product.state)}</Td>
-                            <Td>{product.seller.username}</Td>
                             <Td>
                                 <Button
                                     colorScheme="blue"

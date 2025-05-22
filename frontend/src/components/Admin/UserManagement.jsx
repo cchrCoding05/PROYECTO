@@ -27,7 +27,7 @@ import {
     IconButton,
     Tooltip
 } from '@chakra-ui/react';
-import { adminService } from '../../services/api';
+import { adminService } from '../../services/adminService';
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
@@ -39,9 +39,22 @@ const UserManagement = () => {
 
     const fetchUsers = async () => {
         try {
-            const data = await adminService.getAllUsers();
-            setUsers(data);
+            const response = await adminService.getAllUsers();
+            console.log('Respuesta de getAllUsers:', response);
+            if (response.success && Array.isArray(response.data)) {
+                setUsers(response.data);
+            } else {
+                console.error('Formato de respuesta inválido:', response);
+                toast({
+                    title: 'Error',
+                    description: 'Formato de datos inválido',
+                    status: 'error',
+                    duration: 3000,
+                    isClosable: true,
+                });
+            }
         } catch (error) {
+            console.error('Error al cargar usuarios:', error);
             toast({
                 title: 'Error',
                 description: 'No se pudieron cargar los usuarios',
@@ -57,23 +70,25 @@ const UserManagement = () => {
     }, [searchTerm]);
 
     const handleDelete = async (userId) => {
-        if (window.confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.')) {
+        if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
             try {
-                await adminService.deleteUser(userId);
-                toast({
-                    title: 'Éxito',
-                    description: 'Usuario eliminado correctamente',
-                    status: 'success',
-                    duration: 3000,
-                    isClosable: true,
-                });
-                fetchUsers();
+                const response = await adminService.deleteUser(userId);
+                if (response.success) {
+                    toast({
+                        title: 'Éxito',
+                        description: 'Usuario eliminado correctamente',
+                        status: 'success',
+                        duration: 3000,
+                        isClosable: true,
+                    });
+                    fetchUsers();
+                }
             } catch (error) {
                 toast({
                     title: 'Error',
                     description: error.message || 'No se pudo eliminar el usuario',
                     status: 'error',
-                    duration: 5000,
+                    duration: 3000,
                     isClosable: true,
                 });
             }

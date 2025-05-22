@@ -1,116 +1,118 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Form, Button, Alert, Container, Card } from 'react-bootstrap';
 import { useAuth } from '../../hooks/useAuth';
-import AlertMessage from '../Layout/AlertMessage';
 import './Auth.css';
-import { Link } from 'react-router-dom';
 
 const Login = () => {
-  const [credentials, setCredentials] = useState({
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setCredentials(prev => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value.trim()
     }));
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    // Validación de campos vacíos
-    if (!credentials.email.trim()) {
-      setError('El correo electrónico es obligatorio');
-      setIsLoading(false);
-      return;
-    }
-
-    if (!credentials.password.trim()) {
-      setError('La contraseña es obligatoria');
-      setIsLoading(false);
-      return;
-    }
+    setError(null);
+    setLoading(true);
 
     try {
-      const result = await login({
-        email: credentials.email.trim(),
-        password: credentials.password
-      });
-      
-      if (result.success) {
-        // Redirigir a la página que intentaba visitar o a la página principal
-        const from = location.state?.from?.pathname || '/';
-        navigate(from, { replace: true });
-      } else {
-        setError(result.message || 'Error al iniciar sesión');
+      // Validación de campos vacíos
+      if (!formData.email || !formData.password) {
+        setError('Por favor, completa todos los campos');
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Error durante el inicio de sesión:', error);
-      setError('Error de conexión al servidor');
+
+      // Validación de formato de email
+      if (!validateEmail(formData.email)) {
+        setError('Por favor, ingresa un email válido');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Enviando credenciales:', formData);
+      const response = await login(formData);
+      console.log('Respuesta del login:', response);
+      
+      if (response && response.token) {
+        navigate('/');
+      }
+    } catch (err) {
+      console.error('Error en login:', err);
+      if (err.message === 'Credenciales inválidas') {
+        setError('Usuario o contraseña incorrectos');
+      } else {
+        setError(err.message || 'Error al iniciar sesión');
+      }
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
-  
+
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2>Iniciar sesión</h2>
-        
-        {error && <AlertMessage message={error} type="danger" onClose={() => setError('')} />}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">Correo electrónico</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={credentials.email}
-              onChange={handleChange}
-              className="form-control"
-              placeholder="tu@email.com"
-            />
-          </div>
+    <Container className="d-flex justify-content-center align-items-center min-vh-100">
+      <Card className="p-4 shadow-sm" style={{ maxWidth: '400px', width: '100%' }}>
+        <Card.Body>
+          <h2 className="text-center mb-4">Iniciar Sesión</h2>
           
-          <div className="form-group">
-            <label htmlFor="password">Contraseña</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={credentials.password}
-              onChange={handleChange}
-              className="form-control"
-              placeholder="Tu contraseña"
-            />
-          </div>
-          
-          <button 
-            type="submit" 
-            className="btn-primary" 
-            disabled={isLoading}
-          >
-            {isLoading ? 'Cargando...' : 'Iniciar Sesión'}
-          </button>
-        </form>
-        
-        <div className="auth-footer">
-          <p>¿No tienes cuenta? <Link to="/registro">Regístrate</Link></p>
-        </div>
-      </div>
-    </div>
+          {error && (
+            <Alert variant="danger" onClose={() => setError(null)} dismissible>
+              {error}
+            </Alert>
+          )}
+
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="text"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Ingresa tu email"
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Contraseña</Form.Label>
+              <Form.Control
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Ingresa tu contraseña"
+              />
+            </Form.Group>
+
+            <Button 
+              variant="primary" 
+              type="submit" 
+              className="w-100"
+              disabled={loading}
+            >
+              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            </Button>
+          </Form>
+        </Card.Body>
+      </Card>
+    </Container>
   );
 };
 

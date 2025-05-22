@@ -1,6 +1,7 @@
 // components/home/HomePage.jsx
 import React, { useState, useEffect } from "react";
-import { professionalService, productService } from "../../services/api";
+import { productService } from '../../services/productService';
+import { professionalService } from '../../services/professionalService';
 import { useAuth } from "../../hooks/useAuth";
 import { Link } from "react-router-dom";
 import { Carousel, Card, Row, Col } from 'react-bootstrap';

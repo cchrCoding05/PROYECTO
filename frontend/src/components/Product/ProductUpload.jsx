@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { productService } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
+import { productService } from '../../services/productService';
 import AlertMessage from '../Layout/AlertMessage';
 import './ProductUpload.css';
 
@@ -13,6 +14,7 @@ const ProductUpload = () => {
   const [previewImage, setPreviewImage] = useState('');
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -130,6 +132,7 @@ const ProductUpload = () => {
         });
         setImage(null);
         setPreviewImage('');
+        navigate('/my-products');
       } else {
         throw new Error(productResponse.message || 'Error al crear el producto');
       }

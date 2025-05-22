@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { userService } from '../../services/api';
+import { userService } from '../../services/userService';
 import AlertMessage from '../Layout/AlertMessage';
 import { Cloudinary } from '@cloudinary/url-gen';
 import { AdvancedImage } from '@cloudinary/react';

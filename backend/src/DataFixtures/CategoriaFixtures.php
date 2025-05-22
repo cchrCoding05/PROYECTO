@@ -12,23 +12,28 @@ class CategoriaFixtures extends Fixture
         $categorias = [
             [
                 'nombre' => 'Desarrollo Web',
-                'descripcion' => 'Servicios relacionados con el desarrollo de sitios web y aplicaciones web'
+                'descripcion' => 'Servicios relacionados con el desarrollo de sitios web y aplicaciones web',
+                'referencia' => 'categoria_desarrollo_web'
             ],
             [
-                'nombre' => 'Diseno Grafico',
-                'descripcion' => 'Servicios de diseño visual, branding y creatividad'
+                'nombre' => 'Diseño Gráfico',
+                'descripcion' => 'Servicios de diseño gráfico, branding y diseño de interfaces',
+                'referencia' => 'categoria_diseno_grafico'
             ],
             [
                 'nombre' => 'Marketing Digital',
-                'descripcion' => 'Servicios de marketing online, SEO y redes sociales'
+                'descripcion' => 'Servicios de marketing digital, SEO y gestión de redes sociales',
+                'referencia' => 'categoria_marketing_digital'
             ],
             [
                 'nombre' => 'Consultoría',
-                'descripcion' => 'Servicios de asesoramiento y consultoría profesional'
+                'descripcion' => 'Servicios de consultoría tecnológica y estratégica',
+                'referencia' => 'categoria_consultoria'
             ],
             [
                 'nombre' => 'Educación',
-                'descripcion' => 'Servicios de enseñanza y formación'
+                'descripcion' => 'Servicios educativos y de formación',
+                'referencia' => 'categoria_educacion'
             ]
         ];
 
@@ -36,9 +41,9 @@ class CategoriaFixtures extends Fixture
             $categoria = new Categoria();
             $categoria->setNombre($categoriaData['nombre']);
             $categoria->setDescripcion($categoriaData['descripcion']);
-
+            
             $manager->persist($categoria);
-            $this->addReference('categoria_' . strtolower(str_replace(' ', '_', $categoriaData['nombre'])), $categoria);
+            $this->addReference($categoriaData['referencia'], $categoria);
         }
 
         $manager->flush();

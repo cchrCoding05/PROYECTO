@@ -4,15 +4,15 @@ import { useAuth } from '../../hooks/useAuth';
 import ThemeToggle from '../UI/ThemeToggle';
 
 const Navbar = () => {
-  const { isAuthenticated, currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  const { isAuthenticated, currentUser, logout } = useAuth();
 
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/');
+      navigate('/login');
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      console.error('Error durante el logout:', error);
     }
   };
 
@@ -54,9 +54,11 @@ const Navbar = () => {
             <li className="nav-item">
               <Link className="nav-link" to="/search/professionals" style={{ color: 'var(--bs-body-color)' }}>Buscar Profesionales</Link>
             </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/upload-product" style={{ color: 'var(--bs-body-color)' }}>Subir Producto</Link>
-            </li>
+            {isAuthenticated && (
+              <li className="nav-item">
+                <Link className="nav-link" to="/upload-product" style={{ color: 'var(--bs-body-color)' }}>Subir Producto</Link>
+              </li>
+            )}
 
             {isAuthenticated && currentUser?.data?.username === 'ADMIN' && (
               <li className="nav-item">

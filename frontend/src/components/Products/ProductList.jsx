@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { productService } from '../../services/api.jsx';
+import { productService } from '../../services/productService';
 import { useAuth } from '../../hooks/useAuth';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 import AlertMessage from '../Layout/AlertMessage';

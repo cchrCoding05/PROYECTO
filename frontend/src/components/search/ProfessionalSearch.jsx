@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { professionalService } from '../../services/api.jsx';
+import { professionalService } from "../../services/professionalService";
 import { useAuth } from '../../hooks/useAuth';
 import AlertMessage from '../Layout/AlertMessage.jsx';
 import { Cloudinary } from '@cloudinary/url-gen';

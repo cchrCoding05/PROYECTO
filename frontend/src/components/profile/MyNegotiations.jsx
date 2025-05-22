@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button, Container, Row, Col, Alert, Badge } from 'react-bootstrap';
-import { negotiationService } from '../../services/api.jsx';
+import { negotiationService } from "../../services/negotiationService";
 import './Profile.css';
 
 const MyNegotiations = () => {

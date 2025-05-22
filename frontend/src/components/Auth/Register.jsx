@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authService } from '../../services/api.jsx';
+import { authService } from '../../services/authService';
 import AlertMessage from '../Layout/AlertMessage';
 import './Auth.css';
 
@@ -27,6 +27,7 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setAlert(null);
     
     // Validación de campos vacíos
     if (!formData.username.trim()) {
@@ -79,25 +80,25 @@ const Register = () => {
     }
 
     try {
-      const userData = {
+      const response = await authService.register({
         username: formData.username.trim(),
         email: formData.email.trim(),
         password: formData.password
-      };
+      });
       
-      const result = await authService.register(userData);
-      
-      if (result.success) {
-        navigate('/login');
-      } else {
-        setAlert({ 
-          message: result.message || 'Error en el registro', 
-          type: 'danger' 
+      if (response.success) {
+        setAlert({
+          message: 'Usuario registrado con éxito. Redirigiendo al login...',
+          type: 'success'
         });
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
       }
     } catch (error) {
+      console.error('Error en el registro:', error);
       setAlert({ 
-        message: 'Error de conexión al servidor', 
+        message: error.message || 'Error al registrar usuario', 
         type: 'danger' 
       });
     }

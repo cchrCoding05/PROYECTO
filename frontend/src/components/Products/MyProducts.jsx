@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, Button, Container, Row, Col, Alert } from 'react-bootstrap';
-import { productService } from '../../services/api.jsx';
+import { productService } from '../../services/productService';
 
 const MyProducts = () => {
   const [products, setProducts] = useState([]);
