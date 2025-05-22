@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert, Container, Card } from 'react-bootstrap';
 import { useAuth } from '../../hooks/useAuth';
@@ -11,8 +11,17 @@ const Login = () => {
     email: '',
     password: ''
   });
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Efecto para cargar el error persistente al montar el componente
+  useEffect(() => {
+    const persistedError = localStorage.getItem('authError');
+    if (persistedError) {
+      setError(persistedError);
+      localStorage.removeItem('authError');
+    }
+  }, []);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -25,42 +34,42 @@ const Login = () => {
       ...prev,
       [name]: value.trim()
     }));
+    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
+    setError('');
     setLoading(true);
 
     try {
-      // Validación de campos vacíos
-      if (!formData.email || !formData.password) {
-        setError('Por favor, completa todos los campos');
-        setLoading(false);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Guardar el error en localStorage antes del refresco
+        const errorMessage = data.error || data.message || 'Error al iniciar sesión';
+        localStorage.setItem('authError', errorMessage);
+        window.location.reload();
         return;
       }
 
-      // Validación de formato de email
-      if (!validateEmail(formData.email)) {
-        setError('Por favor, ingresa un email válido');
-        setLoading(false);
-        return;
-      }
-
-      console.log('Enviando credenciales:', formData);
-      const response = await login(formData);
-      console.log('Respuesta del login:', response);
-      
-      if (response && response.token) {
+      if (data.token) {
+        // Usar el método login del hook useAuth para actualizar el estado
+        await login(formData);
         navigate('/');
       }
     } catch (err) {
-      console.error('Error en login:', err);
-      if (err.message === 'Credenciales inválidas') {
-        setError('Usuario o contraseña incorrectos');
-      } else {
-        setError(err.message || 'Error al iniciar sesión');
-      }
+      // Guardar el error de conexión en localStorage
+      localStorage.setItem('authError', 'Error al conectar con el servidor');
+      window.location.reload();
     } finally {
       setLoading(false);
     }
@@ -73,7 +82,15 @@ const Login = () => {
           <h2 className="text-center mb-4">Iniciar Sesión</h2>
           
           {error && (
-            <Alert variant="danger" onClose={() => setError(null)} dismissible>
+            <Alert 
+              variant="danger" 
+              onClose={() => {
+                setError('');
+                localStorage.removeItem('authError');
+              }} 
+              dismissible
+              className="mb-3"
+            >
               {error}
             </Alert>
           )}
@@ -82,11 +99,13 @@ const Login = () => {
             <Form.Group className="mb-3">
               <Form.Label>Email</Form.Label>
               <Form.Control
-                type="text"
+                type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Ingresa tu email"
+                isInvalid={!!error}
+                required
               />
             </Form.Group>
 
@@ -98,6 +117,8 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Ingresa tu contraseña"
+                isInvalid={!!error}
+                required
               />
             </Form.Group>
 
@@ -109,6 +130,10 @@ const Login = () => {
             >
               {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </Button>
+
+            <p className="text-center mt-3">
+              ¿No tienes cuenta? <a href="/register">Regístrate</a>
+            </p>
           </Form>
         </Card.Body>
       </Card>

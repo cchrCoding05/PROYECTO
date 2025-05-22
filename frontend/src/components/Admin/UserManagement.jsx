@@ -103,24 +103,30 @@ const UserManagement = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
-            await adminService.updateUser(selectedUser.id, {
-                nombre_usuario: selectedUser.username,
-                correo: selectedUser.email,
-                creditos: selectedUser.credits
+            const response = await adminService.updateUser(selectedUser.id, {
+                username: selectedUser.username,
+                email: selectedUser.email,
+                credits: selectedUser.credits,
+                profession: selectedUser.profession,
+                description: selectedUser.description,
+                profilePhoto: selectedUser.foto_perfil
             });
-            toast({
-                title: 'Éxito',
-                description: 'Usuario actualizado correctamente',
-                status: 'success',
-                duration: 3000,
-                isClosable: true,
-            });
-            onClose();
-            fetchUsers();
+            
+            if (response.success) {
+                toast({
+                    title: 'Éxito',
+                    description: 'Usuario actualizado correctamente',
+                    status: 'success',
+                    duration: 3000,
+                    isClosable: true,
+                });
+                onClose();
+                fetchUsers();
+            }
         } catch (error) {
             toast({
                 title: 'Error',
-                description: 'No se pudo actualizar el usuario',
+                description: error.message || 'No se pudo actualizar el usuario',
                 status: 'error',
                 duration: 3000,
                 isClosable: true,

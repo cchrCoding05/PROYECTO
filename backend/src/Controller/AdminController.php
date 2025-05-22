@@ -415,4 +415,174 @@ class AdminController extends AbstractController
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    #[Route('/products/{id}', name: 'update_product', methods: ['PUT'])]
+    public function updateProduct(Request $request, int $id): JsonResponse
+    {
+        if (!$this->isAdmin()) {
+            return $this->unauthorizedResponse();
+        }
+
+        try {
+            $product = $this->objetoRepository->find($id);
+            if (!$product) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Producto no encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            
+            // Validaciones básicas
+            if (isset($data['name']) && empty(trim($data['name']))) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'El nombre del producto no puede estar vacío'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            if (isset($data['credits']) && (!is_numeric($data['credits']) || $data['credits'] < 1)) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'El precio debe ser al menos 1 crédito'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Actualizar campos
+            if (isset($data['name'])) {
+                $product->setTitulo($data['name']);
+            }
+            if (isset($data['description'])) {
+                $product->setDescripcion($data['description']);
+            }
+            if (isset($data['credits'])) {
+                $product->setCreditos((int)$data['credits']);
+            }
+            if (isset($data['image'])) {
+                $product->setImagen($data['image']);
+            }
+            if (isset($data['state'])) {
+                $newState = (int)$data['state'];
+                if ($newState >= 1 && $newState <= 3) {
+                    $product->setEstado($newState);
+                } else {
+                    return $this->json([
+                        'success' => false,
+                        'message' => 'Estado de producto inválido'
+                    ], Response::HTTP_BAD_REQUEST);
+                }
+            }
+
+            $this->em->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Producto actualizado con éxito',
+                'data' => [
+                    'id' => $product->getId_objeto(),
+                    'name' => $product->getTitulo(),
+                    'description' => $product->getDescripcion(),
+                    'credits' => $product->getCreditos(),
+                    'image' => $product->getImagen(),
+                    'state' => $product->getEstado(),
+                    'seller' => [
+                        'id' => $product->getUsuario()->getId_usuario(),
+                        'name' => $product->getUsuario()->getNombreUsuario()
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Error al actualizar producto: ' . $e->getMessage());
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al actualizar el producto',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/users/{id}', name: 'update_user', methods: ['PUT'])]
+    public function updateUser(Request $request, int $id): JsonResponse
+    {
+        if (!$this->isAdmin()) {
+            return $this->unauthorizedResponse();
+        }
+
+        try {
+            $user = $this->usuarioRepository->find($id);
+            if (!$user) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario no encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            
+            // Validaciones básicas
+            if (isset($data['username']) && empty(trim($data['username']))) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'El nombre de usuario no puede estar vacío'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Verificar si el nombre de usuario ya existe (excluyendo el usuario actual)
+            if (isset($data['username'])) {
+                $existingUser = $this->usuarioRepository->findOneBy(['nombre_usuario' => $data['username']]);
+                if ($existingUser && $existingUser->getId_usuario() !== $user->getId_usuario()) {
+                    return $this->json([
+                        'success' => false,
+                        'message' => 'Este nombre de usuario ya está en uso'
+                    ], Response::HTTP_CONFLICT);
+                }
+            }
+
+            // Actualizar campos
+            if (isset($data['username'])) {
+                $user->setNombreUsuario($data['username']);
+            }
+            if (isset($data['email'])) {
+                $user->setCorreo($data['email']);
+            }
+            if (isset($data['credits'])) {
+                $user->setCreditos((int)$data['credits']);
+            }
+            if (isset($data['profession'])) {
+                $user->setProfesion($data['profession']);
+            }
+            if (isset($data['description'])) {
+                $user->setDescripcion($data['description']);
+            }
+            if (isset($data['profilePhoto'])) {
+                $user->setFotoPerfil($data['profilePhoto']);
+            }
+
+            $this->em->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Usuario actualizado con éxito',
+                'data' => [
+                    'id' => $user->getId_usuario(),
+                    'username' => $user->getNombreUsuario(),
+                    'email' => $user->getCorreo(),
+                    'credits' => $user->getCreditos(),
+                    'profession' => $user->getProfesion(),
+                    'description' => $user->getDescripcion(),
+                    'profilePhoto' => $user->getFotoPerfil(),
+                    'rating' => $user->getValoracionPromedio(),
+                    'sales' => $user->getVentasRealizadas()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Error al actualizar usuario: ' . $e->getMessage());
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al actualizar el usuario',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

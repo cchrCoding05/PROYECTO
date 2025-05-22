@@ -117,5 +117,27 @@ export const adminService = {
       console.error('Error en updateProduct:', error);
       throw error;
     }
+  },
+
+  updateUser: async (userId, userData) => {
+    try {
+      const response = await fetchApi(`/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData)
+      });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Error al actualizar el usuario');
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error en updateUser:', error);
+      throw error;
+    }
   }
 };
