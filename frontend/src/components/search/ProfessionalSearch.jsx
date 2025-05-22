@@ -98,8 +98,8 @@ const ProfessionalSearch = () => {
         setProfessionals(filteredProfessionals);
         setNoResults(filteredProfessionals.length === 0);
       } else {
-        setProfessionals(processedProfessionals);
-        setNoResults(processedProfessionals.length === 0);
+      setProfessionals(processedProfessionals);
+      setNoResults(processedProfessionals.length === 0);
       }
     } catch (error) {
       console.error('Error en la búsqueda:', error);
@@ -144,8 +144,8 @@ const ProfessionalSearch = () => {
       
       return (
         <span key={star} className={starClass}>
-          ★
-        </span>
+        ★
+      </span>
       );
     });
   };

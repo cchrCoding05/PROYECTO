@@ -27,8 +27,7 @@ import {
     IconButton,
     Tooltip
 } from '@chakra-ui/react';
-
-const API_URL = 'http://localhost:8000/api';
+import { adminService } from '../../services/api';
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
@@ -40,17 +39,8 @@ const UserManagement = () => {
 
     const fetchUsers = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/admin/users?search=${searchTerm}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            const data = await response.json();
-            if (data.success) {
-                setUsers(data.data);
-            }
+            const data = await adminService.getAllUsers();
+            setUsers(data);
         } catch (error) {
             toast({
                 title: 'Error',
@@ -67,33 +57,23 @@ const UserManagement = () => {
     }, [searchTerm]);
 
     const handleDelete = async (userId) => {
-        if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
+        if (window.confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.')) {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/admin/users/${userId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                await adminService.deleteUser(userId);
+                toast({
+                    title: 'Éxito',
+                    description: 'Usuario eliminado correctamente',
+                    status: 'success',
+                    duration: 3000,
+                    isClosable: true,
                 });
-                const data = await response.json();
-                if (data.success) {
-                    toast({
-                        title: 'Éxito',
-                        description: 'Usuario eliminado correctamente',
-                        status: 'success',
-                        duration: 3000,
-                        isClosable: true,
-                    });
-                    fetchUsers();
-                }
+                fetchUsers();
             } catch (error) {
                 toast({
                     title: 'Error',
-                    description: 'No se pudo eliminar el usuario',
+                    description: error.message || 'No se pudo eliminar el usuario',
                     status: 'error',
-                    duration: 3000,
+                    duration: 5000,
                     isClosable: true,
                 });
             }
@@ -108,31 +88,20 @@ const UserManagement = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/users/${selectedUser.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    nombre_usuario: selectedUser.username,
-                    correo: selectedUser.email,
-                    creditos: selectedUser.credits
-                })
+            await adminService.updateUser(selectedUser.id, {
+                nombre_usuario: selectedUser.username,
+                correo: selectedUser.email,
+                creditos: selectedUser.credits
             });
-            const data = await response.json();
-            if (data.success) {
-                toast({
-                    title: 'Éxito',
-                    description: 'Usuario actualizado correctamente',
-                    status: 'success',
-                    duration: 3000,
-                    isClosable: true,
-                });
-                onClose();
-                fetchUsers();
-            }
+            toast({
+                title: 'Éxito',
+                description: 'Usuario actualizado correctamente',
+                status: 'success',
+                duration: 3000,
+                isClosable: true,
+            });
+            onClose();
+            fetchUsers();
         } catch (error) {
             toast({
                 title: 'Error',

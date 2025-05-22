@@ -1425,36 +1425,66 @@ class ApiController extends AbstractController
     #[Route('/admin/users/{id}', name: 'admin_delete_user', methods: ['DELETE'])]
     public function deleteUser(int $id): JsonResponse
     {
-        $user = $this->getUser();
-        if (!$user || $user->getNombreUsuario() !== 'ADMIN') {
+        try {
+            $user = $this->usuarioRepository->find($id);
+            
+            if (!$user) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario no encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Verificar si el usuario tiene registros asociados
+            $qb = $this->em->createQueryBuilder();
+            $qb->select('COUNT(o)')
+               ->from(Objeto::class, 'o')
+               ->where('o.usuario = :userId')
+               ->setParameter('userId', $user);
+            $hasProducts = $qb->getQuery()->getSingleScalarResult() > 0;
+
+            $hasNegotiations = $this->negociacionPrecioRepository->count(['comprador' => $user]) > 0 || 
+                             $this->negociacionPrecioRepository->count(['vendedor' => $user]) > 0;
+
+            $qb = $this->em->createQueryBuilder();
+            $qb->select('COUNT(i)')
+               ->from(IntercambioObjeto::class, 'i')
+               ->where('i.vendedor = :userId OR i.comprador = :userId')
+               ->setParameter('userId', $user);
+            $hasExchanges = $qb->getQuery()->getSingleScalarResult() > 0;
+
+            if ($hasProducts || $hasNegotiations || $hasExchanges) {
+                $message = 'No se puede eliminar este usuario porque tiene ';
+                
+                if ($hasProducts) {
+                    $message .= 'productos asociados';
+                } else if ($hasNegotiations) {
+                    $message .= 'negociaciones asociadas';
+                } else if ($hasExchanges) {
+                    $message .= 'intercambios asociados';
+                }
+                
+                return $this->json([
+                    'success' => false,
+                    'message' => $message
+                ], Response::HTTP_CONFLICT);
+            }
+
+            $this->em->remove($user);
+            $this->em->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Usuario eliminado correctamente'
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Error al eliminar usuario: ' . $e->getMessage());
             return $this->json([
                 'success' => false,
-                'message' => 'Acceso no autorizado'
-            ], Response::HTTP_FORBIDDEN);
+                'message' => 'Error al eliminar el usuario',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        $userToDelete = $this->usuarioRepository->find($id);
-        if (!$userToDelete) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Usuario no encontrado'
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        if ($userToDelete->getNombreUsuario() === 'ADMIN') {
-            return $this->json([
-                'success' => false,
-                'message' => 'No se puede eliminar al administrador'
-            ], Response::HTTP_FORBIDDEN);
-        }
-
-        $this->em->remove($userToDelete);
-        $this->em->flush();
-
-        return $this->json([
-            'success' => true,
-            'message' => 'Usuario eliminado con éxito'
-        ]);
     }
 
     // Listar productos (admin)

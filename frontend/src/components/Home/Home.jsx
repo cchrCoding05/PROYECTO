@@ -104,8 +104,8 @@ const Home = () => {
       
       return (
         <span key={star} className={starClass}>
-          ★
-        </span>
+        ★
+      </span>
       );
     });
   };

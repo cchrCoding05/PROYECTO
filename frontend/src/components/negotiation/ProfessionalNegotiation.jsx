@@ -74,7 +74,7 @@ const ProfessionalNegotiation = () => {
                 localStorage.removeItem('token');
                 navigate('/login');
             } else {
-                setError('Error al cargar la información del profesional');
+            setError('Error al cargar la información del profesional');
             }
         } finally {
             setLoading(false);

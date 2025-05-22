@@ -466,3 +466,62 @@ export const negotiationService = {
     }
   }
 };
+
+// Servicios de administración
+export const adminService = {
+  deleteUser: async (userId) => {
+    try {
+      const response = await fetchApi(`/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Error al eliminar el usuario');
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error en deleteUser:', error);
+      // Propagar el mensaje de error del backend
+      throw new Error(error.message || 'Error al eliminar el usuario');
+    }
+  },
+
+  getAllUsers: async () => {
+    try {
+      const response = await fetchApi('/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Error al obtener los usuarios');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error en getAllUsers:', error);
+      throw error;
+    }
+  },
+
+  // Método para verificar si un usuario puede ser eliminado
+  checkUserDeletion: async (userId) => {
+    try {
+      const response = await fetchApi(`/admin/users/${userId}/check-deletion`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Error en checkUserDeletion:', error);
+      throw error;
+    }
+  }
+};
