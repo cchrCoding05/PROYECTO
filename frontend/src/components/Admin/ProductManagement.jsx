@@ -85,6 +85,14 @@ const ProductManagement = () => {
                         isClosable: true,
                     });
                     fetchProducts();
+                } else {
+                    toast({
+                        title: 'Error',
+                        description: data.message || 'No se pudo eliminar el producto',
+                        status: 'error',
+                        duration: 3000,
+                        isClosable: true,
+                    });
                 }
             } catch (error) {
                 toast({

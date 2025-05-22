@@ -154,15 +154,15 @@ export const authService = {
   },
   
   getCurrentUser: async () => {
-    return fetchApi('/user/profile');
+    return fetchApi('/users/profile');
   },
 
   getProfile: async () => {
-    return fetchApi('/user/profile');
+    return fetchApi('/users/profile');
   },
 
   updateProfile: async (profileData) => {
-    return fetchApi('/user/profile', {
+    return fetchApi('/users/profile', {
       method: 'PUT',
       body: JSON.stringify(profileData)
     });
@@ -175,11 +175,11 @@ export const authService = {
 
 // Servicios de usuario
 export const userService = {
-  getProfile: () => fetchApi("/user/profile"),
+  getProfile: () => fetchApi("/users/profile"),
   
   updateProfile: async (profileData) => {
     try {
-      const response = await fetchApi("/user/profile", {
+      const response = await fetchApi("/users/profile", {
         method: "PUT",
         body: JSON.stringify(profileData),
       });
