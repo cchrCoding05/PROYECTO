@@ -3,7 +3,7 @@ import React from 'react';
 const Footer = () => {
   return (
     <footer className="py-4 mt-5" style={{ 
-      backgroundColor: 'var(--bs-tertiary-bg)',
+      backgroundColor: 'var(--surface-color)',
       borderTop: '1px solid var(--bs-border-color)'
     }}>
       <div className="container text-center">

@@ -19,7 +19,7 @@ const Navbar = () => {
   return (
     <nav className="navbar navbar-expand-lg mb-4" style={{ 
       borderBottom: '1px solid var(--bs-border-color)',
-      backgroundColor: 'var(--bs-body-bg)'
+      backgroundColor: 'var(--surface-color)'
     }}>
       <div className="container">
         <Link className="navbar-brand fw-bold" to="/" style={{ color: 'var(--bs-body-color)' }}>

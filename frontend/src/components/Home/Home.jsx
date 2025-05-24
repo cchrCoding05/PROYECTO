@@ -176,9 +176,12 @@ const Home = () => {
                               )}
                             </small>
                           </div>
-                          <Link to={`/search/professionals/${professional.id}`} className="btn btn-primary">
-                            Ver Perfil
-                          </Link>
+                          <Link 
+                        to={`/negotiate/professional/${professional.id}`}
+                        className="btn btn-primary"
+                      >
+                        Contactar
+                      </Link>
                         </Card.Body>
                       </Card>
                     </Col>

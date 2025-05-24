@@ -1,67 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Box,
-    Table,
-    Thead,
-    Tbody,
-    Tr,
-    Th,
-    Td,
-    Button,
-    Input,
-    useToast,
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalCloseButton,
-    FormControl,
-    FormLabel,
-    VStack,
-    useDisclosure,
-    Image,
-    InputGroup,
-    InputLeftElement,
-    Flex,
-    IconButton,
-    Tooltip
-} from '@chakra-ui/react';
 import { adminService } from '../../services/adminService';
+import './ProfessionalManagement.css';
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
-    const { isOpen, onOpen, onClose } = useDisclosure();
-    const toast = useToast();
+    const [showModal, setShowModal] = useState(false);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
     const fetchUsers = async () => {
         try {
             const response = await adminService.getAllUsers();
-            console.log('Respuesta de getAllUsers:', response);
             if (response.success && Array.isArray(response.data)) {
                 setUsers(response.data);
             } else {
                 console.error('Formato de respuesta inválido:', response);
-                toast({
-                    title: 'Error',
-                    description: 'Formato de datos inválido',
-                    status: 'error',
-                    duration: 3000,
-                    isClosable: true,
-                });
+                showAlert('Error', 'Formato de datos inválido', 'danger');
             }
         } catch (error) {
             console.error('Error al cargar usuarios:', error);
-            toast({
-                title: 'Error',
-                description: 'No se pudieron cargar los usuarios',
-                status: 'error',
-                duration: 3000,
-                isClosable: true,
-            });
+            showAlert('Error', 'No se pudieron cargar los usuarios', 'danger');
         }
     };
 
@@ -69,35 +28,34 @@ const UserManagement = () => {
         fetchUsers();
     }, [searchTerm]);
 
+    const showAlert = (title, message, type) => {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            <strong>${title}</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 5000);
+    };
+
     const handleDelete = async (userId) => {
         if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
             try {
                 const response = await adminService.deleteUser(userId);
                 if (response.success) {
-                    toast({
-                        title: 'Éxito',
-                        description: 'Usuario eliminado correctamente',
-                        status: 'success',
-                        duration: 3000,
-                        isClosable: true,
-                    });
+                    showAlert('Éxito', 'Usuario eliminado correctamente', 'success');
                     fetchUsers();
                 }
             } catch (error) {
-                toast({
-                    title: 'Error',
-                    description: error.message || 'No se pudo eliminar el usuario',
-                    status: 'error',
-                    duration: 3000,
-                    isClosable: true,
-                });
+                showAlert('Error', error.message || 'No se pudo eliminar el usuario', 'danger');
             }
         }
     };
 
     const handleEdit = (user) => {
         setSelectedUser(user);
-        onOpen();
+        setShowModal(true);
     };
 
     const handleSave = async (e) => {
@@ -113,24 +71,12 @@ const UserManagement = () => {
             });
             
             if (response.success) {
-                toast({
-                    title: 'Éxito',
-                    description: 'Usuario actualizado correctamente',
-                    status: 'success',
-                    duration: 3000,
-                    isClosable: true,
-                });
-                onClose();
+                showAlert('Éxito', 'Usuario actualizado correctamente', 'success');
+                setShowModal(false);
                 fetchUsers();
             }
         } catch (error) {
-            toast({
-                title: 'Error',
-                description: error.message || 'No se pudo actualizar el usuario',
-                status: 'error',
-                duration: 3000,
-                isClosable: true,
-            });
+            showAlert('Error', error.message || 'No se pudo actualizar el usuario', 'danger');
         }
     };
 
@@ -165,137 +111,146 @@ const UserManagement = () => {
     };
 
     return (
-        <Box p={5}>
-            <InputGroup mb={4}>
-                <InputLeftElement pointerEvents="none">
-                    🔍
-                </InputLeftElement>
-                <Input
+        <div className="container py-4">
+            <div className="input-group mb-4">
+                <span className="input-group-text">
+                    <i className="bi bi-search"></i>
+                </span>
+                <input
+                    type="text"
+                    className="form-control"
                     placeholder="Buscar por nombre de usuario o email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
-            </InputGroup>
+            </div>
 
-            <Table variant="simple">
-                <Thead>
-                    <Tr>
-                        <Th>Foto</Th>
-                        <Th 
-                            cursor="pointer" 
-                            onClick={() => handleSort('username')}
-                            _hover={{ bg: 'gray.100' }}
-                        >
-                            Nombre{getSortIndicator('username')}
-                        </Th>
-                        <Th 
-                            cursor="pointer" 
-                            onClick={() => handleSort('email')}
-                            _hover={{ bg: 'gray.100' }}
-                        >
-                            Email{getSortIndicator('email')}
-                        </Th>
-                        <Th 
-                            cursor="pointer" 
-                            onClick={() => handleSort('credits')}
-                            _hover={{ bg: 'gray.100' }}
-                        >
-                            Créditos{getSortIndicator('credits')}
-                        </Th>
-                        <Th>Acciones</Th>
-                    </Tr>
-                </Thead>
-                <Tbody>
-                    {getSortedUsers().map((user) => (
-                        <Tr key={user.id}>
-                            <Td>
-                                <Image
-                                    src={user.foto_perfil || 'https://via.placeholder.com/50'}
-                                    alt={user.username}
-                                    boxSize="50px"
-                                    objectFit="cover"
-                                    borderRadius="full"
-                                />
-                            </Td>
-                            <Td>{user.username}</Td>
-                            <Td>{user.email}</Td>
-                            <Td>{user.credits}</Td>
-                            <Td>
-                                <Button
-                                    colorScheme="blue"
-                                    size="sm"
-                                    mr={2}
-                                    onClick={() => handleEdit(user)}
-                                >
-                                    Editar
-                                </Button>
-                                <Button
-                                    colorScheme="red"
-                                    size="sm"
-                                    onClick={() => handleDelete(user.id)}
-                                >
-                                    Eliminar
-                                </Button>
-                            </Td>
-                        </Tr>
-                    ))}
-                </Tbody>
-            </Table>
+            <div className="table-responsive">
+                <table className="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Foto</th>
+                            <th 
+                                onClick={() => handleSort('username')}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                Nombre{getSortIndicator('username')}
+                            </th>
+                            <th 
+                                onClick={() => handleSort('email')}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                Email{getSortIndicator('email')}
+                            </th>
+                            <th 
+                                onClick={() => handleSort('credits')}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                Créditos{getSortIndicator('credits')}
+                            </th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {getSortedUsers().map((user) => (
+                            <tr key={user.id}>
+                                <td>
+                                    <img
+                                        src={user.foto_perfil || 'https://via.placeholder.com/50'}
+                                        alt={user.username}
+                                        className="professional-avatar"
+                                    />
+                                </td>
+                                <td>{user.username}</td>
+                                <td>{user.email}</td>
+                                <td>{user.credits}</td>
+                                <td>
+                                    <button
+                                        className="btn btn-primary btn-sm me-2"
+                                        onClick={() => handleEdit(user)}
+                                    >
+                                        Editar
+                                    </button>
+                                    <button
+                                        className="btn btn-danger btn-sm"
+                                        onClick={() => handleDelete(user.id)}
+                                    >
+                                        Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
 
-            <Modal isOpen={isOpen} onClose={onClose}>
-                <ModalOverlay />
-                <ModalContent>
-                    <ModalHeader>Editar Usuario</ModalHeader>
-                    <ModalCloseButton />
-                    <ModalBody>
-                        <form onSubmit={handleSave}>
-                            <VStack spacing={4}>
-                                <FormControl>
-                                    <FormLabel>Nombre de Usuario</FormLabel>
-                                    <Input
-                                        value={selectedUser?.username || ''}
-                                        onChange={(e) =>
-                                            setSelectedUser({
-                                                ...selectedUser,
-                                                username: e.target.value,
-                                            })
-                                        }
-                                    />
-                                </FormControl>
-                                <FormControl>
-                                    <FormLabel>Email</FormLabel>
-                                    <Input
-                                        value={selectedUser?.email || ''}
-                                        onChange={(e) =>
-                                            setSelectedUser({
-                                                ...selectedUser,
-                                                email: e.target.value,
-                                            })
-                                        }
-                                    />
-                                </FormControl>
-                                <FormControl>
-                                    <FormLabel>Créditos</FormLabel>
-                                    <Input
-                                        type="number"
-                                        value={selectedUser?.credits || 0}
-                                        onChange={(e) =>
-                                            setSelectedUser({
-                                                ...selectedUser,
-                                                credits: parseInt(e.target.value),
-                                            })
-                                        }
-                                    />
-                                </FormControl>
-                                <Button type="submit" colorScheme="blue" width="full">
-                                    Guardar Cambios
-                                </Button>
-                            </VStack>
-                        </form>
-                    </ModalBody>
-                </ModalContent>
-            </Modal>
-        </Box>
+            {/* Modal de edición */}
+            {showModal && (
+                <div className="modal fade show" style={{ display: 'block' }}>
+                    <div className="modal-dialog">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Editar Usuario</h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setShowModal(false)}
+                                ></button>
+                            </div>
+                            <div className="modal-body">
+                                <form onSubmit={handleSave}>
+                                    <div className="mb-3">
+                                        <label className="form-label">Nombre de Usuario</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={selectedUser?.username || ''}
+                                            onChange={(e) =>
+                                                setSelectedUser({
+                                                    ...selectedUser,
+                                                    username: e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Email</label>
+                                        <input
+                                            type="email"
+                                            className="form-control"
+                                            value={selectedUser?.email || ''}
+                                            onChange={(e) =>
+                                                setSelectedUser({
+                                                    ...selectedUser,
+                                                    email: e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Créditos</label>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            value={selectedUser?.credits || 0}
+                                            onChange={(e) =>
+                                                setSelectedUser({
+                                                    ...selectedUser,
+                                                    credits: parseInt(e.target.value),
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                    <button type="submit" className="btn btn-primary w-100">
+                                        Guardar Cambios
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 

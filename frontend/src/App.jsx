@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
-import { ChakraProvider } from '@chakra-ui/react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 import CookieConsent from './components/CookieConsent';
@@ -44,16 +43,14 @@ const AppNavigation = () => {
   return (
     <div className="d-flex flex-column min-vh-100">
       <Navbar />
-
-      <main className="container flex-grow-1 py-3">
+      <main className="flex-grow-1">
         <Routes>
-          {/* Rutas públicas */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/products" element={<ProductList />} />
+          <Route path="/search/products" element={<ProductSearch />} />
+          <Route path="/search/professionals" element={<ProfessionalSearch />} />
           
-          {/* Rutas protegidas */}
           <Route 
             path="/profile" 
             element={
@@ -62,21 +59,12 @@ const AppNavigation = () => {
               </ProtectedRoute>
             } 
           />
-          
+
           <Route 
-            path="/search/professionals" 
+            path="/upload-product" 
             element={
               <ProtectedRoute>
-                <ProfessionalSearch />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/search/products" 
-            element={
-              <ProtectedRoute>
-                <ProductSearch />
+                <ProductUpload />
               </ProtectedRoute>
             } 
           />
@@ -89,9 +77,9 @@ const AppNavigation = () => {
               </ProtectedRoute>
             } 
           />
-          
+
           <Route 
-            path="/negotiation/:id" 
+            path="/negotiate/product/:id" 
             element={
               <ProtectedRoute>
                 <ProductNegotiation />
@@ -100,19 +88,10 @@ const AppNavigation = () => {
           />
 
           <Route 
-            path="/professional-chat/:id" 
+            path="/negotiate/professional/:id" 
             element={
               <ProtectedRoute>
                 <ProfessionalNegotiation />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/upload-product" 
-            element={
-              <ProtectedRoute>
-                <ProductUpload />
               </ProtectedRoute>
             } 
           />
@@ -155,13 +134,11 @@ const AppNavigation = () => {
 
 function App() {
   return (
-    <ChakraProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <AppNavigation />
-        </AuthProvider>
-      </BrowserRouter>
-    </ChakraProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppNavigation />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

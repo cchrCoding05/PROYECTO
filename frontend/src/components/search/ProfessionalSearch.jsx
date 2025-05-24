@@ -271,8 +271,8 @@ const ProfessionalSearch = () => {
                     </div>
                     
                     <div className="d-flex justify-content-center gap-3">
-                      <Link 
-                        to={`/professional-chat/${professional.id}`}
+                    <Link 
+                        to={`/negotiate/professional/${professional.id}`}
                         className="btn btn-primary"
                       >
                         Contactar
