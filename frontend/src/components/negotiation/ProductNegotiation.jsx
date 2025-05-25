@@ -28,31 +28,37 @@ const ProductNegotiation = () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await productService.get(id);
+      const result = await productService.getById(id);
       
       if (result && result.success === false) {
         setError(result.message || 'Error al cargar el producto');
         return;
       }
 
-      console.log('Producto cargado:', {
-        id: result.id,
-        name: result.name,
-        seller: result.seller,
-        user: user
-      });
+      // Asegurarnos de que estamos usando los datos correctos de la respuesta
+      const productData = result.data || result;
+      console.log('Datos del producto recibidos:', productData);
 
-      setProduct({
-        id: result.id || 0,
-        name: result.name || result.title || 'Producto sin nombre',
-        credits: result.credits || 0,
-        image: result.image || result.imageUrl || 'https://via.placeholder.com/400?text=Sin+Imagen',
-        state: result.state || result.estado || 1,
+      if (!productData) {
+        setError('Producto no encontrado');
+        return;
+      }
+
+      const processedProduct = {
+        id: productData.id || productData.id_objeto || 0,
+        name: productData.titulo || productData.name || productData.title || 'Producto sin nombre',
+        credits: productData.creditos || productData.credits || 0,
+        image: productData.imagen || productData.image || 'https://via.placeholder.com/400?text=Sin+Imagen',
+        state: productData.estado || productData.state || 1,
         seller: {
-          id: result.seller?.id || 0,
-          username: result.seller?.username || result.seller?.name || 'Vendedor desconocido'
+          id: productData.seller?.id || productData.usuario?.id_usuario || 0,
+          username: productData.seller?.name || productData.seller?.username || 
+                   productData.usuario?.nombreUsuario || 'Vendedor desconocido'
         }
-      });
+      };
+
+      console.log('Producto procesado:', processedProduct);
+      setProduct(processedProduct);
     } catch (err) {
       console.error('Error al cargar producto:', err);
       setError('Error al cargar el producto');
@@ -145,7 +151,7 @@ const ProductNegotiation = () => {
       if (authLoading) return;
 
       if (!isAuthenticated || !user) {
-        navigate('/login', { state: { from: `/negotiation/${id}` } });
+        navigate('/login', { state: { from: `/negotiate/product/${id}` } });
         return;
       }
 
@@ -255,7 +261,7 @@ const ProductNegotiation = () => {
         <div className="text-center mt-3">
           <Button 
             variant="primary" 
-            onClick={() => navigate('/login', { state: { from: `/negotiation/${id}` } })}
+            onClick={() => navigate('/login', { state: { from: `/negotiate/product/${id}` } })}
           >
             Ir a iniciar sesión
           </Button>

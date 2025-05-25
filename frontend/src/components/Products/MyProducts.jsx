@@ -9,45 +9,32 @@ const MyProducts = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const loadProducts = async () => {
+  const fetchProducts = async () => {
     try {
-      console.log('Iniciando carga de productos...');
-      setLoading(true);
-      setError(null);
-      
       const response = await productService.getMyProducts();
-      console.log('Respuesta de getMyProducts:', response);
-      
       if (response.success) {
-        console.log('Productos obtenidos:', response.data);
         setProducts(response.data);
-      } else {
-        console.error('Error en la respuesta:', response);
-        setError(response.message || 'Error al cargar los productos');
       }
-    } catch (err) {
-      console.error('Error completo:', err);
-      console.error('Stack trace:', err.stack);
-      setError(err.message || 'Error al cargar los productos');
+    } catch (error) {
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
   const handleDelete = async (productId) => {
     if (!window.confirm('¿Estás seguro de que deseas eliminar este producto?')) return;
     try {
       await productService.delete(productId);
-      loadProducts();
+      fetchProducts();
     } catch (err) {
       alert('Error al eliminar el producto');
     }
   };
-
-  useEffect(() => {
-    console.log('MyProducts montado, iniciando carga...');
-    loadProducts();
-  }, []);
 
   if (loading) {
     return (
@@ -85,7 +72,6 @@ const MyProducts = () => {
       <h2>Mis Productos</h2>
       <Row>
         {products.map(product => {
-          console.log('Renderizando producto:', product);
           return (
             <Col key={product.id} md={4} className="mb-4">
               <Card>
@@ -110,8 +96,8 @@ const MyProducts = () => {
                   <div className="product-actions">
                     <Button 
                       variant="primary" 
-                      onClick={() => navigate(`/negotiation/${product.id}`)}
-                      className="me-2"
+                      onClick={() => navigate(`/negotiate/product/${product.id}`)}
+                      className="mt-2 w-100"
                     >
                       Ver Negociación
                     </Button>

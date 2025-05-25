@@ -32,6 +32,7 @@ import ProductDetail from './components/Products/ProductDetail';
 import MyProducts from './components/Products/MyProducts';
 import EditProduct from './components/Product/EditProduct';
 import ProductList from './components/Products/ProductList';
+import MyChats from './components/negotiation/MyChats';
 
 // Componentes de administración
 import AdminPanel from './components/Admin/AdminPanel';
@@ -101,6 +102,15 @@ const AppNavigation = () => {
             element={
               <ProtectedRoute>
                 <MyProducts />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/my-chats" 
+            element={
+              <ProtectedRoute>
+                <MyChats />
               </ProtectedRoute>
             } 
           />

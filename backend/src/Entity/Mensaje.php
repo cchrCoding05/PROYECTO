@@ -30,6 +30,14 @@ class Mensaje
     #[ORM\Column]
     private ?\DateTimeImmutable $fecha_envio;
 
+    #[ORM\ManyToOne(inversedBy: 'mensajes')]
+    #[ORM\JoinColumn(name: 'id_negociacion_precio', referencedColumnName: 'id_negociacion', nullable: true)]
+    private ?NegociacionPrecio $negociacion_precio = null;
+
+    #[ORM\ManyToOne(inversedBy: 'mensajes')]
+    #[ORM\JoinColumn(name: 'id_negociacion_servicio', referencedColumnName: 'id_negociacion', nullable: true)]
+    private ?NegociacionServicio $negociacion_servicio = null;
+
     public function __construct()
     {
         $this->fecha_envio = new \DateTimeImmutable();
@@ -97,6 +105,28 @@ class Mensaje
     {
         $this->fecha_envio = $fecha_envio;
 
+        return $this;
+    }
+
+    public function getNegociacionPrecio(): ?NegociacionPrecio
+    {
+        return $this->negociacion_precio;
+    }
+
+    public function setNegociacionPrecio(?NegociacionPrecio $negociacion_precio): self
+    {
+        $this->negociacion_precio = $negociacion_precio;
+        return $this;
+    }
+
+    public function getNegociacionServicio(): ?NegociacionServicio
+    {
+        return $this->negociacion_servicio;
+    }
+
+    public function setNegociacionServicio(?NegociacionServicio $negociacion_servicio): self
+    {
+        $this->negociacion_servicio = $negociacion_servicio;
         return $this;
     }
 }

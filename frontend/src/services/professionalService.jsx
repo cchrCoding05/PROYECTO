@@ -4,27 +4,16 @@ import { fetchApi } from './apiConfig';
 export const professionalService = {
   search: async (query = '') => {
     try {
-      // Usar el endpoint que sabemos que funciona
-      const response = await fetchApi('/users/top-rated');
+      // Usar el endpoint correcto para buscar profesionales
+      const response = await fetchApi(`/professionals/search${query ? `?query=${encodeURIComponent(query)}` : ''}`);
       console.log('Respuesta del backend:', response);
       
       if (!response.success) {
         throw new Error(response.message || 'Error al obtener profesionales');
       }
 
-      // Filtrar los resultados si hay una consulta
-      let filteredData = response.data || [];
-      if (query.trim()) {
-        const normalizedQuery = query.toLowerCase().trim();
-        filteredData = filteredData.filter(prof => 
-          (prof.name && prof.name.toLowerCase().includes(normalizedQuery)) ||
-          (prof.profession && prof.profession.toLowerCase().includes(normalizedQuery)) ||
-          (prof.description && prof.description.toLowerCase().includes(normalizedQuery))
-        );
-      }
-
       // Procesar los datos
-      const processedData = filteredData.map(professional => ({
+      const processedData = (response.data || []).map(professional => ({
         ...professional,
         foto_perfil: professional.profilePhoto || professional.photo || null,
         rating: parseFloat(professional.rating) || 0,

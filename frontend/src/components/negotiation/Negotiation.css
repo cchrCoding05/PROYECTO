@@ -263,18 +263,38 @@
     padding: 10px 15px;
     border-radius: 15px;
     position: relative;
+    color: white;
 }
 
 .message.sent .message-content {
-    background-color: #007bff;
+    background-color: var(--primary-color);
     color: white;
     border-bottom-right-radius: 5px;
+    margin-left: auto;
 }
 
 .message.received .message-content {
-    background-color: #f1f1f1;
-    color: #333;
+    background-color: var(--surface-color-2);
+    color: white;
     border-bottom-left-radius: 5px;
+    margin-right: auto;
+}
+
+.price-amount {
+    display: inline-block;
+    font-weight: bold;
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+}
+
+.message.sent .price-amount {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.message.received .price-amount {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .message-time {
@@ -314,4 +334,22 @@
 
 .modal-footer {
     border-top: 1px solid #dee2e6;
+}
+
+.message-bubble {
+    background-color: var(--surface-color);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.message.active .message-bubble {
+    background-color: var(--primary-color);
+    color: var(--surface-color);
+}
+
+.message.active .price-amount {
+    background-color: var(--surface-color);
+    color: var(--primary-color);
 } 

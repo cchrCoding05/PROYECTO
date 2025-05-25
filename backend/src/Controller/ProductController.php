@@ -69,8 +69,7 @@ class ProductController extends AbstractController
                    ->setParameter('currentUserId', $currentUserId);
             }
             
-            $qb->orderBy('u.valoracion_promedio', 'DESC')
-               ->setMaxResults(5);
+            $qb->orderBy('u.valoracion_promedio', 'DESC');
             
             $topUsers = $qb->getQuery()->getResult();
 
@@ -94,9 +93,8 @@ class ProductController extends AbstractController
                 ->andWhere('o.estado = :estado')
                 ->setParameter('users', $userIds)
                 ->setParameter('estado', Objeto::ESTADO_DISPONIBLE)
-                ->orderBy('o.fecha_creacion', 'DESC')
-                ->setMaxResults(10);
-            
+                ->orderBy('o.fecha_creacion', 'DESC');
+
             $products = $qb->getQuery()->getResult();
 
             $productsData = array_map(function($product) {
@@ -113,6 +111,13 @@ class ProductController extends AbstractController
                     ]
                 ];
             }, $products);
+
+            // Ordenar por rating del usuario y limitar a 9
+            usort($productsData, function($a, $b) {
+                return $b['user']['rating'] <=> $a['user']['rating'];
+            });
+
+            $productsData = array_slice($productsData, 0, 9);
 
             return $this->json([
                 'success' => true,

@@ -36,6 +36,12 @@ class NegociacionPrecio
     #[ORM\Column]
     private ?\DateTimeImmutable $fecha_creacion;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $mensaje = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $estado = null;
+
     #[ORM\ManyToOne(inversedBy: 'negociaciones')]
     #[ORM\JoinColumn(name: 'id_intercambio', referencedColumnName: 'id_intercambio', nullable: true)]
     private ?IntercambioObjeto $intercambio = null;
@@ -135,6 +141,28 @@ class NegociacionPrecio
     public function setIntercambio(?IntercambioObjeto $intercambio): self
     {
         $this->intercambio = $intercambio;
+        return $this;
+    }
+
+    public function getMensaje(): ?string
+    {
+        return $this->mensaje;
+    }
+
+    public function setMensaje(?string $mensaje): self
+    {
+        $this->mensaje = $mensaje;
+        return $this;
+    }
+
+    public function getEstado(): ?string
+    {
+        return $this->estado;
+    }
+
+    public function setEstado(?string $estado): self
+    {
+        $this->estado = $estado;
         return $this;
     }
 }

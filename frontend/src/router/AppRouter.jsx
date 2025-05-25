@@ -8,8 +8,8 @@ import Footer from '../components/Layout/Footer';
 import { useAuth } from '../hooks/useAuth';
 import Login from '../components/Auth/Login';
 import Register from '../components/Auth/Register';
-import ProductNegotiation from '../components/Negotiation/ProductNegotiation';
-import ProfessionalNegotiation from '../components/Negotiation/ProfessionalNegotiation';
+import ProductNegotiation from '../components/negotiation/ProductNegotiation';
+import ProfessionalNegotiation from '../components/negotiation/ProfessionalNegotiation';
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {

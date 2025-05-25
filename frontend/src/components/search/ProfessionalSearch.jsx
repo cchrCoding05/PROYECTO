@@ -4,11 +4,12 @@ import { useAuth } from '../../hooks/useAuth';
 import AlertMessage from '../Layout/AlertMessage.jsx';
 import { Cloudinary } from '@cloudinary/url-gen';
 import { AdvancedImage } from '@cloudinary/react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './ProfessionalSearch.css';
 
 const ProfessionalSearch = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,6 +22,12 @@ const ProfessionalSearch = () => {
       cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
     }
   });
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
 
   // Función para normalizar texto (quitar tildes y convertir a minúsculas)
   const normalizeText = (text) => {
@@ -45,7 +52,7 @@ const ProfessionalSearch = () => {
       
       console.log('Buscando profesionales con query:', query);
       const results = await professionalService.search(query);
-      console.log('Resultados de búsqueda:', results);
+      console.log('Resultados de búsqueda completos:', results);
 
       if (results && results.success === false) {
         setError(results.message || 'Error en la búsqueda de profesionales');
@@ -54,15 +61,16 @@ const ProfessionalSearch = () => {
         return;
       }
 
-      // Validar que results.data es un array y filtrar el usuario actual
-      const professionalsArray = Array.isArray(results.data) 
-        ? results.data.filter(prof => prof.id !== user?.id)
-        : [];
+      // Validar que results.data es un array
+      const professionalsArray = Array.isArray(results.data) ? results.data : [];
+      console.log('Número total de profesionales antes de filtrar:', professionalsArray.length);
       
-      console.log('Profesionales procesados:', professionalsArray);
+      // Filtrar el usuario actual solo si está autenticado
+      const filteredProfessionals = user ? professionalsArray.filter(prof => prof.id !== user.id) : professionalsArray;
+      console.log('Número de profesionales después de filtrar usuario actual:', filteredProfessionals.length);
       
       // Procesar las valoraciones y normalizar los datos
-      const processedProfessionals = professionalsArray.map(prof => {
+      const processedProfessionals = filteredProfessionals.map(prof => {
         // Asegurarse de que rating y reviews_count sean números
         const rating = parseFloat(prof.rating) || 0;
         const reviewsCount = parseInt(prof.reviews_count) || 0;
@@ -82,10 +90,12 @@ const ProfessionalSearch = () => {
         };
       });
 
+      console.log('Profesionales procesados:', processedProfessionals);
+
       // Si hay una consulta de búsqueda, filtrar los resultados
       if (query.trim()) {
         const normalizedQuery = normalizeText(query);
-        const filteredProfessionals = processedProfessionals.filter(prof => {
+        const filteredResults = processedProfessionals.filter(prof => {
           const normalizedName = normalizeText(prof.name);
           const normalizedProfession = normalizeText(prof.profession);
           const normalizedDescription = normalizeText(prof.description);
@@ -95,11 +105,13 @@ const ProfessionalSearch = () => {
                  normalizedDescription.includes(normalizedQuery);
         });
         
-        setProfessionals(filteredProfessionals);
-        setNoResults(filteredProfessionals.length === 0);
+        console.log('Resultados filtrados por búsqueda:', filteredResults.length);
+        setProfessionals(filteredResults);
+        setNoResults(filteredResults.length === 0);
       } else {
-      setProfessionals(processedProfessionals);
-      setNoResults(processedProfessionals.length === 0);
+        console.log('Mostrando todos los profesionales:', processedProfessionals.length);
+        setProfessionals(processedProfessionals);
+        setNoResults(processedProfessionals.length === 0);
       }
     } catch (error) {
       console.error('Error en la búsqueda:', error);

@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Form, Button, Container, Row, Col, Alert, Card, Tab, Tabs } from 'react-bootstrap';
 import MyProducts from '../Products/MyProducts';
 import MyNegotiations from './MyNegotiations';
+import MyChats from '../negotiation/MyChats';
 import './Profile.css';
 
 const ProfileForm = () => {
@@ -52,7 +53,7 @@ const ProfileForm = () => {
     // Obtener el tab de la URL
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
-    if (tab && ['profile', 'products', 'negotiations'].includes(tab)) {
+    if (tab && ['profile', 'products', 'negotiations', 'chats'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [location.search]);

@@ -44,5 +44,4 @@ security:
         - { path: ^/api/users/top-rated, roles: PUBLIC_ACCESS }
         - { path: ^/api/products/top-rated-users, roles: PUBLIC_ACCESS }
         - { path: ^/api/home, roles: PUBLIC_ACCESS }
-        - { path: ^/api/professional-chat, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER } 

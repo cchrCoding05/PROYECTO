@@ -21,11 +21,11 @@ const Home = () => {
         setLoading(true);
         setError(null);
         
-        // Realizar las peticiones sin token
-        const [usersResponse, productsResponse] = await Promise.all([
-          professionalService.getTopRated(),
-          productService.getFromTopRatedUsers()
-        ]);
+        // Obtener usuarios mejor valorados
+        const usersResponse = await professionalService.getTopRated();
+        
+        // Obtener productos de los usuarios mejor valorados
+        const productsResponse = await productService.getFromTopRatedUsers();
         
         if (usersResponse?.data) {
           // Filtrar el usuario actual y el usuario admin
@@ -46,8 +46,10 @@ const Home = () => {
             reviews_count: parseInt(prof.reviews_count) || 0
           }));
 
-          // Ordenar usuarios por rating
-          const sortedUsers = processedProfessionals.sort((a, b) => b.rating - a.rating);
+          // Ordenar usuarios por rating y limitar a 9
+          const sortedUsers = processedProfessionals
+            .sort((a, b) => b.rating - a.rating)
+            .slice(0, 9);
           setTopUsers(sortedUsers);
         }
         
@@ -61,7 +63,8 @@ const Home = () => {
                 id: product.user?.id,
                 name: product.user?.name || product.user?.username || 'Anónimo'
               }
-            }));
+            }))
+            .slice(0, 9); // Limitar a 9 productos
           setTopProducts(filteredProducts);
         }
       } catch (err) {

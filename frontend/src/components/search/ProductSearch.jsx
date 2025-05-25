@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { productService } from '../../services/productService';
 import { useAuth } from '../../hooks/useAuth';
 import AlertMessage from '../Layout/AlertMessage';
@@ -7,79 +7,78 @@ import './Search.css';
 
 const ProductSearch = () => {
   const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [noResults, setNoResults] = useState(false);
 
+  useEffect(() => {
+    const checkAuth = () => {
+      if (!isAuthenticated) {
+        navigate('/login', { replace: true });
+      }
+    };
+    checkAuth();
+  }, [isAuthenticated, navigate]);
+
   const searchProducts = useCallback(async (query = '') => {
     if (!isAuthenticated || !user) {
-      console.log('Usuario no autenticado, saltando búsqueda de productos');
+      navigate('/login', { replace: true });
       return;
     }
 
-    console.log('Iniciando búsqueda de productos con query:', query);
     try {
       setLoading(true);
       setError(null);
       setNoResults(false);
       
-      console.log('Llamando a productService.search...');
       const results = await productService.search(query);
-      console.log('Resultados de búsqueda recibidos:', results);
       
       if (results && results.success === false) {
-        console.error('Error en la respuesta:', results);
         setError(results.message || 'Error al buscar productos');
         setProducts([]);
         return;
       }
       
-      const productsArray = Array.isArray(results) ? results : [];
-      console.log('Número de productos encontrados:', productsArray.length);
+      const productsData = results.data || results;
+      const productsArray = Array.isArray(productsData) ? productsData : [];
       
       if (productsArray.length === 0) {
-        console.log('No se encontraron productos');
         setNoResults(true);
       }
       
-      // Filtrar productos disponibles (estado 1) y que no sean del usuario actual
       const filteredProducts = productsArray.filter(product => 
-        product.estado === 1 && product.seller?.id !== user.id
+        (product.estado === 1 || product.state === 1) && 
+        (product.seller?.id !== user.id && product.usuario?.id_usuario !== user.id)
       );
       
       const validatedProducts = filteredProducts.map(product => ({
-        id: product.id || 0,
-        name: product.name || product.title || 'Producto sin nombre',
-        description: product.description || 'Sin descripción',
-        credits: product.credits || 0,
-        imageUrl: product.imageUrl || product.image || 'https://via.placeholder.com/150',
-        state: product.estado,
+        id: product.id || product.id_objeto || 0,
+        name: product.titulo || product.name || product.title || 'Producto sin nombre',
+        description: product.descripcion || product.description || 'Sin descripción',
+        credits: product.creditos || product.credits || 0,
+        imageUrl: product.imagen || product.image || 'https://via.placeholder.com/150',
+        state: product.estado || product.state || 1,
         seller: {
-          id: product.seller?.id || 0,
-          username: product.seller?.username || 'Vendedor desconocido',
-          name: product.seller?.name || product.seller?.username || 'Vendedor desconocido'
-        }
+          id: product.seller?.id || product.usuario?.id_usuario || 0,
+          username: product.seller?.name || product.seller?.username || 
+                   product.usuario?.nombreUsuario || 'Vendedor desconocido'
+        },
+        created_at: product.created_at || product.fechaCreacion || new Date().toISOString()
       }));
       
-      console.log('Productos validados:', validatedProducts.map(p => ({
-        id: p.id,
-        name: p.name,
-        seller: p.seller
-      })));
       setProducts(validatedProducts);
     } catch (err) {
       console.error('Error al buscar productos:', err);
       setError('Error al buscar productos');
       setProducts([]);
     } finally {
-      console.log('Finalizando búsqueda de productos');
       setLoading(false);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, navigate]);
 
-  // Cargar productos al iniciar y configurar actualización automática
   useEffect(() => {
     let intervalId;
 
@@ -89,17 +88,14 @@ const ProductSearch = () => {
       }
     };
 
-    // Cargar datos iniciales
     loadInitialData();
 
-    // Configurar actualización automática
     if (isAuthenticated) {
       intervalId = setInterval(() => {
         searchProducts(searchQuery);
-      }, 20000); // 20 segundos
+      }, 20000);
     }
 
-    // Limpiar el intervalo al desmontar
     return () => {
       if (intervalId) {
         clearInterval(intervalId);
@@ -140,14 +136,7 @@ const ProductSearch = () => {
   };
 
   if (!isAuthenticated) {
-    return (
-      <div className="search-container">
-        <AlertMessage 
-          message="Debes iniciar sesión para buscar productos" 
-          type="warning" 
-        />
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -174,7 +163,7 @@ const ProductSearch = () => {
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Cargando...</span>
           </div>
-          <p className="mt-2 text-muted">Cargando...</p>
+          <p className="mt-2 text-muted">Cargando productos...</p>
         </div>
       )}
       
@@ -190,7 +179,7 @@ const ProductSearch = () => {
           {searchQuery ? (
             <p className="text-muted">No hay resultados para "<strong>{searchQuery}</strong>". Intenta con otra búsqueda.</p>
           ) : (
-            <p className="text-muted">No hay objetos disponibles o reservados en este momento.</p>
+            <p className="text-muted">No hay objetos disponibles en este momento.</p>
           )}
         </div>
       )}
@@ -230,8 +219,11 @@ const ProductSearch = () => {
                     </p>
                     <p className="card-text">
                       <small className="text-muted">
-                        Vendedor: {product.seller.name || product.seller.username}
+                        Vendedor: {product.seller.username}
                       </small>
+                    </p>
+                    <p className="card-text small text-muted">
+                      Publicado: {new Date(product.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="card-footer bg-transparent">
@@ -252,4 +244,4 @@ const ProductSearch = () => {
   );
 };
 
-export default ProductSearch; 
+export default ProductSearch;
