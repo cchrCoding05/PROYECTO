@@ -93,10 +93,10 @@ const UserManagement = () => {
         
         // Filtrar por término de búsqueda
         if (searchTerm) {
-            const searchLower = searchTerm.toLowerCase();
+            const searchLower = normalizeText(searchTerm.toLowerCase());
             filteredUsers = users.filter(user => 
-                user.username.toLowerCase().includes(searchLower) ||
-                user.email.toLowerCase().includes(searchLower)
+                normalizeText(user.username.toLowerCase()).includes(searchLower) ||
+                normalizeText(user.email.toLowerCase()).includes(searchLower)
             );
         }
 
@@ -115,6 +115,11 @@ const UserManagement = () => {
             }
             return 0;
         });
+    };
+
+    // Función para normalizar texto (eliminar tildes)
+    const normalizeText = (text) => {
+        return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     };
 
     const getSortIndicator = (columnKey) => {

@@ -1,42 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { notificationService } from '../../services/notificationService';
 import ThemeToggle from '../UI/ThemeToggle';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { isAuthenticated, currentUser, logout } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    let intervalId;
-    
-    const fetchUnreadCount = async () => {
-      if (isAuthenticated) {
-        try {
-          const response = await notificationService.getUnreadCount();
-          setUnreadCount(response.count || 0);
-        } catch (error) {
-          console.error('Error al obtener el contador de notificaciones:', error);
-        }
-      }
-    };
-
-    // Cargar contador inicial
-    fetchUnreadCount();
-
-    // Actualizar contador cada 30 segundos
-    if (isAuthenticated) {
-      intervalId = setInterval(fetchUnreadCount, 30000);
-    }
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [isAuthenticated]);
 
   const handleLogout = async () => {
     try {
@@ -123,20 +92,6 @@ const Navbar = () => {
                     </span>
                   )}
                 </div>
-
-                {/* Notificaciones */}
-                <Link 
-                  to="/notifications" 
-                  className="btn btn-outline-secondary position-relative"
-                  style={{ borderColor: 'var(--bs-border-color)', color: 'var(--bs-body-color)' }}
-                >
-                  <i className="bi bi-bell"></i>
-                  {unreadCount > 0 && (
-                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
-                </Link>
                 
                 <div className="dropdown">
                   <button 
@@ -166,16 +121,6 @@ const Navbar = () => {
                     <li>
                       <Link className="dropdown-item" to="/profile?tab=negotiations" style={{ color: 'var(--bs-body-color)' }}>
                         Mis negociaciones
-                      </Link>
-                    </li>
-                    <li>
-                      <Link className="dropdown-item" to="/notifications" style={{ color: 'var(--bs-body-color)' }}>
-                        Notificaciones
-                        {unreadCount > 0 && (
-                          <span className="badge bg-danger ms-2">
-                            {unreadCount > 99 ? '99+' : unreadCount}
-                          </span>
-                        )}
                       </Link>
                     </li>
                     <li><hr className="dropdown-divider" style={{ borderColor: 'var(--bs-border-color)' }} /></li>

@@ -6,9 +6,9 @@ import './ProductUpload.css';
 
 const ProductUpload = () => {
   const [productData, setProductData] = useState({
-    name: '',
-    description: '',
-    price: ''
+    titulo: '',
+    descripcion: '',
+    creditos: ''
   });
   const [image, setImage] = useState(null);
   const [previewImage, setPreviewImage] = useState('');
@@ -44,7 +44,7 @@ const ProductUpload = () => {
 
     try {
       // Validar campos obligatorios
-      if (!productData.name.trim()) {
+      if (!productData.titulo.trim()) {
         setAlert({
           type: 'danger',
           message: 'El nombre del producto es obligatorio'
@@ -53,7 +53,7 @@ const ProductUpload = () => {
         return;
       }
 
-      if (!productData.description.trim()) {
+      if (!productData.descripcion.trim()) {
         setAlert({
           type: 'danger',
           message: 'La descripción es obligatoria'
@@ -62,7 +62,7 @@ const ProductUpload = () => {
         return;
       }
 
-      if (!productData.price || isNaN(parseInt(productData.price)) || parseInt(productData.price) <= 0) {
+      if (!productData.creditos || isNaN(parseInt(productData.creditos)) || parseInt(productData.creditos) <= 0) {
         setAlert({
           type: 'danger',
           message: 'El precio debe ser un número mayor que 0'
@@ -104,17 +104,17 @@ const ProductUpload = () => {
 
       // Crear el producto con la URL de la imagen
       console.log('Creando producto con datos:', {
-        name: productData.name.trim(),
-        description: productData.description.trim(),
-        price: parseInt(productData.price),
-        image: uploadResult.secure_url
+        titulo: productData.titulo.trim(),
+        descripcion: productData.descripcion.trim(),
+        creditos: parseInt(productData.creditos),
+        imagen: uploadResult.secure_url
       });
 
       const productResponse = await productService.create({
-        name: productData.name.trim(),
-        description: productData.description.trim(),
-        price: parseInt(productData.price),
-        image: uploadResult.secure_url
+        titulo: productData.titulo.trim(),
+        descripcion: productData.descripcion.trim(),
+        creditos: parseInt(productData.creditos),
+        imagen: uploadResult.secure_url
       });
 
       console.log('Respuesta del servidor:', productResponse);
@@ -126,9 +126,9 @@ const ProductUpload = () => {
         });
         // Limpiar el formulario
         setProductData({
-          name: '',
-          description: '',
-          price: ''
+          titulo: '',
+          descripcion: '',
+          creditos: ''
         });
         setImage(null);
         setPreviewImage('');
@@ -162,12 +162,12 @@ const ProductUpload = () => {
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="name">Nombre del Producto</label>
+            <label htmlFor="titulo">Nombre del Producto</label>
             <input
               type="text"
-              id="name"
-              name="name"
-              value={productData.name}
+              id="titulo"
+              name="titulo"
+              value={productData.titulo}
               onChange={handleChange}
               className="form-control"
               placeholder="Nombre del producto"
@@ -175,11 +175,11 @@ const ProductUpload = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="description">Descripción</label>
+            <label htmlFor="descripcion">Descripción</label>
             <textarea
-              id="description"
-              name="description"
-              value={productData.description}
+              id="descripcion"
+              name="descripcion"
+              value={productData.descripcion}
               onChange={handleChange}
               className="form-control"
               rows="4"
@@ -189,12 +189,12 @@ const ProductUpload = () => {
 
           <div className="form-row">
             <div className="form-group col-md-6">
-              <label htmlFor="price">Precio (créditos)</label>
+              <label htmlFor="creditos">Precio (créditos)</label>
               <input
                 type="number"
-                id="price"
-                name="price"
-                value={productData.price}
+                id="creditos"
+                name="creditos"
+                value={productData.creditos}
                 onChange={handleChange}
                 className="form-control"
                 step="1"

@@ -13,7 +13,6 @@ const ProductSearch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [noResults, setNoResults] = useState(false);
-  const [debouncedQuery, setDebouncedQuery] = useState('');
 
   useEffect(() => {
     const checkAuth = () => {
@@ -23,22 +22,6 @@ const ProductSearch = () => {
     };
     checkAuth();
   }, [isAuthenticated, navigate]);
-
-  // Efecto para el debounce de la búsqueda
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, 500); // 500ms de debounce
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Efecto para realizar la búsqueda cuando cambia el debouncedQuery
-  useEffect(() => {
-    if (isAuthenticated) {
-      searchProducts(debouncedQuery);
-    }
-  }, [debouncedQuery, isAuthenticated]);
 
   const searchProducts = useCallback(async (query = '') => {
     if (!isAuthenticated || !user) {
@@ -59,34 +42,18 @@ const ProductSearch = () => {
         return;
       }
       
-      const productsData = results.data || results;
-      const productsArray = Array.isArray(productsData) ? productsData : [];
+      const productsData = results.data || [];
       
-      // Filtrar productos por el término de búsqueda
-      const filteredProducts = productsArray.filter(product => {
-        const searchLower = query.toLowerCase();
-        const name = (product.titulo || product.name || product.title || '').toLowerCase();
-        const description = (product.descripcion || product.description || '').toLowerCase();
-        const sellerName = (product.seller?.name || product.seller?.username || 
-                          product.usuario?.nombreUsuario || '').toLowerCase();
-
-        // Si no hay término de búsqueda, mostrar todos los productos disponibles
-        if (!query.trim()) {
-          return (product.estado === 1 || product.state === 1) && 
-                 (product.seller?.id !== user.id && product.usuario?.id_usuario !== user.id);
-        }
-
-        // Filtrar por término de búsqueda
-        return (name.includes(searchLower) || 
-                description.includes(searchLower) || 
-                sellerName.includes(searchLower)) &&
-               (product.estado === 1 || product.state === 1) && 
-               (product.seller?.id !== user.id && product.usuario?.id_usuario !== user.id);
-      });
-      
-      if (filteredProducts.length === 0) {
+      if (productsData.length === 0) {
         setNoResults(true);
+        setProducts([]);
+        return;
       }
+      
+      const filteredProducts = productsData.filter(product => 
+        (product.estado === 1 || product.state === 1) && 
+        (product.seller?.id !== user.id && product.usuario?.id_usuario !== user.id)
+      );
       
       const validatedProducts = filteredProducts.map(product => ({
         id: product.id || product.id_objeto || 0,
@@ -113,12 +80,12 @@ const ProductSearch = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Eliminar el intervalo de actualización automática
+  // Cargar productos iniciales
   useEffect(() => {
     if (isAuthenticated) {
-      searchProducts(searchQuery);
+      searchProducts('');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, searchProducts]);
 
   const getStateText = (state) => {
     switch (state) {
@@ -140,7 +107,7 @@ const ProductSearch = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    setDebouncedQuery(searchQuery);
+    searchProducts(searchQuery);
   };
 
   const handleInputChange = (e) => {

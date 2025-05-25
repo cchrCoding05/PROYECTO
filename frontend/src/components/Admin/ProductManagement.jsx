@@ -92,11 +92,11 @@ const ProductManagement = () => {
         
         // Filtrar por término de búsqueda
         if (searchTerm) {
-            const searchLower = searchTerm.toLowerCase();
+            const searchLower = normalizeText(searchTerm.toLowerCase());
             filteredProducts = products.filter(product => 
-                product.name.toLowerCase().includes(searchLower) ||
-                product.description?.toLowerCase().includes(searchLower) ||
-                product.seller?.username.toLowerCase().includes(searchLower)
+                normalizeText(product.name.toLowerCase()).includes(searchLower) ||
+                normalizeText(product.description?.toLowerCase() || '').includes(searchLower) ||
+                normalizeText(product.seller?.username.toLowerCase() || '').includes(searchLower)
             );
         }
 
@@ -115,6 +115,11 @@ const ProductManagement = () => {
             }
             return 0;
         });
+    };
+
+    // Función para normalizar texto (eliminar tildes)
+    const normalizeText = (text) => {
+        return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     };
 
     const getSortIndicator = (columnKey) => {

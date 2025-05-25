@@ -4,7 +4,7 @@ import { fetchApi } from './apiConfig';
 export const productService = {
   search: async (query) => {
     try {
-      const response = await fetchApi(`/products/search?q=${encodeURIComponent(query)}`);
+      const response = await fetchApi(`/products/search?query=${encodeURIComponent(query)}`);
       return response;
     } catch (error) {
       throw error;

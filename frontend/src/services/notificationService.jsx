@@ -1,10 +1,10 @@
-import { fetchApi } from './apiConfig';
+import { api } from './api';
 
 export const notificationService = {
     getUnreadCount: async () => {
         try {
-            const response = await fetchApi('/notifications/unread/count');
-            return response;
+            const response = await api.get('/notifications/unread/count');
+            return response.data;
         } catch (error) {
             console.error('Error al obtener el contador de notificaciones:', error);
             return { count: 0 };
@@ -13,8 +13,8 @@ export const notificationService = {
 
     getNotifications: async () => {
         try {
-            const response = await fetchApi('/notifications');
-            return response;
+            const response = await api.get('/notifications');
+            return response.data;
         } catch (error) {
             console.error('Error al obtener las notificaciones:', error);
             return [];
@@ -23,10 +23,8 @@ export const notificationService = {
 
     markAsRead: async (notificationId) => {
         try {
-            const response = await fetchApi(`/notifications/${notificationId}/read`, {
-                method: 'PUT'
-            });
-            return response;
+            const response = await api.put(`/notifications/${notificationId}/read`);
+            return response.data;
         } catch (error) {
             console.error('Error al marcar notificación como leída:', error);
             throw error;
@@ -35,10 +33,8 @@ export const notificationService = {
 
     markAllAsRead: async () => {
         try {
-            const response = await fetchApi('/notifications/read-all', {
-                method: 'PUT'
-            });
-            return response;
+            const response = await api.put('/notifications/read-all');
+            return response.data;
         } catch (error) {
             console.error('Error al marcar todas las notificaciones como leídas:', error);
             throw error;

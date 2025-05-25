@@ -8,5 +8,3 @@ export { productService } from './productService';
 export { creditService } from './creditService';
 export { negotiationService } from './negotiationService';
 export { adminService } from './adminService';
-export { notificationService } from './notificationService';
-export { chatService } from './chatService';
