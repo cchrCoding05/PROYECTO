@@ -88,9 +88,22 @@ const ProductManagement = () => {
     };
 
     const getSortedProducts = () => {
-        if (!sortConfig.key) return products;
+        let filteredProducts = products;
+        
+        // Filtrar por término de búsqueda
+        if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            filteredProducts = products.filter(product => 
+                product.name.toLowerCase().includes(searchLower) ||
+                product.description?.toLowerCase().includes(searchLower) ||
+                product.seller?.username.toLowerCase().includes(searchLower)
+            );
+        }
 
-        return [...products].sort((a, b) => {
+        // Ordenar productos
+        if (!sortConfig.key) return filteredProducts;
+
+        return [...filteredProducts].sort((a, b) => {
             let aValue = a[sortConfig.key];
             let bValue = b[sortConfig.key];
 

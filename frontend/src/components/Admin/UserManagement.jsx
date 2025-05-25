@@ -89,9 +89,21 @@ const UserManagement = () => {
     };
 
     const getSortedUsers = () => {
-        if (!sortConfig.key) return users;
+        let filteredUsers = users;
+        
+        // Filtrar por término de búsqueda
+        if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            filteredUsers = users.filter(user => 
+                user.username.toLowerCase().includes(searchLower) ||
+                user.email.toLowerCase().includes(searchLower)
+            );
+        }
 
-        return [...users].sort((a, b) => {
+        // Ordenar usuarios
+        if (!sortConfig.key) return filteredUsers;
+
+        return [...filteredUsers].sort((a, b) => {
             let aValue = a[sortConfig.key];
             let bValue = b[sortConfig.key];
 

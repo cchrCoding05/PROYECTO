@@ -7,6 +7,7 @@ use App\Entity\Objeto;
 use App\Entity\NegociacionPrecio;
 use App\Entity\IntercambioObjeto;
 use App\Entity\Valoracion;
+use App\Entity\Mensaje;
 use App\Repository\UsuarioRepository;
 use App\Repository\ObjetoRepository;
 use App\Repository\NegociacionPrecioRepository;
@@ -499,36 +500,31 @@ class NegotiationController extends AbstractController
 
             // Obtener mensajes del chat
             $qb = $this->em->createQueryBuilder();
-            $qb->select('n')
-               ->from('App\Entity\NegociacionPrecio', 'n')
-               ->where('(n.comprador = :userId AND n.vendedor = :professionalId) OR (n.comprador = :professionalId AND n.vendedor = :userId)')
+            $qb->select('m')
+               ->from('App\Entity\Mensaje', 'm')
+               ->where('(m.emisor = :userId AND m.receptor = :professionalId) OR (m.emisor = :professionalId AND m.receptor = :userId)')
                ->setParameter('userId', $user->getId_usuario())
                ->setParameter('professionalId', $profesional->getId_usuario())
-               ->orderBy('n.fecha_creacion', 'ASC');
+               ->orderBy('m.fecha_envio', 'ASC');
 
-            $negociaciones = $qb->getQuery()->getResult();
-            $this->logger->info('Negociaciones encontradas', ['count' => count($negociaciones)]);
+            $mensajes = $qb->getQuery()->getResult();
+            $this->logger->info('Mensajes encontrados', ['count' => count($mensajes)]);
 
             $messages = [];
-            foreach ($negociaciones as $neg) {
+            foreach ($mensajes as $mensaje) {
                 try {
                     $messages[] = [
-                        'id' => $neg->getId_negociacion(),
-                        'message' => $neg->getMensaje(),
-                        'user_id' => $neg->getComprador()->getId_usuario(),
-                        'user_name' => $neg->getComprador()->getNombreUsuario(),
-                        'created_at' => $neg->getFechaCreacion()->format('Y-m-d H:i:s'),
-                        'isBuyer' => $neg->getComprador()->getId_usuario() === $user->getId_usuario(),
-                        'precioPropuesto' => $neg->getPrecioPropuesto(),
-                        'accepted' => $neg->isAceptado(),
-                        'rejected' => $neg->getEstado() === 'rechazada',
-                        'estado' => $neg->getEstado(),
-                        'aceptado_comprador' => $neg->isAceptadoComprador(),
-                        'aceptado_vendedor' => $neg->isAceptadoVendedor()
+                        'id' => $mensaje->getId_mensaje(),
+                        'message' => $mensaje->getContenido(),
+                        'user_id' => $mensaje->getEmisor()->getId_usuario(),
+                        'user_name' => $mensaje->getEmisor()->getNombreUsuario(),
+                        'created_at' => $mensaje->getFechaEnvio()->format('Y-m-d H:i:s'),
+                        'isBuyer' => $mensaje->getEmisor()->getId_usuario() === $user->getId_usuario(),
+                        'leido' => $mensaje->isLeido()
                     ];
                 } catch (\Exception $e) {
                     $this->logger->error('Error procesando mensaje', [
-                        'negociacion_id' => $neg->getId_negociacion(),
+                        'mensaje_id' => $mensaje->getId_mensaje(),
                         'error' => $e->getMessage()
                     ]);
                     continue;
@@ -920,6 +916,135 @@ class NegotiationController extends AbstractController
             return new JsonResponse([
                 'success' => false,
                 'message' => 'Error al obtener propuestas de precio',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/chat/{id}/message', name: 'chat_send_message', methods: ['POST'])]
+    public function sendMessage(Request $request, int $id): JsonResponse
+    {
+        try {
+            $this->logger->info('Iniciando envío de mensaje', ['id' => $id]);
+            
+            if (!$this->getUser()) {
+                $this->logger->warning('Usuario no autenticado');
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario no autenticado'
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            $this->logger->info('Datos recibidos:', $data);
+
+            if (!isset($data['contenido']) || empty($data['contenido'])) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'El mensaje no puede estar vacío'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $receptor = $this->usuarioRepository->find($id);
+            if (!$receptor) {
+                $this->logger->warning('Receptor no encontrado', ['id' => $id]);
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario receptor no encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Crear nuevo mensaje
+            $mensaje = new Mensaje();
+            $mensaje->setEmisor($this->getUser());
+            $mensaje->setReceptor($receptor);
+            $mensaje->setContenido($data['contenido']);
+            $mensaje->setLeido(false);
+            $mensaje->setFechaEnvio(new \DateTimeImmutable());
+
+            $this->logger->info('Mensaje creado:', [
+                'emisor_id' => $mensaje->getEmisor()->getId_usuario(),
+                'receptor_id' => $mensaje->getReceptor()->getId_usuario(),
+                'contenido' => $mensaje->getContenido()
+            ]);
+
+            $this->em->persist($mensaje);
+            $this->em->flush();
+
+            $this->logger->info('Mensaje guardado exitosamente', [
+                'id' => $mensaje->getId_mensaje(),
+                'emisor' => $mensaje->getEmisor()->getId_usuario(),
+                'receptor' => $mensaje->getReceptor()->getId_usuario()
+            ]);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Mensaje enviado exitosamente',
+                'data' => [
+                    'id' => $mensaje->getId_mensaje(),
+                    'contenido' => $mensaje->getContenido(),
+                    'fecha_envio' => $mensaje->getFechaEnvio()->format('Y-m-d H:i:s'),
+                    'emisor' => [
+                        'id' => $mensaje->getEmisor()->getId_usuario(),
+                        'nombre' => $mensaje->getEmisor()->getNombreUsuario()
+                    ],
+                    'receptor' => [
+                        'id' => $mensaje->getReceptor()->getId_usuario(),
+                        'nombre' => $mensaje->getReceptor()->getNombreUsuario()
+                    ],
+                    'leido' => $mensaje->isLeido()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error al enviar mensaje', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al enviar el mensaje',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/chat/{id}/read', name: 'chat_mark_read', methods: ['POST'])]
+    public function markMessagesAsRead(int $id): JsonResponse
+    {
+        try {
+            if (!$this->getUser()) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario no autenticado'
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+
+            // Marcar todos los mensajes no leídos como leídos
+            $qb = $this->em->createQueryBuilder();
+            $qb->update('App\Entity\Mensaje', 'm')
+               ->set('m.leido', true)
+               ->where('m.receptor = :userId')
+               ->andWhere('m.emisor = :otherId')
+               ->andWhere('m.leido = false')
+               ->setParameter('userId', $this->getUser()->getId_usuario())
+               ->setParameter('otherId', $id);
+
+            $qb->getQuery()->execute();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Mensajes marcados como leídos'
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error al marcar mensajes como leídos', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al marcar mensajes como leídos',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
