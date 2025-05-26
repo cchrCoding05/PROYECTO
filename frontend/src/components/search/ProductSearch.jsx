@@ -13,6 +13,8 @@ const ProductSearch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [noResults, setNoResults] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 15;
 
   useEffect(() => {
     const checkAuth = () => {
@@ -87,6 +89,12 @@ const ProductSearch = () => {
     }
   }, [isAuthenticated, searchProducts]);
 
+  // Calcular los productos a mostrar en la página actual
+  const indexOfLast = currentPage * productsPerPage;
+  const indexOfFirst = indexOfLast - productsPerPage;
+  const currentProducts = products.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(products.length / productsPerPage);
+
   const getStateText = (state) => {
     switch (state) {
       case 1: return 'Disponible';
@@ -112,6 +120,10 @@ const ProductSearch = () => {
 
   const handleInputChange = (e) => {
     setSearchQuery(e.target.value);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
   if (!isAuthenticated) {
@@ -170,7 +182,7 @@ const ProductSearch = () => {
           </h3>
           
           <div className="row g-4">
-            {products.map((product) => (
+            {currentProducts.map((product) => (
               <div key={product.id} className="col-md-4">
                 <div className="card h-100 shadow-sm">
                   <img 
@@ -217,6 +229,18 @@ const ProductSearch = () => {
               </div>
             ))}
           </div>
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <nav className="d-flex justify-content-center mt-4">
+              <ul className="pagination">
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <li key={i} className={`page-item${currentPage === i + 1 ? ' active' : ''}`}>
+                    <button className="page-link" onClick={() => handlePageChange(i + 1)}>{i + 1}</button>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
         </div>
       )}
     </div>

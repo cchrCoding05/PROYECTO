@@ -15,6 +15,8 @@ const ProfessionalSearch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [noResults, setNoResults] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const professionalsPerPage = 15;
 
   // Inicializar Cloudinary
   const cld = new Cloudinary({
@@ -180,6 +182,16 @@ const ProfessionalSearch = () => {
     setError(null);
   };
 
+  // Calcular los profesionales a mostrar en la página actual
+  const indexOfLast = currentPage * professionalsPerPage;
+  const indexOfFirst = indexOfLast - professionalsPerPage;
+  const currentProfessionals = professionals.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(professionals.length / professionalsPerPage);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className="container py-4">
       <h2 className="text-center display-5 mb-4">PROFESIONALES</h2>
@@ -224,76 +236,90 @@ const ProfessionalSearch = () => {
         </h3>
         
         {!loading && !error && !noResults && professionals.length > 0 ? (
-          <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-            {professionals.map((professional) => (
-              <div key={professional.id} className="col">
-                <div className="card h-100 border-0 shadow-sm transition">
-                  <div className="card-body text-center p-4">
-                    <div className="mb-3">
-                      {professional.foto_perfil ? (
-                        <img 
-                          src={professional.foto_perfil}
-                          alt={professional.name}
-                          className="rounded-circle mx-auto border"
-                          style={{ 
-                            width: '80px', 
-                            height: '80px', 
-                            objectFit: 'cover',
-                            borderColor: 'var(--bs-border-color)'
-                          }}
-                        />
-                      ) : (
-                        <div 
-                          className="rounded-circle d-flex align-items-center justify-content-center mx-auto bg-primary bg-opacity-10 text-primary fw-bold border"
-                          style={{ 
-                            width: '80px', 
-                            height: '80px',
-                            borderColor: 'var(--bs-border-color)'
-                          }}
-                        >
-                          {professional.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <h4 className="card-title mb-1 fw-bold">{professional.name}</h4>
-                    <div className="text-primary fw-medium mb-2">{professional.profession}</div>
-                    <p className="card-text text-body-secondary small mb-3" style={{ 
-                      display: '-webkit-box', 
-                      WebkitBoxOrient: 'vertical', 
-                      WebkitLineClamp: 3, 
-                      overflow: 'hidden'
-                    }}>
-                      {professional.description}
-                    </p>
-                    
-                    <div className="d-flex flex-column align-items-center mb-3">
-                      <div className="mb-1">
-                        {renderStars(professional.rating)}
-                      </div>
-                      <small className="text-muted">
-                        {professional.reviews_count} valoraciones
-                        {professional.rating > 0 && (
-                          <span className="ms-1">
-                            ({professional.rating.toFixed(1)})
-                          </span>
+          <>
+            <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+              {currentProfessionals.map((professional) => (
+                <div key={professional.id} className="col">
+                  <div className="card h-100 border-0 shadow-sm transition">
+                    <div className="card-body text-center p-4">
+                      <div className="mb-3">
+                        {professional.foto_perfil ? (
+                          <img 
+                            src={professional.foto_perfil}
+                            alt={professional.name}
+                            className="rounded-circle mx-auto border"
+                            style={{ 
+                              width: '80px', 
+                              height: '80px', 
+                              objectFit: 'cover',
+                              borderColor: 'var(--bs-border-color)'
+                            }}
+                          />
+                        ) : (
+                          <div 
+                            className="rounded-circle d-flex align-items-center justify-content-center mx-auto bg-primary bg-opacity-10 text-primary fw-bold border"
+                            style={{ 
+                              width: '80px', 
+                              height: '80px',
+                              borderColor: 'var(--bs-border-color)'
+                            }}
+                          >
+                            {professional.name.charAt(0).toUpperCase()}
+                          </div>
                         )}
-                      </small>
-                    </div>
-                    
-                    <div className="d-flex justify-content-center gap-3">
-                    <Link 
-                        to={`/negotiate/professional/${professional.id}`}
-                        className="btn btn-primary"
-                      >
-                        Contactar
-                      </Link>
+                      </div>
+                      
+                      <h4 className="card-title mb-1 fw-bold">{professional.name}</h4>
+                      <div className="text-primary fw-medium mb-2">{professional.profession}</div>
+                      <p className="card-text text-body-secondary small mb-3" style={{ 
+                        display: '-webkit-box', 
+                        WebkitBoxOrient: 'vertical', 
+                        WebkitLineClamp: 3, 
+                        overflow: 'hidden'
+                      }}>
+                        {professional.description}
+                      </p>
+                      
+                      <div className="d-flex flex-column align-items-center mb-3">
+                        <div className="mb-1">
+                          {renderStars(professional.rating)}
+                        </div>
+                        <small className="text-muted">
+                          {professional.reviews_count} valoraciones
+                          {professional.rating > 0 && (
+                            <span className="ms-1">
+                              ({professional.rating.toFixed(1)})
+                            </span>
+                          )}
+                        </small>
+                      </div>
+                      
+                      <div className="d-flex justify-content-center gap-3">
+                      <Link 
+                          to={`/negotiate/professional/${professional.id}`}
+                          className="btn btn-primary"
+                        >
+                          Contactar
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            {/* Paginación */}
+            {totalPages > 1 && (
+              <nav className="d-flex justify-content-center mt-4">
+                <ul className="pagination">
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <li key={i} className={`page-item${currentPage === i + 1 ? ' active' : ''}`}>
+                      <button className="page-link" onClick={() => handlePageChange(i + 1)}>{i + 1}</button>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
+          </>
         ) : null}
       </div>
     </div>
