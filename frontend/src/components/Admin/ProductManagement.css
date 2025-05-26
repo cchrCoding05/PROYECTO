@@ -168,4 +168,148 @@ textarea.form-control:focus {
     background-color: var(--surface-color);
     color: var(--text-color);
     vertical-align: middle;
-} 
+}
+
+@media (max-width: 900px) {
+  .user-table-responsive,
+  .product-table-responsive {
+    font-size: 0.95rem;
+  }
+  .user-table-responsive th,
+  .user-table-responsive td,
+  .product-table-responsive th,
+  .product-table-responsive td {
+    padding: 0.4rem 0.3rem;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .user-table-responsive,
+  .product-table-responsive {
+    font-size: 0.85rem;
+  }
+  .user-table-responsive th,
+  .user-table-responsive td,
+  .product-table-responsive th,
+  .product-table-responsive td {
+    padding: 0.25rem 0.15rem;
+  }
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+@media (max-width: 1024px) {
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
+  }
+  .product-table-responsive,
+  .user-table-responsive {
+    min-width: 700px;
+  }
+}
+
+.btn-edit,
+.btn-delete {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 110px !important;
+  max-width: 110px !important;
+  width: 110px !important;
+  min-height: 40px !important;
+  height: 40px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+.btn-edit {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--surface-color);
+}
+
+.btn-delete {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+  color: var(--surface-color);
+}
+
+.btn-edit:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.btn-delete:hover {
+  background-color: var(--surface-color-3);
+  border-color: var(--surface-color-3);
+}
+
+.btn-edit:disabled, .btn-delete:disabled {
+  opacity: 0.6;
+  background: var(--surface-color-2) !important;
+  color: var(--text-color) !important;
+}
+
+@media (max-width: 600px) {
+  .btn-edit,
+  .btn-delete {
+    min-width: 90px;
+    max-width: 90px;
+    width: 90px;
+    min-height: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+    padding: 0.5rem;
+    margin: 0;
+  }
+}
+
+.product-table-responsive th,
+.product-table-responsive td,
+.user-table-responsive th,
+.user-table-responsive td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.product-table-responsive td:last-child,
+.user-table-responsive td:last-child {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  height: 100% !important;
+  padding: 0.75rem 0.5rem !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+@media (max-width: 600px) {
+  .product-table-responsive td:last-child,
+  .user-table-responsive td:last-child {
+    padding: 0.5rem 0.25rem !important;
+    gap: 0.25rem !important;
+  }
+  
+  .btn-edit,
+  .btn-delete {
+    min-width: 90px !important;
+    max-width: 90px !important;
+    width: 90px !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    font-size: 0.95rem !important;
+    padding: 0.5rem !important;
+    margin: 0 !important;
+  }
+}

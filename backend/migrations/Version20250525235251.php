@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250525171244 extends AbstractMigration
+final class Version20250525235251 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -36,10 +36,13 @@ final class Version20250525171244 extends AbstractMigration
             CREATE TABLE mensaje (id_mensaje INT AUTO_INCREMENT NOT NULL, id_emisor INT NOT NULL, id_receptor INT NOT NULL, id_negociacion_precio INT DEFAULT NULL, id_negociacion_servicio INT DEFAULT NULL, contenido LONGTEXT NOT NULL, leido TINYINT(1) NOT NULL, fecha_envio DATETIME NOT NULL COMMENT '(DC2Type:datetime_immutable)', INDEX IDX_9B631D01E29930A3 (id_emisor), INDEX IDX_9B631D01B91944F2 (id_receptor), INDEX IDX_9B631D01553E6F36 (id_negociacion_precio), INDEX IDX_9B631D01EFC5704C (id_negociacion_servicio), PRIMARY KEY(id_mensaje)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
         SQL);
         $this->addSql(<<<'SQL'
-            CREATE TABLE negociacion_precio (id_negociacion INT AUTO_INCREMENT NOT NULL, id_comprador INT NOT NULL, id_vendedor INT NOT NULL, id_intercambio INT DEFAULT NULL, precio_propuesto INT NOT NULL, aceptado TINYINT(1) NOT NULL, aceptado_vendedor TINYINT(1) NOT NULL, aceptado_comprador TINYINT(1) NOT NULL, fecha_creacion DATETIME NOT NULL COMMENT '(DC2Type:datetime_immutable)', mensaje VARCHAR(255) DEFAULT NULL, estado VARCHAR(20) DEFAULT NULL, INDEX IDX_D61CDD99F862A056 (id_comprador), INDEX IDX_D61CDD99C74C74BB (id_vendedor), INDEX IDX_D61CDD99188EA2DF (id_intercambio), PRIMARY KEY(id_negociacion)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+            CREATE TABLE negociacion_precio (id_negociacion INT AUTO_INCREMENT NOT NULL, id_comprador INT NOT NULL, id_vendedor INT NOT NULL, id_intercambio INT DEFAULT NULL, precio_propuesto INT NOT NULL, aceptado TINYINT(1) NOT NULL, aceptado_vendedor TINYINT(1) NOT NULL, aceptado_comprador TINYINT(1) NOT NULL, fecha_creacion DATETIME NOT NULL COMMENT '(DC2Type:datetime_immutable)', mensaje VARCHAR(255) DEFAULT NULL, estado VARCHAR(20) DEFAULT NULL, tipo VARCHAR(20) DEFAULT NULL, INDEX IDX_D61CDD99F862A056 (id_comprador), INDEX IDX_D61CDD99C74C74BB (id_vendedor), INDEX IDX_D61CDD99188EA2DF (id_intercambio), PRIMARY KEY(id_negociacion)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
         SQL);
         $this->addSql(<<<'SQL'
             CREATE TABLE negociacion_servicio (id_negociacion INT AUTO_INCREMENT NOT NULL, id_cliente INT NOT NULL, id_profesional INT NOT NULL, creditos_propuestos INT NOT NULL, estado VARCHAR(20) NOT NULL, fecha_creacion DATETIME NOT NULL COMMENT '(DC2Type:datetime_immutable)', fecha_aceptacion DATETIME DEFAULT NULL COMMENT '(DC2Type:datetime_immutable)', fecha_completado DATETIME DEFAULT NULL COMMENT '(DC2Type:datetime_immutable)', INDEX IDX_E33581E82A813255 (id_cliente), INDEX IDX_E33581E833A1E3FF (id_profesional), PRIMARY KEY(id_negociacion)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE notificaciones (id_notificacion INT AUTO_INCREMENT NOT NULL, usuario_id INT NOT NULL, emisor_id INT NOT NULL, tipo VARCHAR(50) NOT NULL, mensaje LONGTEXT NOT NULL, leido TINYINT(1) DEFAULT 0 NOT NULL, fecha_creacion DATETIME NOT NULL COMMENT '(DC2Type:datetime_immutable)', referencia_id INT NOT NULL, INDEX IDX_6FFCB21DB38439E (usuario_id), INDEX IDX_6FFCB216BDF87DF (emisor_id), PRIMARY KEY(id_notificacion)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
         SQL);
         $this->addSql(<<<'SQL'
             CREATE TABLE objeto (id_objeto INT AUTO_INCREMENT NOT NULL, id_usuario INT NOT NULL, titulo VARCHAR(100) NOT NULL, descripcion LONGTEXT NOT NULL, creditos INT NOT NULL, estado INT NOT NULL, fecha_creacion DATETIME NOT NULL COMMENT '(DC2Type:datetime_immutable)', imagen VARCHAR(255) DEFAULT NULL, INDEX IDX_274BE696FCF8192D (id_usuario), PRIMARY KEY(id_objeto)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
@@ -100,6 +103,12 @@ final class Version20250525171244 extends AbstractMigration
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE negociacion_servicio ADD CONSTRAINT FK_E33581E833A1E3FF FOREIGN KEY (id_profesional) REFERENCES usuario (id_usuario)
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE notificaciones ADD CONSTRAINT FK_6FFCB21DB38439E FOREIGN KEY (usuario_id) REFERENCES usuario (id_usuario)
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE notificaciones ADD CONSTRAINT FK_6FFCB216BDF87DF FOREIGN KEY (emisor_id) REFERENCES usuario (id_usuario)
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE objeto ADD CONSTRAINT FK_274BE696FCF8192D FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
@@ -185,6 +194,12 @@ final class Version20250525171244 extends AbstractMigration
             ALTER TABLE negociacion_servicio DROP FOREIGN KEY FK_E33581E833A1E3FF
         SQL);
         $this->addSql(<<<'SQL'
+            ALTER TABLE notificaciones DROP FOREIGN KEY FK_6FFCB21DB38439E
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE notificaciones DROP FOREIGN KEY FK_6FFCB216BDF87DF
+        SQL);
+        $this->addSql(<<<'SQL'
             ALTER TABLE objeto DROP FOREIGN KEY FK_274BE696FCF8192D
         SQL);
         $this->addSql(<<<'SQL'
@@ -240,6 +255,9 @@ final class Version20250525171244 extends AbstractMigration
         SQL);
         $this->addSql(<<<'SQL'
             DROP TABLE negociacion_servicio
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE notificaciones
         SQL);
         $this->addSql(<<<'SQL'
             DROP TABLE objeto

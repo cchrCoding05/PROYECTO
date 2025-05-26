@@ -49,9 +49,13 @@ export const productService = {
       const response = await fetchApi(`/products/${id}`, {
         method: 'DELETE'
       });
+      if (!response.success) {
+        throw new Error(response.message || 'Error al eliminar el producto');
+      }
       return response;
     } catch (error) {
-      throw error;
+      console.error('Error al eliminar producto:', error);
+      throw new Error(error.message || 'Error al eliminar el producto');
     }
   },
 

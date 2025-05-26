@@ -22,7 +22,16 @@ const Register = () => {
   const validatePassword = (password) => {
     const hasUpperCase = /[A-Z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
-    return hasUpperCase && hasNumber;
+    const hasMinLength = password.length >= 8;
+    return hasUpperCase && hasNumber && hasMinLength;
+  };
+
+  const validateEmail = (email) => {
+    // Debe tener un punto después de la arroba
+    const atIndex = email.indexOf('@');
+    if (atIndex === -1) return false;
+    const domain = email.slice(atIndex + 1);
+    return domain.includes('.') && domain.split('.').pop().length > 0;
   };
 
   const handleSubmit = async (e) => {
@@ -46,6 +55,15 @@ const Register = () => {
       return;
     }
 
+    // Validación de correo personalizada
+    if (!validateEmail(formData.email)) {
+      setAlert({ 
+        message: 'El correo debe tener un punto después de la arroba (ejemplo: usuario@dominio.com)', 
+        type: 'danger' 
+      });
+      return;
+    }
+
     if (!formData.password.trim()) {
       setAlert({ 
         message: 'La contraseña es obligatoria', 
@@ -62,10 +80,10 @@ const Register = () => {
       return;
     }
     
-    // Validación de contraseña
+    // Validación de contraseña personalizada
     if (!validatePassword(formData.password)) {
       setAlert({ 
-        message: 'La contraseña debe contener al menos una mayúscula y un número', 
+        message: 'La contraseña debe tener al menos 8 caracteres, una mayúscula y un número', 
         type: 'danger' 
       });
       return;
@@ -94,7 +112,32 @@ const Register = () => {
         setTimeout(() => {
           navigate('/login');
         }, 2000);
+        return;
       }
+
+      // Mensajes personalizados para usuario/correo ya registrados
+      if (response.message) {
+        if (response.message.toLowerCase().includes('usuario') && response.message.toLowerCase().includes('existe')) {
+          setAlert({
+            message: 'Este usuario ya está registrado',
+            type: 'danger'
+          });
+          return;
+        }
+        if (response.message.toLowerCase().includes('correo') && response.message.toLowerCase().includes('existe')) {
+          setAlert({
+            message: 'Este correo ya está registrado',
+            type: 'danger'
+          });
+          return;
+        }
+      }
+
+      // Mensaje genérico si no es ninguno de los anteriores
+      setAlert({
+        message: response.message || 'Error al registrar usuario',
+        type: 'danger'
+      });
     } catch (error) {
       console.error('Error en el registro:', error);
       setAlert({ 
@@ -134,13 +177,13 @@ const Register = () => {
           <div className="form-group">
             <label htmlFor="email">Correo electrónico</label>
             <input
-              type="email"
+              type="text"
               id="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               className="form-control"
-              placeholder="tu@email.com"
+              placeholder="Tu correo electrónico"
             />
           </div>
           

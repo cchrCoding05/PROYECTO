@@ -143,7 +143,7 @@ const UserManagement = () => {
             </div>
 
             <div className="table-responsive">
-                <table className="table table-hover">
+                <table className="table table-hover user-table-responsive">
                     <thead>
                         <tr>
                             <th>Foto</th>
@@ -183,13 +183,13 @@ const UserManagement = () => {
                                 <td>{user.credits}</td>
                                 <td>
                                     <button
-                                        className="btn btn-primary btn-sm me-2"
+                                        className="btn btn-primary btn-sm me-2 btn-edit"
                                         onClick={() => handleEdit(user)}
                                     >
                                         Editar
                                     </button>
                                     <button
-                                        className="btn btn-danger btn-sm"
+                                        className="btn btn-danger btn-sm btn-delete"
                                         onClick={() => handleDelete(user.id)}
                                     >
                                         Eliminar

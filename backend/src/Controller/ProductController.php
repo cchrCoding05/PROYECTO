@@ -357,4 +357,49 @@ class ProductController extends AbstractController
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
+    public function deleteProduct(int $id): JsonResponse
+    {
+        try {
+            $user = $this->getUser();
+            if (!$user) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario no autenticado'
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+
+            $product = $this->objetoRepository->find($id);
+            if (!$product) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Producto no encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Verificar que el usuario es el propietario
+            if ($product->getUsuario()->getId_usuario() !== $user->getId_usuario()) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para eliminar este producto'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $this->em->remove($product);
+            $this->em->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Producto eliminado con éxito'
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Error al eliminar producto: ' . $e->getMessage());
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al eliminar el producto',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

@@ -185,10 +185,9 @@ const ProfessionalSearch = () => {
       <h2 className="text-center display-5 mb-4">PROFESIONALES</h2>
       
       {error && (
-        <AlertMessage 
+        <AlertMessage
           message={error}
           type="danger"
-          duration={0} // No auto-cerrar
           onClose={handleCloseError}
         />
       )}

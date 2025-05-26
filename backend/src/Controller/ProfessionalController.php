@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Entity\Usuario;
 use App\Entity\Valoracion;
 use App\Entity\NegociacionPrecio;
+use App\Entity\NegociacionServicio;
+use App\Entity\Notificacion;
 use App\Repository\UsuarioRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -177,86 +179,57 @@ class ProfessionalController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/chat', name: 'get_professional_chat', methods: ['GET'])]
+    #[Route('/chat/{id}', name: 'get_chat', methods: ['GET'])]
     public function getChat(int $id): JsonResponse
     {
         try {
-            $this->logger->info('Iniciando getChat', ['id' => $id]);
-            
             $user = $this->getUser();
             if (!$user) {
-                $this->logger->warning('Usuario no autenticado');
                 return $this->json([
                     'success' => false,
                     'message' => 'Usuario no autenticado'
                 ], Response::HTTP_UNAUTHORIZED);
             }
 
-            $profesional = $this->usuarioRepository->find($id);
+            $profesional = $this->em->getRepository(Profesional::class)->find($id);
             if (!$profesional) {
-                $this->logger->warning('Profesional no encontrado', ['id' => $id]);
                 return $this->json([
                     'success' => false,
                     'message' => 'Profesional no encontrado'
                 ], Response::HTTP_NOT_FOUND);
             }
 
-            // Obtener mensajes del chat
+            // Obtener todas las negociaciones entre el usuario y el profesional
             $qb = $this->em->createQueryBuilder();
             $qb->select('n')
                ->from('App\Entity\NegociacionPrecio', 'n')
                ->where('(n.comprador = :userId AND n.vendedor = :professionalId) OR (n.comprador = :professionalId AND n.vendedor = :userId)')
+               ->andWhere('n.tipo = :tipo')
                ->setParameter('userId', $user->getId_usuario())
                ->setParameter('professionalId', $profesional->getId_usuario())
+               ->setParameter('tipo', 'servicio')
                ->orderBy('n.fecha_creacion', 'ASC');
 
-            $negociaciones = $qb->getQuery()->getResult();
-            $this->logger->info('Negociaciones encontradas', ['count' => count($negociaciones)]);
+            $negotiations = $qb->getQuery()->getResult();
 
-            $messages = [];
-            foreach ($negociaciones as $neg) {
-                try {
-                    $messages[] = [
-                        'id' => $neg->getId_negociacion(),
-                        'message' => $neg->getMensaje(),
-                        'user_id' => $neg->getComprador()->getId_usuario(),
-                        'user_name' => $neg->getComprador()->getNombreUsuario(),
-                        'created_at' => $neg->getFechaCreacion()->format('Y-m-d H:i:s'),
-                        'isBuyer' => $neg->getComprador()->getId_usuario() === $user->getId_usuario(),
-                        'precioPropuesto' => $neg->getPrecioPropuesto(),
-                        'accepted' => $neg->isAceptado(),
-                        'rejected' => $neg->getEstado() === 'rechazada',
-                        'isActive' => !$neg->isAceptado() && $neg->getEstado() !== 'rechazada'
-                    ];
-                } catch (\Exception $e) {
-                    $this->logger->error('Error procesando mensaje', [
-                        'negociacion_id' => $neg->getId_negociacion(),
-                        'error' => $e->getMessage()
-                    ]);
-                    continue;
-                }
+            $formattedNegotiations = [];
+            foreach ($negotiations as $negotiation) {
+                $formattedNegotiations[] = [
+                    'id' => $negotiation->getId_negociacion(),
+                    'proposedCredits' => $negotiation->getPrecioPropuesto(),
+                    'status' => $negotiation->isAceptado() ? 2 : 1,
+                    'date' => $negotiation->getFechaCreacion()->format('Y-m-d H:i:s'),
+                    'isSeller' => $negotiation->getVendedor()->getId_usuario() === $user->getId_usuario()
+                ];
             }
-
-            $this->logger->info('Mensajes procesados', ['count' => count($messages)]);
 
             return $this->json([
                 'success' => true,
-                'data' => [
-                    'professional' => [
-                        'id' => $profesional->getId_usuario(),
-                        'name' => $profesional->getNombreUsuario(),
-                        'profession' => $profesional->getProfesion(),
-                        'profile_image' => $profesional->getFotoPerfil()
-                    ],
-                    'messages' => $messages
-                ]
+                'data' => $formattedNegotiations
             ]);
 
         } catch (\Exception $e) {
-            $this->logger->error('Error al obtener chat', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            $this->logger->error('Error al obtener chat: ' . $e->getMessage());
             return $this->json([
                 'success' => false,
                 'message' => 'Error al obtener el chat',
@@ -300,6 +273,19 @@ class ProfessionalController extends AbstractController
             $negociacion->setFechaCreacion(new \DateTimeImmutable());
 
             $this->em->persist($negociacion);
+            $this->em->flush();
+
+            // Crear notificación
+            $notificacion = new Notificacion();
+            $notificacion->setUsuario($profesional);
+            $notificacion->setTipo('mensaje');
+            $notificacion->setMensaje($this->getUser()->getNombreUsuario() . ' te ha enviado un mensaje');
+            $notificacion->setReferenciaId($negociacion->getId_negociacion());
+            $notificacion->setEmisor($this->getUser());
+            $notificacion->setLeido(false);
+            $notificacion->setFechaCreacion(new \DateTimeImmutable());
+
+            $this->em->persist($notificacion);
             $this->em->flush();
 
             return $this->json([
@@ -448,6 +434,19 @@ class ProfessionalController extends AbstractController
                 'aceptado_vendedor' => $propuesta->isAceptadoVendedor()
             ]);
 
+            // Crear notificación
+            $notificacion = new Notificacion();
+            $notificacion->setUsuario($profesional);
+            $notificacion->setTipo('propuesta_aceptada');
+            $notificacion->setMensaje($this->getUser()->getNombreUsuario() . ' ha aceptado tu propuesta');
+            $notificacion->setReferenciaId($propuesta->getId_negociacion());
+            $notificacion->setEmisor($this->getUser());
+            $notificacion->setLeido(false);
+            $notificacion->setFechaCreacion(new \DateTimeImmutable());
+
+            $this->em->persist($notificacion);
+            $this->em->flush();
+
             return $this->json([
                 'success' => true,
                 'message' => 'Propuesta aceptada exitosamente',
@@ -511,6 +510,19 @@ class ProfessionalController extends AbstractController
             $propuesta->setEstado('rechazada');
             $this->em->flush();
 
+            // Crear notificación
+            $notificacion = new Notificacion();
+            $notificacion->setUsuario($profesional);
+            $notificacion->setTipo('propuesta_rechazada');
+            $notificacion->setMensaje($this->getUser()->getNombreUsuario() . ' ha rechazado tu propuesta');
+            $notificacion->setReferenciaId($propuesta->getId_negociacion());
+            $notificacion->setEmisor($this->getUser());
+            $notificacion->setLeido(false);
+            $notificacion->setFechaCreacion(new \DateTimeImmutable());
+
+            $this->em->persist($notificacion);
+            $this->em->flush();
+
             return $this->json([
                 'success' => true,
                 'message' => 'Propuesta rechazada exitosamente',
@@ -528,86 +540,6 @@ class ProfessionalController extends AbstractController
             return $this->json([
                 'success' => false,
                 'message' => 'Error al rechazar la propuesta',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    #[Route('/{id}/chat/propose-price', name: 'chat_propose_price', methods: ['POST'])]
-    public function proposePrice(Request $request, int $id): JsonResponse
-    {
-        try {
-            $this->logger->info('Iniciando proposePrice', ['id' => $id]);
-            
-            if (!$this->getUser()) {
-                $this->logger->warning('Usuario no autenticado');
-                return $this->json([
-                    'success' => false,
-                    'message' => 'Usuario no autenticado'
-                ], Response::HTTP_UNAUTHORIZED);
-            }
-
-            $profesional = $this->usuarioRepository->find($id);
-            if (!$profesional) {
-                $this->logger->warning('Profesional no encontrado', ['id' => $id]);
-                return $this->json([
-                    'success' => false,
-                    'message' => 'Profesional no encontrado'
-                ], Response::HTTP_NOT_FOUND);
-            }
-
-            $data = json_decode($request->getContent(), true);
-            if (!isset($data['price']) || !is_numeric($data['price']) || $data['price'] < 1) {
-                return $this->json([
-                    'success' => false,
-                    'message' => 'El precio debe ser un número mayor a 0'
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            // Verificar si el usuario tiene suficientes créditos
-            if ($this->getUser()->getCreditos() < $data['price']) {
-                return $this->json([
-                    'success' => false,
-                    'message' => 'No tienes suficientes créditos para realizar esta propuesta'
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            // Crear nueva negociación
-            $negociacion = new NegociacionPrecio();
-            $negociacion->setComprador($this->getUser());
-            $negociacion->setVendedor($profesional);
-            $negociacion->setPrecioPropuesto($data['price']);
-            $negociacion->setAceptado(false);
-            $negociacion->setFechaCreacion(new \DateTimeImmutable());
-
-            $this->em->persist($negociacion);
-            $this->em->flush();
-
-            $this->logger->info('Propuesta de precio creada exitosamente', [
-                'id' => $negociacion->getId_negociacion(),
-                'comprador' => $this->getUser()->getId_usuario(),
-                'vendedor' => $profesional->getId_usuario(),
-                'precio' => $data['price']
-            ]);
-
-            return $this->json([
-                'success' => true,
-                'message' => 'Propuesta de precio enviada exitosamente',
-                'data' => [
-                    'id' => $negociacion->getId_negociacion(),
-                    'price' => $negociacion->getPrecioPropuesto(),
-                    'created_at' => $negociacion->getFechaCreacion()->format('Y-m-d H:i:s')
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            $this->logger->error('Error al proponer precio', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return $this->json([
-                'success' => false,
-                'message' => 'Error al proponer precio',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -641,8 +573,10 @@ class ProfessionalController extends AbstractController
             $qb->select('n')
                ->from(NegociacionPrecio::class, 'n')
                ->where('(n.comprador = :usuario AND n.vendedor = :profesional) OR (n.comprador = :profesional AND n.vendedor = :usuario)')
+               ->andWhere('n.tipo = :tipo')
                ->setParameter('usuario', $this->getUser())
                ->setParameter('profesional', $profesional)
+               ->setParameter('tipo', 'servicio')
                ->orderBy('n.fecha_creacion', 'ASC');
 
             $propuestas = $qb->getQuery()->getResult();
@@ -710,10 +644,12 @@ class ProfessionalController extends AbstractController
 
             // Obtener todas las negociaciones del usuario
             $qb = $this->em->createQueryBuilder();
-            $qb->select('n')
+            $qb->select('DISTINCT n')
                ->from(NegociacionPrecio::class, 'n')
                ->where('n.comprador = :usuario OR n.vendedor = :usuario')
+               ->andWhere('n.tipo = :tipo')
                ->setParameter('usuario', $user)
+               ->setParameter('tipo', 'servicio')
                ->orderBy('n.fecha_creacion', 'DESC');
 
             $negociaciones = $qb->getQuery()->getResult();
@@ -721,87 +657,109 @@ class ProfessionalController extends AbstractController
                 'count' => count($negociaciones)
             ]);
 
-            // Agrupar las negociaciones por profesional
             $chats = [];
+            $processedUsers = [];
+
             foreach ($negociaciones as $negociacion) {
-                try {
-                    // Determinar quién es el profesional (el que no es el usuario actual)
-                    $profesional = $negociacion->getComprador()->getId_usuario() === $user->getId_usuario() 
-                        ? $negociacion->getVendedor() 
-                        : $negociacion->getComprador();
+                // Determinar quién es el otro usuario (no el actual)
+                $otherUser = $negociacion->getComprador()->getId_usuario() === $user->getId_usuario() 
+                    ? $negociacion->getVendedor() 
+                    : $negociacion->getComprador();
 
-                    if (!$profesional) {
-                        $this->logger->warning('Profesional no encontrado en negociación', [
-                            'negociacion_id' => $negociacion->getId_negociacion()
-                        ]);
-                        continue;
-                    }
-
-                    $profesionalId = $profesional->getId_usuario();
-                    
-                    if (!isset($chats[$profesionalId])) {
-                        $chats[$profesionalId] = [
-                            'id' => $profesionalId,
-                            'professional' => [
-                                'id' => $profesional->getId_usuario(),
-                                'name' => $profesional->getNombreUsuario(),
-                                'profession' => $profesional->getProfesion(),
-                                'photo' => $profesional->getFotoPerfil()
-                            ],
-                            'lastMessage' => [
-                                'id' => $negociacion->getId_negociacion(),
-                                'price' => $negociacion->getPrecioPropuesto(),
-                                'created_at' => $negociacion->getFechaCreacion()->format('Y-m-d H:i:s'),
-                                'estado' => $negociacion->getEstado(),
-                                'aceptado' => $negociacion->isAceptado(),
-                                'aceptado_vendedor' => $negociacion->isAceptadoVendedor(),
-                                'aceptado_comprador' => $negociacion->isAceptadoComprador()
-                            ]
-                        ];
-                    
-                        // Actualizar el último mensaje si esta negociación es más reciente
-                        $fechaActual = new \DateTime($chats[$profesionalId]['lastMessage']['created_at']);
-                        $fechaNueva = $negociacion->getFechaCreacion();
-                        
-                        if ($fechaNueva > $fechaActual) {
-                            $chats[$profesionalId]['lastMessage'] = [
-                                'id' => $negociacion->getId_negociacion(),
-                                'price' => $negociacion->getPrecioPropuesto(),
-                                'created_at' => $negociacion->getFechaCreacion()->format('Y-m-d H:i:s'),
-                                'estado' => $negociacion->getEstado(),
-                                'aceptado' => $negociacion->isAceptado(),
-                                'aceptado_vendedor' => $negociacion->isAceptadoVendedor(),
-                                'aceptado_comprador' => $negociacion->isAceptadoComprador()
-                            ];
-                        }
-                    }
-                } catch (\Exception $e) {
-                    $this->logger->error('Error procesando negociación', [
-                        'negociacion_id' => $negociacion->getId_negociacion(),
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
+                // Evitar duplicados
+                if (in_array($otherUser->getId_usuario(), $processedUsers)) {
                     continue;
                 }
+                $processedUsers[] = $otherUser->getId_usuario();
+
+                // Obtener el último mensaje del chat
+                $qb = $this->em->createQueryBuilder();
+                $qb->select('m')
+                   ->from('App\Entity\Mensaje', 'm')
+                   ->where('(m.emisor = :userId AND m.receptor = :otherId) OR (m.emisor = :otherId AND m.receptor = :userId)')
+                   ->setParameter('userId', $user->getId_usuario())
+                   ->setParameter('otherId', $otherUser->getId_usuario())
+                   ->orderBy('m.fecha_envio', 'DESC')
+                   ->setMaxResults(1);
+
+                $ultimoMensaje = $qb->getQuery()->getOneOrNullResult();
+
+                // Obtener la última propuesta
+                $qb = $this->em->createQueryBuilder();
+                $qb->select('n')
+                   ->from(NegociacionPrecio::class, 'n')
+                   ->where('(n.comprador = :userId AND n.vendedor = :otherId) OR (n.comprador = :otherId AND n.vendedor = :userId)')
+                   ->andWhere('n.tipo = :tipo')
+                   ->setParameter('userId', $user->getId_usuario())
+                   ->setParameter('otherId', $otherUser->getId_usuario())
+                   ->setParameter('tipo', 'servicio')
+                   ->orderBy('n.fecha_creacion', 'DESC')
+                   ->setMaxResults(1);
+
+                $ultimaPropuesta = $qb->getQuery()->getOneOrNullResult();
+
+                // Determinar el estado de la negociación
+                $status = 'EN_NEGOCIACION';
+                $isActive = true;
+
+                if ($ultimaPropuesta) {
+                    if ($ultimaPropuesta->getEstado() === 'finalizada') {
+                        $status = 'finalizada';
+                        $isActive = false;
+                    } else if ($ultimaPropuesta->getEstado() === 'aceptada') {
+                        $status = 'aceptada';
+                        $isActive = true;
+                    } else if ($ultimaPropuesta->getEstado() === 'rechazada') {
+                        $status = 'rechazada';
+                        $isActive = false;
+                    }
+                }
+
+                $chats[] = [
+                    'id' => $otherUser->getId_usuario(),
+                    'professional' => [
+                        'id' => $otherUser->getId_usuario(),
+                        'name' => $otherUser->getNombreUsuario(),
+                        'profession' => $otherUser->getProfesion(),
+                        'photo' => $otherUser->getFotoPerfil()
+                    ],
+                    'lastMessage' => $ultimoMensaje ? [
+                        'id' => $ultimoMensaje->getId_mensaje(),
+                        'content' => $ultimoMensaje->getContenido(),
+                        'created_at' => $ultimoMensaje->getFechaEnvio()->format('Y-m-d H:i:s'),
+                        'isRead' => $ultimoMensaje->isLeido()
+                    ] : null,
+                    'lastProposal' => $ultimaPropuesta ? [
+                        'id' => $ultimaPropuesta->getId_negociacion(),
+                        'price' => $ultimaPropuesta->getPrecioPropuesto(),
+                        'created_at' => $ultimaPropuesta->getFechaCreacion()->format('Y-m-d H:i:s'),
+                        'estado' => $ultimaPropuesta->getEstado(),
+                        'aceptado_comprador' => $ultimaPropuesta->isAceptadoComprador(),
+                        'aceptado_vendedor' => $ultimaPropuesta->isAceptadoVendedor()
+                    ] : null,
+                    'status' => $status,
+                    'isActive' => $isActive
+                ];
             }
 
-            $this->logger->info('Chats procesados exitosamente', [
-                'chats_count' => count($chats)
+            $this->logger->info('Chats procesados', [
+                'count' => count($chats),
+                'chats' => $chats
             ]);
 
             return $this->json([
                 'success' => true,
-                'data' => array_values($chats)
+                'data' => $chats
             ]);
 
         } catch (\Exception $e) {
-            $this->logger->error('Error al obtener chats del usuario', [
+            $this->logger->error('Error al obtener chats', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
             return $this->json([
                 'success' => false,
-                'message' => 'Error al obtener chats',
+                'message' => 'Error al obtener los chats',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -924,6 +882,19 @@ class ProfessionalController extends AbstractController
                 'aceptado_vendedor' => $propuesta->isAceptadoVendedor()
             ]);
 
+            // Crear notificación
+            $notificacion = new Notificacion();
+            $notificacion->setUsuario($propuesta->getVendedor());
+            $notificacion->setTipo('propuesta_aceptada');
+            $notificacion->setMensaje($this->getUser()->getNombreUsuario() . ' ha aceptado tu propuesta');
+            $notificacion->setReferenciaId($propuesta->getId_negociacion());
+            $notificacion->setEmisor($this->getUser());
+            $notificacion->setLeido(false);
+            $notificacion->setFechaCreacion(new \DateTimeImmutable());
+
+            $this->em->persist($notificacion);
+            $this->em->flush();
+
             return $this->json([
                 'success' => true,
                 'message' => 'Propuesta aceptada exitosamente',
@@ -945,6 +916,76 @@ class ProfessionalController extends AbstractController
                 'message' => 'Error al aceptar la propuesta',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/{id}/chat/message', name: 'chat_send_message', methods: ['POST'])]
+    public function sendMessage(Request $request, int $id): JsonResponse
+    {
+        try {
+            if (!$this->getUser()) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Usuario no autenticado'
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            if (!isset($data['message']) || empty($data['message'])) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'El mensaje no puede estar vacío'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $profesional = $this->usuarioRepository->find($id);
+            if (!$profesional) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Profesional no encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Crear nueva negociación
+            $negociacion = new NegociacionServicio();
+            $negociacion->setCliente($this->getUser());
+            $negociacion->setProfesional($profesional);
+            $negociacion->setMensaje($data['message']);
+            $negociacion->setEstado(NegociacionServicio::ESTADO_EN_NEGOCIACION);
+            $negociacion->setFechaCreacion(new \DateTimeImmutable());
+
+            $this->em->persist($negociacion);
+            $this->em->flush();
+
+            // Crear notificación
+            $notificacion = new Notificacion();
+            $notificacion->setUsuario($profesional);
+            $notificacion->setTipo('mensaje');
+            $notificacion->setMensaje($this->getUser()->getNombreUsuario() . ' te ha enviado un mensaje');
+            $notificacion->setReferenciaId($negociacion->getId_negociacion());
+            $notificacion->setEmisor($this->getUser());
+            $notificacion->setLeido(false);
+            $notificacion->setFechaCreacion(new \DateTimeImmutable());
+
+            $this->em->persist($notificacion);
+            $this->em->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Mensaje enviado exitosamente',
+                'data' => [
+                    'id' => $negociacion->getId_negociacion(),
+                    'message' => $negociacion->getMensaje(),
+                    'created_at' => $negociacion->getFechaCreacion()->format('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error al enviar mensaje', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->json(['error' => 'Error al enviar el mensaje'], 500);
         }
     }
 

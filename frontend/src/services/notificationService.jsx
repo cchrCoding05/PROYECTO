@@ -1,42 +1,60 @@
-import { api } from './api';
+import { fetchApi } from './apiConfig';
 
+// Servicios de notificaciones
 export const notificationService = {
-    getUnreadCount: async () => {
+    async getNotifications() {
         try {
-            const response = await api.get('/notifications/unread/count');
-            return response.data;
+            const response = await fetchApi('/notifications');
+            return response;
         } catch (error) {
-            console.error('Error al obtener el contador de notificaciones:', error);
-            return { count: 0 };
+            console.error('Error al obtener notificaciones:', error);
+            throw error;
         }
     },
 
-    getNotifications: async () => {
+    async getUnreadCount() {
         try {
-            const response = await api.get('/notifications');
-            return response.data;
+            const response = await fetchApi('/notifications/unread/count');
+            return response;
         } catch (error) {
-            console.error('Error al obtener las notificaciones:', error);
-            return [];
+            console.error('Error al obtener contador de notificaciones no leídas:', error);
+            throw error;
         }
     },
 
-    markAsRead: async (notificationId) => {
+    async markAsRead(notificationId) {
         try {
-            const response = await api.put(`/notifications/${notificationId}/read`);
-            return response.data;
+            const response = await fetchApi(`/notifications/${notificationId}/read`, {
+                method: 'PUT'
+            });
+            return response;
         } catch (error) {
             console.error('Error al marcar notificación como leída:', error);
             throw error;
         }
     },
 
-    markAllAsRead: async () => {
+    async markAllAsRead() {
         try {
-            const response = await api.put('/notifications/read-all');
-            return response.data;
+            const response = await fetchApi('/notifications/read-all', {
+                method: 'PUT'
+            });
+            return response;
         } catch (error) {
             console.error('Error al marcar todas las notificaciones como leídas:', error);
+            throw error;
+        }
+    },
+
+    async createNotification(data) {
+        try {
+            const response = await fetchApi('/notifications/create', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            return response;
+        } catch (error) {
+            console.error('Error al crear notificación:', error);
             throw error;
         }
     }

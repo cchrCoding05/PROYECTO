@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button, Container, Row, Col, Alert, Badge, Tabs, Tab } from 'react-bootstrap';
+import { Card, Button, Container, Row, Col, Alert, Badge } from 'react-bootstrap';
 import { negotiationService } from "../../services/negotiationService";
 import './Profile.css';
 
@@ -15,25 +15,17 @@ const MyNegotiations = () => {
       setLoading(true);
       setError(null);
       const data = await negotiationService.getMyNegotiations();
-      
       // Agrupar negociaciones por producto y mantener solo la más reciente
       const negociacionesAgrupadas = data.reduce((acc, negotiation) => {
         const productId = negotiation.product.id;
-        
-        // Si no existe una negociación para este producto o la actual es más reciente
         if (!acc[productId] || new Date(negotiation.date) > new Date(acc[productId].date)) {
           acc[productId] = negotiation;
         }
-        
         return acc;
       }, {});
-      
-      // Convertir el objeto agrupado en un array
       const negociacionesFiltradas = Object.values(negociacionesAgrupadas);
-      
       setNegotiations(negociacionesFiltradas);
     } catch (err) {
-      console.error('Error al cargar negociaciones:', err);
       setError(err.message || 'Error al cargar las negociaciones');
     } finally {
       setLoading(false);
@@ -114,38 +106,6 @@ const MyNegotiations = () => {
     </Col>
   );
 
-  const renderChatCard = (negotiation) => (
-    <Col key={negotiation.id}>
-      <Card className="h-100 shadow-sm">
-        <Card.Body>
-          <div className="d-flex justify-content-between align-items-start mb-2">
-            {getRoleBadge(negotiation.isSeller)}
-            {getStatusBadge(negotiation.status, negotiation.isActive)}
-          </div>
-          <Card.Title className="mb-3">
-            {negotiation.isSeller ? negotiation.buyer.name : negotiation.seller.name}
-          </Card.Title>
-          <Card.Text>
-            <strong>Precio propuesto:</strong> {negotiation.proposedCredits} créditos
-          </Card.Text>
-          <Card.Text>
-            <small className="text-muted">
-              Última actualización: {new Date(negotiation.date).toLocaleString()}
-            </small>
-          </Card.Text>
-
-          <Button 
-            variant="primary" 
-            onClick={() => navigate(`/negotiate/professional/${negotiation.isSeller ? negotiation.buyer.id : negotiation.seller.id}`)}
-            className="mt-2 w-100"
-          >
-            Ver Chat
-          </Button>
-        </Card.Body>
-      </Card>
-    </Col>
-  );
-
   if (loading) {
     return (
       <Container className="mt-4">
@@ -164,37 +124,21 @@ const MyNegotiations = () => {
     );
   }
 
-  // Separar negociaciones con y sin objetos
+  // Solo negociaciones con productos
   const negociacionesConObjetos = negotiations.filter(n => n.product && n.product.id);
-  const negociacionesSinObjetos = negotiations.filter(n => !n.product || !n.product.id);
 
   return (
     <Container className="mt-4">
       <h2 className="mb-4">Mis Negociaciones</h2>
-      <Tabs defaultActiveKey="productos" className="mb-4">
-        <Tab eventKey="productos" title="Negociaciones con Productos">
-          {negociacionesConObjetos.length === 0 ? (
-            <Alert variant="info">
-              No tienes negociaciones activas con productos
-            </Alert>
-          ) : (
-            <Row xs={1} md={2} lg={3} className="g-4">
-              {negociacionesConObjetos.map(renderNegotiationCard)}
-            </Row>
-          )}
-        </Tab>
-        <Tab eventKey="chats" title="Mis Chats">
-          {negociacionesSinObjetos.length === 0 ? (
-            <Alert variant="info">
-              No tienes chats activos
-            </Alert>
-          ) : (
-            <Row xs={1} md={2} lg={3} className="g-4">
-              {negociacionesSinObjetos.map(renderChatCard)}
-            </Row>
-          )}
-        </Tab>
-      </Tabs>
+      {negociacionesConObjetos.length === 0 ? (
+        <Alert variant="info">
+          No tienes negociaciones activas con productos
+        </Alert>
+      ) : (
+        <Row xs={1} md={2} lg={3} className="g-4">
+          {negociacionesConObjetos.map(renderNegotiationCard)}
+        </Row>
+      )}
     </Container>
   );
 };

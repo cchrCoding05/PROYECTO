@@ -158,55 +158,19 @@ const ProfileForm = () => {
           <Card>
             <Card.Body>
               {alert && (
-                <Alert variant={alert.type} onClose={() => setAlert(null)} dismissible>
-                  {alert.message}
-                </Alert>
+                <AlertMessage
+                  message={alert.message}
+                  type={alert.type}
+                  onClose={() => setAlert(null)}
+                />
               )}
 
               <Form onSubmit={handleSubmit}>
-                <div className="profile-layout">
-                  <div className="profile-col">
-                    <div className="form-group">
-                      <label htmlFor="username">Usuario</label>
-                      <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        value={profileData.username}
-                        onChange={handleChange}
-                        className="form-control"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="form-group">
-                      <label htmlFor="profession">Profesión</label>
-                      <input
-                        type="text"
-                        id="profession"
-                        name="profession"
-                        value={profileData.profession}
-                        onChange={handleChange}
-                        className="form-control"
-                      />
-                    </div>
-                    
-                    <div className="form-group">
-                      <label htmlFor="description">Descripción</label>
-                      <textarea
-                        id="description"
-                        name="description"
-                        value={profileData.description}
-                        onChange={handleChange}
-                        className="form-control description-textarea"
-                        rows="6"
-                        placeholder="Descríbete y tus servicios aquí..."
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="profile-col">
-                    <div className="avatar-container">
+                {/* Fila principal: Avatar + Campos de usuario y profesión */}
+                <div className="profile-header-row">
+                  {/* Columna del avatar (20%) */}
+                  <div className="profile-avatar-col">
+                    <div className="profile-avatar-section">
                       <div className="avatar-preview">
                         {previewAvatar ? (
                           <img
@@ -220,30 +184,87 @@ const ProfileForm = () => {
                           </div>
                         )}
                       </div>
-                      
-                      <label htmlFor="avatar" className="avatar-upload-btn">
-                        {loading ? 'Subiendo...' : 'Cambiar avatar'}
-                      </label>
-                      <input
-                        type="file"
-                        id="avatar"
-                        name="avatar"
-                        accept="image/*"
-                        onChange={handleAvatarChange}
-                        className="hidden-input"
-                        disabled={loading}
-                      />
+                      <div className="avatar-actions">
+                        <label htmlFor="avatar" className="avatar-upload-btn">
+                          {loading ? 'Subiendo...' : 'Cambiar avatar'}
+                        </label>
+                        <input
+                          type="file"
+                          id="avatar"
+                          name="avatar"
+                          accept="image/*"
+                          onChange={handleAvatarChange}
+                          className="hidden-input"
+                          disabled={loading}
+                        />
+                        {previewAvatar && (
+                          <button
+                            type="button"
+                            className="avatar-remove-btn"
+                            onClick={() => setPreviewAvatar('')}
+                            disabled={loading}
+                          >
+                            Quitar foto
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Columna de información personal (80%) */}
+                  <div className="profile-info-col">
+                    <div className="profile-info-fields">
+                      <div className="form-group">
+                        <label htmlFor="username">Usuario</label>
+                        <input
+                          type="text"
+                          id="username"
+                          name="username"
+                          value={profileData.username}
+                          onChange={handleChange}
+                          className="form-control profile-info-input"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="profession">Profesión</label>
+                        <input
+                          type="text"
+                          id="profession"
+                          name="profession"
+                          value={profileData.profession}
+                          onChange={handleChange}
+                          className="form-control profile-info-input"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-                
-                <button 
-                  type="submit" 
-                  className="btn-primary" 
-                  disabled={loading}
-                >
-                  {loading ? 'Guardando...' : 'Guardar cambios'}
-                </button>
+
+                {/* Descripción debajo de todo */}
+                <div className="form-group profile-description-row">
+                  <label htmlFor="description">Descripción</label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={profileData.description}
+                    onChange={handleChange}
+                    className="form-control description-textarea"
+                    rows="6"
+                    placeholder="Descríbete y tus servicios aquí..."
+                  />
+                </div>
+
+                {/* Botón de guardar */}
+                <div className="form-group mt-3">
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary" 
+                    disabled={loading}
+                  >
+                    {loading ? 'Guardando...' : 'Guardar cambios'}
+                  </button>
+                </div>
               </Form>
             </Card.Body>
           </Card>
@@ -256,9 +277,13 @@ const ProfileForm = () => {
         <Tab eventKey="negotiations" title="Mis Negociaciones">
           <MyNegotiations />
         </Tab>
+
+        <Tab eventKey="chats" title="Mis Chats">
+          <MyChats />
+        </Tab>
       </Tabs>
     </Container>
   );
 };
 
-export default ProfileForm; 
+export default ProfileForm;

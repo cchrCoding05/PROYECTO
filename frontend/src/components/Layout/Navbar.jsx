@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import ThemeToggle from '../UI/ThemeToggle';
+import NotificationBell from '../Notifications/NotificationBell';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -38,10 +39,10 @@ const Navbar = () => {
           <span className="navbar-toggler-icon"></span>
         </button>
         
-        {/* Toggle de tema visible en versión móvil */}
-        <div className="d-lg-none ms-auto me-2">
+        {/* Eliminar ThemeToggle fuera del menú hamburguesa */}
+        {/* <div className="d-lg-none ms-auto me-2 theme-toggle-mobile">
           <ThemeToggle />
-        </div>
+        </div> */}
         
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
@@ -49,29 +50,30 @@ const Navbar = () => {
               <Link className="nav-link" to="/" style={{ color: 'var(--bs-body-color)' }}>Inicio</Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/search/products" style={{ color: 'var(--bs-body-color)' }}>Buscar Objetos</Link>
+              <Link className="nav-link" to="/search/products" style={{ color: 'var(--bs-body-color)' }}>Objetos</Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/search/professionals" style={{ color: 'var(--bs-body-color)' }}>Buscar Profesionales</Link>
+              <Link className="nav-link" to="/search/professionals" style={{ color: 'var(--bs-body-color)' }}>Profesionales</Link>
             </li>
             {isAuthenticated && (
               <li className="nav-item">
-                <Link className="nav-link" to="/upload-product" style={{ color: 'var(--bs-body-color)' }}>Subir Producto</Link>
+                <Link className="nav-link" to="/upload-product" style={{ color: 'var(--bs-body-color)' }}>Subir</Link>
               </li>
             )}
-
             {isAuthenticated && currentUser?.data?.username === 'ADMIN' && (
               <li className="nav-item">
                 <Link className="nav-link" to="/admin" style={{ color: 'var(--bs-body-color)' }}>Gestión</Link>
               </li>
             )}
           </ul>
-          
           {/* Toggle de tema solo visible en escritorio */}
           <div className="d-none d-lg-flex align-items-center pe-3 border-end me-3" style={{ borderColor: 'var(--bs-border-color)' }}>
             <ThemeToggle />
           </div>
-          
+          {/* Toggle de tema en móvil, dentro del menú hamburguesa */}
+          <div className="d-lg-none w-100 mt-2 mb-2 theme-toggle-mobile">
+            <ThemeToggle />
+          </div>
           <div className="d-flex align-items-center">
             {!isAuthenticated ? (
               <div className="d-flex gap-2">
@@ -92,6 +94,9 @@ const Navbar = () => {
                     </span>
                   )}
                 </div>
+                
+                {/* Campana de notificaciones */}
+                <NotificationBell />
                 
                 <div className="dropdown">
                   <button 

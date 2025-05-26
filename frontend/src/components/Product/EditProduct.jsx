@@ -39,38 +39,25 @@ const EditProduct = () => {
         console.log('Iniciando carga de producto:', { id, userId: user.id });
         setLoading(true);
         setError(null);
-        const result = await productService.get(id);
-        console.log('Resultado de la API:', result);
         
-        if (result && result.success === false) {
-          console.error('Error en la respuesta:', result);
-          setError(result.message || 'Error al cargar el producto');
-          return;
+        const result = await productService.getById(id);
+        console.log('Respuesta del servidor:', result);
+        
+        if (!result.success) {
+          throw new Error(result.message || 'Error al cargar el producto');
         }
-
-        // Verificar si el usuario es el propietario
-        if (result.seller?.id !== user.id) {
-          console.error('Error de permisos:', { 
-            sellerId: result.seller?.id, 
-            userId: user.id 
-          });
-          setError('No tienes permiso para editar este producto');
-          return;
-        }
-
-        console.log('Producto cargado correctamente:', result);
-        setProduct(result);
+        
+        const productData = result.data;
         setFormData({
-          name: result.name || result.title || '',
-          description: result.description || '',
-          credits: result.credits || '',
-          image: result.image || '',
-          state: result.state || result.estado || 1
+          name: productData.name || productData.title || '',
+          description: productData.description || '',
+          credits: productData.credits || 0,
+          image: productData.image || ''
         });
-        setPreviewImage(result.image || '');
+        setPreviewImage(productData.image || '');
       } catch (err) {
         console.error('Error al cargar producto:', err);
-        setError('Error al cargar el producto');
+        setError(err.message || 'Error al cargar el producto');
       } finally {
         setLoading(false);
       }
@@ -158,9 +145,9 @@ const EditProduct = () => {
       }
 
       setSuccess(true);
-      // Redirigir a la página de negociación después de 2 segundos
+      // Redirigir a la lista de productos después de 2 segundos
       setTimeout(() => {
-        navigate(`/negotiation/${id}`);
+        navigate('/my-products');
       }, 2000);
     } catch (err) {
       console.error('Error al actualizar producto:', err);

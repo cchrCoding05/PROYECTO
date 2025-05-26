@@ -150,7 +150,7 @@ const ProductManagement = () => {
                 </div>
             ) : (
                 <div className="table-responsive">
-                    <table className="table table-hover">
+                    <table className="table table-hover product-table-responsive">
                         <thead>
                             <tr>
                                 <th>Imagen</th>
@@ -191,13 +191,13 @@ const ProductManagement = () => {
                                     <td>{product.seller.username}</td>
                                     <td>
                                         <button
-                                            className="btn btn-primary btn-sm me-2"
+                                            className="btn btn-primary btn-sm me-2 btn-edit"
                                             onClick={() => handleEdit(product)}
                                         >
                                             Editar
                                         </button>
                                         <button
-                                            className="btn btn-danger btn-sm"
+                                            className="btn btn-danger btn-sm btn-delete"
                                             onClick={() => handleDelete(product.id)}
                                         >
                                             Eliminar

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
+import { NotificationProvider } from './contexts/NotificationContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 import CookieConsent from './components/CookieConsent';
@@ -19,8 +20,8 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 import ProfileForm from './components/Profile/ProfileForm';
 
 // Componentes de búsqueda
-import ProfessionalSearch from './components/Search/ProfessionalSearch';
-import ProductSearch from './components/Search/ProductSearch';
+import ProfessionalSearch from './components/search/ProfessionalSearch';
+import ProductSearch from './components/search/ProductSearch';
 
 // Componentes de negociación
 import ProductNegotiation from './components/Negotiation/ProductNegotiation';
@@ -142,14 +143,16 @@ const AppNavigation = () => {
   );
 };
 
-function App() {
+const App = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppNavigation />
+        <NotificationProvider>
+          <AppNavigation />
+        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   );
-}
+};
 
 export default App;

@@ -8,6 +8,7 @@ use App\Entity\NegociacionPrecio;
 use App\Entity\IntercambioObjeto;
 use App\Entity\Valoracion;
 use App\Entity\Mensaje;
+use App\Entity\Notificacion;
 use App\Repository\UsuarioRepository;
 use App\Repository\ObjetoRepository;
 use App\Repository\NegociacionPrecioRepository;
@@ -53,17 +54,20 @@ class NegotiationController extends AbstractController
                 ], Response::HTTP_NOT_FOUND);
             }
             
-            $intercambio = $this->intercambioObjetoRepository->findOneBy(['objeto' => $product]);
-            if (!$intercambio) {
-                return $this->json([
-                    'success' => true,
-                    'data' => []
-                ]);
-            }
+            // Buscar las negociaciones relacionadas con el producto específico
+            $qb = $this->em->createQueryBuilder();
+            $qb->select('n')
+               ->from(NegociacionPrecio::class, 'n')
+               ->join('n.intercambio', 'i')
+               ->where('i.objeto = :objeto')
+               ->andWhere('n.tipo = :tipo')
+               ->setParameter('objeto', $product)
+               ->setParameter('tipo', 'producto')
+               ->orderBy('n.fecha_creacion', 'ASC');
+
+            $negociaciones = $qb->getQuery()->getResult();
             
-            $negociaciones = $this->negociacionPrecioRepository->findBy(['intercambio' => $intercambio], ['fecha_creacion' => 'ASC']);
-            $data = array_map(function($neg) {
-                $intercambio = $neg->getIntercambio();
+            $data = array_map(function($neg) use ($product) {
                 return [
                     'id' => $neg->getId_negociacion(),
                     'user' => [
@@ -74,8 +78,8 @@ class NegotiationController extends AbstractController
                     'accepted' => $neg->isAceptado(),
                     'createdAt' => $neg->getFechaCreacion()->format('c'),
                     'product' => [
-                        'id' => $intercambio->getObjeto()->getId_objeto(),
-                        'name' => $intercambio->getObjeto()->getTitulo()
+                        'id' => $product->getId_objeto(),
+                        'name' => $product->getTitulo()
                     ]
                 ];
             }, $negociaciones);
@@ -98,98 +102,98 @@ class NegotiationController extends AbstractController
     #[Route('/products/{id}/propose-price', name: 'propose_price', methods: ['POST'])]
     public function proposePrice(Request $request, int $id): JsonResponse
     {
-        $user = $this->getUser();
-        if (!$user) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Usuario no autenticado'
-            ], Response::HTTP_UNAUTHORIZED);
-        }
-        
-        $product = $this->objetoRepository->find($id);
-        if (!$product) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Producto no encontrado'
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        // Solo validar que el producto no esté intercambiado
-        if ($product->getEstado() === Objeto::ESTADO_INTERCAMBIADO) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Este producto ya ha sido intercambiado'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        $data = json_decode($request->getContent(), true);
-        if (!isset($data['price']) || !is_numeric($data['price']) || $data['price'] < 1) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Precio inválido'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-        $price = (int)$data['price'];
-
-        // Validar saldo si es comprador
-        if ($user->getId_usuario() !== $product->getUsuario()->getId_usuario() && $user->getCreditos() < $price) {
-            return $this->json([
-                'success' => false,
-                'message' => 'No tienes suficientes puntos para ofertar'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Buscar o crear intercambio
-        $intercambio = $this->intercambioObjetoRepository->findOneBy(['objeto' => $product]);
-        if (!$intercambio) {
-            $intercambio = new IntercambioObjeto();
-            $intercambio->setObjeto($product);
-            $intercambio->setVendedor($product->getUsuario());
-            $intercambio->setComprador($user);
-            $intercambio->setPrecioPropuesto($price);
-            $this->em->persist($intercambio);
-        } else {
-            // Solo validar si ya hay una oferta aceptada
-            foreach ($intercambio->getNegociaciones() as $neg) {
-                if ($neg->isAceptado()) {
-                    return $this->json([
-                        'success' => false,
-                        'message' => 'La negociación ya ha sido aceptada'
-                    ], Response::HTTP_BAD_REQUEST);
-                }
+        try {
+            $data = json_decode($request->getContent(), true);
+            
+            if (!isset($data['price']) || !is_numeric($data['price'])) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'El precio debe ser un número válido'
+                ], Response::HTTP_BAD_REQUEST);
             }
+
+            $producto = $this->objetoRepository->find($id);
+            if (!$producto) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Producto no encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            if ($this->getUser()->getCreditos() < $data['price']) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'No tienes suficientes créditos para realizar esta propuesta'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Crear intercambio
+            $intercambio = new IntercambioObjeto();
+            $intercambio->setObjeto($producto);
+            $intercambio->setVendedor($producto->getUsuario());
+            $intercambio->setComprador($this->getUser());
+            $intercambio->setPrecioPropuesto($data['price']);
+            $intercambio->setFechaSolicitud(new \DateTimeImmutable());
+
+            $this->em->persist($intercambio);
+
+            // Crear nueva negociación
+            $negociacion = new NegociacionPrecio();
+            $negociacion->setComprador($this->getUser());
+            $negociacion->setVendedor($producto->getUsuario());
+            $negociacion->setPrecioPropuesto($data['price']);
+            $negociacion->setAceptado(false);
+            $negociacion->setAceptadoComprador(false);
+            $negociacion->setAceptadoVendedor(false);
+            $negociacion->setEstado('EN_NEGOCIACION');
+            $negociacion->setTipo('producto');
+            $negociacion->setFechaCreacion(new \DateTimeImmutable());
+            $negociacion->setIntercambio($intercambio);
+
+            $this->em->persist($negociacion);
+            $this->em->flush();
+
+            // Crear notificación
+            $notificacion = new Notificacion();
+            $notificacion->setUsuario($producto->getUsuario());
+            $notificacion->setTipo('propuesta_producto');
+            $notificacion->setMensaje($this->getUser()->getNombreUsuario() . ' ha propuesto ' . $data['price'] . ' créditos por tu producto ' . $producto->getTitulo());
+            $notificacion->setReferenciaId($producto->getId_objeto());
+            $notificacion->setEmisor($this->getUser());
+            $notificacion->setLeido(false);
+            $notificacion->setFechaCreacion(new \DateTimeImmutable());
+
+            $this->em->persist($notificacion);
+            $this->em->flush();
+
+            $this->logger->info('Propuesta de precio y notificación creadas exitosamente', [
+                'id' => $negociacion->getId_negociacion(),
+                'comprador' => $this->getUser()->getId_usuario(),
+                'vendedor' => $producto->getUsuario()->getId_usuario(),
+                'precio' => $data['price']
+            ]);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Propuesta de precio enviada exitosamente',
+                'data' => [
+                    'id' => $negociacion->getId_negociacion(),
+                    'price' => $negociacion->getPrecioPropuesto(),
+                    'created_at' => $negociacion->getFechaCreacion()->format('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error al proponer precio', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al proponer precio',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // Cambiar estado a reservado si está disponible
-        if ($product->getEstado() === Objeto::ESTADO_DISPONIBLE) {
-            $product->setEstado(Objeto::ESTADO_RESERVADO);
-        }
-
-        // Crear nueva negociación
-        $neg = new NegociacionPrecio();
-        $neg->setComprador($user);
-        $neg->setVendedor($product->getUsuario());
-        $neg->setPrecioPropuesto($price);
-        $neg->setAceptado(false);
-        $neg->setAceptadoVendedor(false);
-        $neg->setAceptadoComprador(false);
-        
-        // Agregar la negociación al intercambio usando el método addNegociacion
-        $intercambio->addNegociacion($neg);
-        
-        $this->em->persist($neg);
-        $this->em->flush();
-
-        return $this->json([
-            'success' => true,
-            'message' => 'Oferta enviada',
-            'data' => [
-                'id' => $neg->getId_negociacion(),
-                'proposedCredits' => $neg->getPrecioPropuesto(),
-                'createdAt' => $neg->getFechaCreacion()->format('c'),
-                'isActive' => $neg->isAceptado()
-            ]
-        ]);
     }
 
     // Aceptar negociación
@@ -388,7 +392,9 @@ class NegotiationController extends AbstractController
             $qb->select('n')
                ->from('App\Entity\NegociacionPrecio', 'n')
                ->where('n.comprador = :userId OR n.vendedor = :userId')
+               ->andWhere('n.tipo = :tipo')
                ->setParameter('userId', $user->getId_usuario())
+               ->setParameter('tipo', 'producto')
                ->orderBy('n.fecha_creacion', 'DESC');
 
             $negotiations = $qb->getQuery()->getResult();
@@ -761,11 +767,11 @@ class NegotiationController extends AbstractController
         }
     }
 
-    #[Route('/chat/{id}/propose-price', name: 'chat_propose_price', methods: ['POST'])]
+    #[Route('/chat/{id}/propose-price', name: 'propose_price_for_chat', methods: ['POST'])]
     public function proposePriceForChat(Request $request, int $id): JsonResponse
     {
         try {
-            $this->logger->info('Iniciando proposePrice', ['id' => $id]);
+            $this->logger->info('Iniciando proposePriceForChat', ['id' => $id]);
             
             if (!$this->getUser()) {
                 $this->logger->warning('Usuario no autenticado');
@@ -784,52 +790,117 @@ class NegotiationController extends AbstractController
                 ], Response::HTTP_NOT_FOUND);
             }
 
-            $data = json_decode($request->getContent(), true);
-            if (!isset($data['price']) || !is_numeric($data['price']) || $data['price'] < 1) {
+            // Verificar que el usuario no sea el mismo que el profesional
+            if ($this->getUser()->getId_usuario() === $profesional->getId_usuario()) {
+                $this->logger->warning('Intento de propuesta a sí mismo', [
+                    'userId' => $this->getUser()->getId_usuario()
+                ]);
                 return $this->json([
                     'success' => false,
-                    'message' => 'El precio debe ser un número mayor a 0'
+                    'message' => 'No puedes proponer un precio a ti mismo'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            $this->logger->info('Datos recibidos', ['data' => $data]);
+
+            if (!isset($data['price']) || !is_numeric($data['price']) || $data['price'] <= 0) {
+                $this->logger->warning('Precio inválido', ['price' => $data['price'] ?? null]);
+                return $this->json([
+                    'success' => false,
+                    'message' => 'El precio propuesto debe ser un número mayor que 0'
                 ], Response::HTTP_BAD_REQUEST);
             }
 
             // Verificar si el usuario tiene suficientes créditos
             if ($this->getUser()->getCreditos() < $data['price']) {
+                $this->logger->warning('Créditos insuficientes', [
+                    'userId' => $this->getUser()->getId_usuario(),
+                    'creditos' => $this->getUser()->getCreditos(),
+                    'precio' => $data['price']
+                ]);
                 return $this->json([
                     'success' => false,
                     'message' => 'No tienes suficientes créditos para realizar esta propuesta'
                 ], Response::HTTP_BAD_REQUEST);
             }
 
-            // Crear nueva negociación
-            $negociacion = new NegociacionPrecio();
-            $negociacion->setComprador($this->getUser());
-            $negociacion->setVendedor($profesional);
-            $negociacion->setPrecioPropuesto($data['price']);
-            $negociacion->setAceptado(false);
-            $negociacion->setAceptadoComprador(false);
-            $negociacion->setAceptadoVendedor(false);
-            $negociacion->setEstado('EN_NEGOCIACION');
-            $negociacion->setFechaCreacion(new \DateTimeImmutable());
+            // Verificar si ya existe una propuesta activa
+            $qb = $this->em->createQueryBuilder();
+            $qb->select('n')
+               ->from(NegociacionPrecio::class, 'n')
+               ->where('(n.comprador = :usuario AND n.vendedor = :profesional) OR (n.comprador = :profesional AND n.vendedor = :usuario)')
+               ->andWhere('n.tipo = :tipo')
+               ->andWhere('n.estado IN (:estados)')
+               ->setParameter('usuario', $this->getUser())
+               ->setParameter('profesional', $profesional)
+               ->setParameter('tipo', 'servicio')
+               ->setParameter('estados', ['pendiente', 'aceptada']);
 
-            $this->em->persist($negociacion);
-            $this->em->flush();
+            $propuestaExistente = $qb->getQuery()->getOneOrNullResult();
+            if ($propuestaExistente) {
+                $this->logger->warning('Propuesta activa existente', [
+                    'propuestaId' => $propuestaExistente->getId_negociacion()
+                ]);
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Ya existe una propuesta activa entre ambos usuarios'
+                ], Response::HTTP_BAD_REQUEST);
+            }
 
-            $this->logger->info('Propuesta de precio creada exitosamente', [
-                'id' => $negociacion->getId_negociacion(),
-                'comprador' => $this->getUser()->getId_usuario(),
-                'vendedor' => $profesional->getId_usuario(),
-                'precio' => $data['price']
-            ]);
+            try {
+                // Crear la negociación
+                $negociacion = new NegociacionPrecio();
+                $negociacion->setComprador($this->getUser());
+                $negociacion->setVendedor($profesional);
+                $negociacion->setPrecioPropuesto($data['price']);
+                $negociacion->setEstado('pendiente');
+                $negociacion->setTipo('servicio');
+                $negociacion->setAceptado(false);
+                $negociacion->setAceptadoComprador(false);
+                $negociacion->setAceptadoVendedor(false);
+                $negociacion->setFechaCreacion(new \DateTimeImmutable());
 
-            return $this->json([
-                'success' => true,
-                'message' => 'Propuesta de precio enviada exitosamente',
-                'data' => [
-                    'id' => $negociacion->getId_negociacion(),
-                    'price' => $negociacion->getPrecioPropuesto(),
-                    'created_at' => $negociacion->getFechaCreacion()->format('Y-m-d H:i:s')
-                ]
-            ]);
+                $this->em->persist($negociacion);
+                $this->em->flush(); // Flush para obtener el ID de la negociación
+
+                // Crear notificación para el profesional
+                $notificacion = new Notificacion();
+                $notificacion->setUsuario($profesional);
+                $notificacion->setTipo('propuesta_servicio');
+                $notificacion->setMensaje($this->getUser()->getNombreUsuario() . ' te ha propuesto un precio de ' . $data['price'] . ' créditos por tu servicio');
+                $notificacion->setLeido(false);
+                $notificacion->setFechaCreacion(new \DateTimeImmutable());
+                $notificacion->setReferenciaId($negociacion->getId_negociacion());
+                $notificacion->setEmisor($this->getUser());
+
+                $this->em->persist($notificacion);
+                $this->em->flush();
+
+                $this->logger->info('Propuesta creada exitosamente', [
+                    'negociacionId' => $negociacion->getId_negociacion(),
+                    'notificacionId' => $notificacion->getId()
+                ]);
+
+                return $this->json([
+                    'success' => true,
+                    'message' => 'Propuesta enviada correctamente',
+                    'data' => [
+                        'id' => $negociacion->getId_negociacion(),
+                        'precio' => $negociacion->getPrecioPropuesto(),
+                        'estado' => $negociacion->getEstado()
+                    ]
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->error('Error al persistir la propuesta', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Error al guardar la propuesta: ' . $e->getMessage()
+                ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
 
         } catch (\Exception $e) {
             $this->logger->error('Error al proponer precio', [
@@ -838,8 +909,7 @@ class NegotiationController extends AbstractController
             ]);
             return $this->json([
                 'success' => false,
-                'message' => 'Error al proponer precio',
-                'error' => $e->getMessage()
+                'message' => 'Error al procesar la propuesta: ' . $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -872,8 +942,10 @@ class NegotiationController extends AbstractController
             $qb->select('n')
                ->from(NegociacionPrecio::class, 'n')
                ->where('(n.comprador = :usuario AND n.vendedor = :profesional) OR (n.comprador = :profesional AND n.vendedor = :usuario)')
+               ->andWhere('n.tipo = :tipo')
                ->setParameter('usuario', $this->getUser())
                ->setParameter('profesional', $profesional)
+               ->setParameter('tipo', 'servicio')
                ->orderBy('n.fecha_creacion', 'ASC');
 
             $propuestas = $qb->getQuery()->getResult();
@@ -962,16 +1034,23 @@ class NegotiationController extends AbstractController
             $mensaje->setLeido(false);
             $mensaje->setFechaEnvio(new \DateTimeImmutable());
 
-            $this->logger->info('Mensaje creado:', [
-                'emisor_id' => $mensaje->getEmisor()->getId_usuario(),
-                'receptor_id' => $mensaje->getReceptor()->getId_usuario(),
-                'contenido' => $mensaje->getContenido()
-            ]);
-
             $this->em->persist($mensaje);
             $this->em->flush();
 
-            $this->logger->info('Mensaje guardado exitosamente', [
+            // Crear notificación
+            $notificacion = new Notificacion();
+            $notificacion->setUsuario($receptor);
+            $notificacion->setTipo('mensaje');
+            $notificacion->setMensaje($this->getUser()->getNombreUsuario() . ' te ha enviado un mensaje');
+            $notificacion->setReferenciaId($mensaje->getId_mensaje());
+            $notificacion->setEmisor($this->getUser());
+            $notificacion->setLeido(false);
+            $notificacion->setFechaCreacion(new \DateTimeImmutable());
+
+            $this->em->persist($notificacion);
+            $this->em->flush();
+
+            $this->logger->info('Mensaje y notificación guardados exitosamente', [
                 'id' => $mensaje->getId_mensaje(),
                 'emisor' => $mensaje->getEmisor()->getId_usuario(),
                 'receptor' => $mensaje->getReceptor()->getId_usuario()

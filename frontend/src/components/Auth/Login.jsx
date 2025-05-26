@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert, Container, Card } from 'react-bootstrap';
 import { useAuth } from '../../hooks/useAuth';
 import './Auth.css';
+import AlertMessage from '../Layout/AlertMessage';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -82,17 +83,14 @@ const Login = () => {
           <h2 className="text-center mb-4">Iniciar Sesión</h2>
           
           {error && (
-            <Alert 
-              variant="danger" 
+            <AlertMessage
+              message={error}
+              type="danger"
               onClose={() => {
                 setError('');
                 localStorage.removeItem('authError');
-              }} 
-              dismissible
-              className="mb-3"
-            >
-              {error}
-            </Alert>
+              }}
+            />
           )}
 
           <Form onSubmit={handleSubmit}>

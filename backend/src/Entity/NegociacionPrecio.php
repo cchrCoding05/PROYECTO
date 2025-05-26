@@ -42,6 +42,9 @@ class NegociacionPrecio
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $estado = null;
 
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $tipo = null;
+
     #[ORM\ManyToOne(inversedBy: 'negociaciones')]
     #[ORM\JoinColumn(name: 'id_intercambio', referencedColumnName: 'id_intercambio', nullable: true)]
     private ?IntercambioObjeto $intercambio = null;
@@ -163,6 +166,17 @@ class NegociacionPrecio
     public function setEstado(?string $estado): self
     {
         $this->estado = $estado;
+        return $this;
+    }
+
+    public function getTipo(): ?string
+    {
+        return $this->tipo;
+    }
+
+    public function setTipo(?string $tipo): self
+    {
+        $this->tipo = $tipo;
         return $this;
     }
 }
