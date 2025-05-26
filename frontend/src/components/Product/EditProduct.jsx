@@ -112,15 +112,17 @@ const EditProduct = () => {
       // Si hay una nueva imagen, subirla a Cloudinary
       if (image) {
         console.log('Subiendo imagen a Cloudinary...');
-        const formData = new FormData();
-        formData.append('file', image);
-        formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+        
+        // Crear FormData para Cloudinary (usando nombre diferente para evitar conflicto)
+        const cloudinaryFormData = new FormData();
+        cloudinaryFormData.append('file', image);
+        cloudinaryFormData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
 
         const uploadResponse = await fetch(
           `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
           {
             method: 'POST',
-            body: formData,
+            body: cloudinaryFormData,
           }
         );
 
@@ -134,9 +136,13 @@ const EditProduct = () => {
         imageUrl = uploadResult.secure_url;
       }
 
+      // Actualizar el producto
       const result = await productService.updateProduct(id, {
-        ...formData,
-        image: imageUrl
+        name: formData.name,
+        description: formData.description,
+        credits: parseInt(formData.credits),
+        image: imageUrl,
+        state: formData.state
       });
       
       if (result && result.success === false) {
@@ -145,6 +151,11 @@ const EditProduct = () => {
       }
 
       setSuccess(true);
+      // Actualizar la imagen de vista previa con la nueva URL
+      if (imageUrl !== formData.image) {
+        setFormData(prev => ({ ...prev, image: imageUrl }));
+      }
+      
       // Redirigir a la lista de productos después de 2 segundos
       setTimeout(() => {
         navigate('/my-products');
@@ -262,26 +273,83 @@ const EditProduct = () => {
                 <Form.Group className="mb-3">
                   <Form.Label>Imagen del Producto</Form.Label>
                   <div className="image-upload-container">
-                    {previewImage ? (
-                      <img
-                        src={previewImage}
-                        alt="Vista previa"
-                        className="image-preview"
-                        style={{ maxWidth: '200px', maxHeight: '200px', objectFit: 'contain' }}
-                      />
-                    ) : (
-                      <div className="image-placeholder">
-                        <i className="bi bi-image"></i>
-                        <span>Selecciona una imagen</span>
-                      </div>
-                    )}
+                    <div className="image-preview-container mb-3">
+                      {previewImage ? (
+                        <img
+                          src={previewImage}
+                          alt="Vista previa"
+                          className="image-preview"
+                          style={{ 
+                            maxWidth: '200px', 
+                            maxHeight: '200px', 
+                            objectFit: 'contain',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            padding: '4px',
+                            display: 'block'
+                          }}
+                        />
+                      ) : (
+                        <div 
+                          className="image-placeholder d-flex flex-column align-items-center justify-content-center"
+                          style={{
+                            width: '200px',
+                            height: '150px',
+                            border: '2px dashed #ddd',
+                            borderRadius: '4px',
+                            backgroundColor: '#f8f9fa'
+                          }}
+                        >
+                          <i className="bi bi-image fs-1 text-muted"></i>
+                          <span className="text-muted">Selecciona una imagen</span>
+                        </div>
+                      )}
+                    </div>
+                    
                     <Form.Control
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
-                      className="mt-2"
+                      className="d-none"
+                      id="imageUpload"
                     />
                   </div>
+                  
+                  {/* Botones fuera del contenedor de imagen */}
+                  <div className="d-flex gap-2 mb-2">
+                    <Button 
+                      variant="outline-primary" 
+                      size="sm"
+                      onClick={() => document.getElementById('imageUpload').click()}
+                      type="button"
+                    >
+                      <i className="bi bi-upload me-1"></i>
+                      Seleccionar Imagen
+                    </Button>
+                    
+                    {image && (
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm"
+                        onClick={() => {
+                          setImage(null);
+                          setPreviewImage(formData.image);
+                          document.getElementById('imageUpload').value = '';
+                        }}
+                        type="button"
+                      >
+                        <i className="bi bi-x-circle me-1"></i>
+                        Cancelar
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {image && (
+                    <small className="text-success d-block">
+                      <i className="bi bi-check-circle me-1"></i>
+                      Nueva imagen seleccionada: {image.name}
+                    </small>
+                  )}
                 </Form.Group>
 
                 <div className="d-grid gap-2">
@@ -310,4 +378,4 @@ const EditProduct = () => {
   );
 };
 
-export default EditProduct; 
+export default EditProduct;

@@ -1,5 +1,6 @@
 .product-card {
   transition: transform 0.2s ease-in-out;
+  height: 100%; /* Usar toda la altura disponible del contenedor */
 }
 
 .product-card:hover {
@@ -9,6 +10,28 @@
 .product-image {
   height: 200px;
   object-fit: cover;
+}
+
+/* Botones uniformes */
+.uniform-button {
+  width: 100%;
+  min-height: 40px;
+  font-size: 0.875rem;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Para que el contenido se distribuya correctamente */
+.product-card .card-body {
+  display: flex;
+  flex-direction: column;
 }
 
 .negotiation-card {
@@ -85,4 +108,4 @@
   .product-image {
     height: 150px;
   }
-} 
+}

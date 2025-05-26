@@ -82,45 +82,52 @@ const MyProducts = () => {
           {products.map(product => {
             return (
               <Col key={product.id} md={4} className="mb-4">
-                <Card>
+                <Card className="product-card h-100">
                   {product.image && (
                     <Card.Img 
                       variant="top" 
                       src={product.image} 
                       alt={product.name}
-                      style={{ height: '200px', objectFit: 'cover' }}
+                      className="product-image"
                     />
                   )}
-                  <Card.Body>
-                    <Card.Title>{product.name}</Card.Title>
-                    <Card.Text>{product.description}</Card.Text>
-                    <Card.Text>
-                      <strong>Precio:</strong> {product.price} créditos
-                    </Card.Text>
-                    <Card.Text>
-                      <strong>Estado:</strong> {product.state === 1 ? 'Disponible' : 
-                        product.state === 2 ? 'Reservado' : 'Intercambiado'}
-                    </Card.Text>
-                    <div className="product-actions">
+                  <Card.Body className="d-flex flex-column">
+                    <div className="flex-grow-1">
+                      <Card.Title>{product.name}</Card.Title>
+                      <Card.Text>{product.description}</Card.Text>
+                      <Card.Text>
+                        <strong>Precio:</strong> {product.price} créditos
+                      </Card.Text>
+                      <Card.Text>
+                        <strong>Estado:</strong> {product.state === 1 ? 'Disponible' : 
+                          product.state === 2 ? 'Reservado' : 'Intercambiado'}
+                      </Card.Text>
+                    </div>
+                    <div className="product-actions mt-auto">
                       <Button 
                         variant="primary" 
                         onClick={() => navigate(`/negotiate/product/${product.id}`)}
-                        className="mt-2 w-100"
+                        className="uniform-button mb-2"
                       >
                         Ver Negociación
                       </Button>
                       <Button 
                         variant="secondary" 
                         onClick={() => navigate(`/edit-product/${product.id}`)}
+                        className="uniform-button mb-2"
                       >
                         Editar Producto
                       </Button>
+                      {product.state === 1 && (
+                        <Button 
+                          variant="danger" 
+                          onClick={() => handleDelete(product.id)}
+                          className="uniform-button"
+                        >
+                          Eliminar
+                        </Button>
+                      )}
                     </div>
-                    {product.state === 1 && (
-                      <Button variant="danger" className="ms-2" onClick={() => handleDelete(product.id)}>
-                        Eliminar
-                      </Button>
-                    )}
                   </Card.Body>
                 </Card>
               </Col>
