@@ -4,8 +4,9 @@ import { useAuth } from '../../hooks/useAuth';
 import AlertMessage from '../Layout/AlertMessage';
 import { chatService } from '../../services/chatService';
 import './Negotiation.css';
+import { apiConfig } from '../../services/apiConfig';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = apiConfig.apiUrl;
 
 const ProfessionalNegotiation = () => {
     const { id } = useParams();

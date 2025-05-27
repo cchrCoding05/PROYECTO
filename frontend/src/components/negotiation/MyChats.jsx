@@ -4,8 +4,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { Card, ListGroup, Badge, Spinner, Alert, Button } from 'react-bootstrap';
 import '../../styles/Negotiation.css';
 import AlertMessage from '../Layout/AlertMessage';
+import { apiConfig } from '../../services/apiConfig';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = apiConfig.apiUrl;
 
 const MyChats = () => {
     const [chats, setChats] = useState([]);
