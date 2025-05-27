@@ -353,3 +353,18 @@
     background-color: var(--surface-color);
     color: var(--primary-color);
 } 
+.list-group-item.accepted-negotiation {
+  /* Fuerza que use el mismo fondo que el contenedor padre */
+  background-color: transparent !important;
+  /* Borde verde para indicar aceptación */
+  border-left: 4px solid #28a745 !important;
+  /* Asegura que el texto mantenga el color correcto */
+  color: inherit !important;
+}
+
+/* Asegurar compatibilidad en modo oscuro */
+[data-bs-theme="dark"] .list-group-item.accepted-negotiation,
+.dark .list-group-item.accepted-negotiation {
+  background-color: transparent !important;
+  color: inherit !important;
+}

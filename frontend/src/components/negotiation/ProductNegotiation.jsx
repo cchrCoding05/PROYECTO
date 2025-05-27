@@ -445,10 +445,10 @@ const ProductNegotiation = () => {
                     });
 
                     return (
-                      <div 
-                        key={negotiation.id} 
-                        className={`list-group-item ${yaAceptado ? 'bg-light' : ''}`}
-                      >
+<div 
+  key={negotiation.id} 
+  className={`list-group-item ${yaAceptado ? 'accepted-negotiation' : ''}`}
+>
                         <div className="d-flex justify-content-between align-items-start">
                           <div className="flex-grow-1">
                             <div className="d-flex align-items-center mb-2">
