@@ -17,7 +17,7 @@ import Register from './components/Auth/Register';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 // Componentes de perfil
-import ProfileForm from './components/Profile/ProfileForm';
+import ProfileForm from './components/profile/ProfileForm';
 
 // Componentes de búsqueda
 import ProfessionalSearch from './components/search/ProfessionalSearch';
