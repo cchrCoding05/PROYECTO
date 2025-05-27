@@ -78,14 +78,10 @@ export const authService = {
         return response;
       } catch (error) {
         console.warn('Error al hacer logout en el servidor:', error);
-        // Si falla el logout en el servidor, no es crítico
-        // ya que ya hemos eliminado el token localmente
         return { success: true };
       }
     } catch (error) {
       console.error('Error en logout:', error);
-      // Asegurarnos de que el token se elimine incluso si hay error
-      localStorage.removeItem('token');
       return { success: true };
     }
   },

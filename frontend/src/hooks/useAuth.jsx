@@ -26,13 +26,11 @@ export const AuthProvider = ({ children, onNavigate }) => {
       if (user) {
         setCurrentUser(user);
       } else {
-        console.log('No se pudo obtener datos del usuario, limpiando sesión');
-        localStorage.removeItem('token');
+        console.log('No se pudo obtener datos del usuario');
         setCurrentUser(null);
       }
     } catch (error) {
       console.error('Error al verificar autenticación:', error);
-      localStorage.removeItem('token');
       setCurrentUser(null);
       setError(error.message);
     } finally {

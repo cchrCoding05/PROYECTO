@@ -34,7 +34,6 @@ const MyChats = () => {
             setLoading(true);
             setError(null);
 
-            // Obtener chats
             const response = await fetch(`${API_URL}/chat/my-chats`, {
                 method: 'GET',
                 headers: {
@@ -48,7 +47,6 @@ const MyChats = () => {
             console.log('Respuesta del backend (chats):', data);
             
             if (response.status === 401) {
-                localStorage.removeItem('token');
                 navigate('/login');
                 return;
             }
@@ -58,7 +56,6 @@ const MyChats = () => {
             }
 
             if (data.success && Array.isArray(data.data)) {
-                console.log('Chats recibidos:', data.data);
                 setChats(data.data);
             } else {
                 setChats([]);
@@ -277,4 +274,4 @@ const MyChats = () => {
     );
 };
 
-export default MyChats; 
+export default MyChats;
