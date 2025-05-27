@@ -1,4 +1,6 @@
-const API_URL = 'http://api.helpex.com:22193/api';
+export const apiConfig = {
+  apiUrl: import.meta.env.VITE_API_URL || 'http://api.helpex.com:22193/api'
+};
 
 // Función fetch mejorada con mejor gestión de errores
 export const fetchApi = async (endpoint, options = {}) => {
@@ -21,7 +23,7 @@ export const fetchApi = async (endpoint, options = {}) => {
     };
 
     try {
-        const response = await fetch(`${API_URL}${endpoint}`, config);
+        const response = await fetch(`${apiConfig.apiUrl}${endpoint}`, config);
         const data = await response.json();
 
         if (!response.ok) {
