@@ -1,4 +1,6 @@
-const API_URL = 'http://localhost:8000/api';
+const API_URL = process.env.NODE_ENV === 'production' 
+    ? 'https://api.helpex.com/api'
+    : 'http://localhost:8000/api';
 
 // Función fetch mejorada con mejor gestión de errores
 export const fetchApi = async (endpoint, options = {}) => {

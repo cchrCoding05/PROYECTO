@@ -13,7 +13,8 @@
 
 <IfModule mod_headers.c>
     # Cabeceras CORS para todas las respuestas
-    Header set Access-Control-Allow-Origin "http://localhost:5173"
+    SetEnvIf Origin "^https?://(localhost|www\.helpex\.com|api\.helpex\.com)(:[0-9]+)?$" ORIGIN=$0
+    Header set Access-Control-Allow-Origin "%{ORIGIN}e" env=ORIGIN
     Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
     Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
     Header set Access-Control-Allow-Credentials "true"
