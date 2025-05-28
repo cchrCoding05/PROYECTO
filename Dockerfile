@@ -1,21 +1,23 @@
-# Usa imagen oficial PHP con CLI y servidor embebido
 FROM php:8.2-cli
 
-# Instalar unzip y curl para composer
-RUN apt-get update && apt-get install -y unzip curl
+# Instalar dependencias del sistema necesarias para extensiones PHP y Composer
+RUN apt-get update && apt-get install -y \
+    unzip \
+    curl \
+    libzip-dev \
+    libonig-dev \
+    && docker-php-ext-install zip mbstring pdo pdo_mysql
 
 # Instalar Composer globalmente
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Copiar el backend
+# Copiar backend
 WORKDIR /app/backend
 COPY backend/ /app/backend/
 
-# Instalar dependencias composer sin dev y optimizado
+# Instalar dependencias composer
 RUN composer install --no-dev --optimize-autoloader
 
-# Exponer puerto (Railway usará $PORT)
 EXPOSE 8000
 
-# Comando para iniciar el servidor PHP embebido
 CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
