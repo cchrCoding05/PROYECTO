@@ -17,15 +17,15 @@ import Register from './components/Auth/Register';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 // Componentes de perfil
-import ProfileForm from './components/Profile/ProfileForm';
+import ProfileForm from './components/profile/ProfileForm';
 
 // Componentes de búsqueda
 import ProfessionalSearch from './components/search/ProfessionalSearch';
 import ProductSearch from './components/search/ProductSearch';
 
 // Componentes de negociación
-import ProductNegotiation from './components/Negotiation/ProductNegotiation';
-import ProfessionalNegotiation from './components/Negotiation/ProfessionalNegotiation';
+import ProductNegotiation from './components/negotiation/ProductNegotiation';
+import ProfessionalNegotiation from './components/negotiation/ProfessionalNegotiation';
 
 // Componentes de productos
 import ProductUpload from './components/Product/ProductUpload';
