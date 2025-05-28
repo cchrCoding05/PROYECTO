@@ -1,5 +1,2 @@
 [build]
-  builder = "nixpacks"
-
-[deploy]
-  # No es necesario startCommand aquí, nixpacks lo usa del nixpacks.toml
+builder = "nixpacks"
