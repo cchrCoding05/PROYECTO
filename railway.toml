@@ -1,6 +1,5 @@
 [build]
   builder = "nixpacks"
-  buildCommand = "cd backend && composer install --no-dev --optimize-autoloader"
 
 [deploy]
-  startCommand = "cd backend && php -S 0.0.0.0:$PORT -t public"
+  # No es necesario startCommand aquí, nixpacks lo usa del nixpacks.toml
