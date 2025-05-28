@@ -14,4 +14,4 @@ COPY backend/ /app/backend/
 
 EXPOSE 8000
 
-CMD sh -c "composer install --no-dev --verbose --no-interaction && php -S 0.0.0.0:$PORT -t public"
+CMD sh -c "composer install --no-dev --verbose --no-interaction && php -S 0.0.0.0:$PORT -t public public/index.php"
