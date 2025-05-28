@@ -12,8 +12,9 @@
 </IfModule>
 
 <IfModule mod_headers.c>
-    # Cabeceras CORS para todas las respuestas
-    Header set Access-Control-Allow-Origin "http://localhost:5173"
+    # Cabeceras CORS dinámicas basadas en el entorno
+    SetEnvIf Origin "^(http://localhost:[0-9]+|https://.*\.railway\.app|https://.*\.up\.railway\.app)$" CORS_ORIGIN=$0
+    Header set Access-Control-Allow-Origin "%{CORS_ORIGIN}e" env=CORS_ORIGIN
     Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
     Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
     Header set Access-Control-Allow-Credentials "true"
@@ -34,4 +35,4 @@ DirectoryIndex index.php
     <IfModule mod_alias.c>
         RedirectMatch 307 ^/$ /index.php/
     </IfModule>
-</IfModule> 
+</IfModule>
