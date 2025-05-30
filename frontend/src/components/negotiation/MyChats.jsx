@@ -5,7 +5,7 @@ import { Card, ListGroup, Badge, Spinner, Alert, Button } from 'react-bootstrap'
 import '../../styles/Negotiation.css';
 import AlertMessage from '../Layout/AlertMessage';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'http://api.helpex.com:22193/api';
 
 const MyChats = () => {
     const [chats, setChats] = useState([]);
@@ -242,7 +242,7 @@ const MyChats = () => {
                             >
                                 <div className="d-flex align-items-center">
                                     <img 
-                                        src={chat.user.photo || '/default-avatar.png'} 
+                                        src={chat.user.photo} 
                                         alt={chat.user.username}
                                         className="rounded-circle me-3"
                                         style={{ width: '50px', height: '50px', objectFit: 'cover' }}

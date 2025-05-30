@@ -422,8 +422,6 @@ class NegotiationController extends AbstractController
                     $status = 2; // Finalizada (aceptada)
                 } else if ($negotiation->getEstado() === 'RECHAZADA') {
                     $status = 3; // Finalizada (rechazada)
-                } else if ($negotiation->isAceptado()) {
-                    $status = 2; // Finalizada (aceptada)
                 } else if ($objeto && $objeto->getEstado() === Objeto::ESTADO_INTERCAMBIADO) {
                     $status = 2; // Finalizada (aceptada)
                 }

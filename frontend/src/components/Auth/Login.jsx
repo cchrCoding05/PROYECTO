@@ -44,33 +44,12 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Guardar el error en localStorage antes del refresco
-        const errorMessage = data.error || data.message || 'Error al iniciar sesión';
-        localStorage.setItem('authError', errorMessage);
-        window.location.reload();
-        return;
-      }
-
-      if (data.token) {
-        // Usar el método login del hook useAuth para actualizar el estado
-        await login(formData);
-        navigate('/');
-      }
+      // Usar el método login del hook useAuth que ya incluye la obtención del perfil
+      await login(formData);
+      navigate('/');
     } catch (err) {
-      // Guardar el error de conexión en localStorage
-      localStorage.setItem('authError', 'Error al conectar con el servidor');
-      window.location.reload();
+      console.error('Error en login:', err);
+      setError(err.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }

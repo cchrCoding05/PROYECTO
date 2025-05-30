@@ -28,7 +28,41 @@ export const authService = {
       }
 
       if (response.token) {
+        console.log('Token recibido, guardando en localStorage...');
         localStorage.setItem('token', response.token);
+        
+        // Esperar un momento para asegurar que el token se guardó
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verificar que el token se guardó correctamente
+        const savedToken = localStorage.getItem('token');
+        console.log('Token guardado:', savedToken ? 'Sí' : 'No');
+        console.log('Valor del token guardado:', savedToken);
+        
+        if (!savedToken) {
+          throw new Error('Error al guardar el token');
+        }
+        
+        // Intentar obtener el perfil del usuario
+        console.log('Obteniendo perfil del usuario...');
+        try {
+          const userProfile = await this.getCurrentUser();
+          console.log('Perfil obtenido:', userProfile);
+          
+          // Verificar que tenemos los datos del usuario
+          if (!userProfile || !userProfile.data) {
+            throw new Error('No se pudo obtener el perfil del usuario');
+          }
+          
+          return {
+            ...response,
+            user: userProfile.data
+          };
+        } catch (profileError) {
+          console.error('Error al obtener perfil:', profileError);
+          // Si falla al obtener el perfil, al menos devolvemos los datos básicos
+          return response;
+        }
       }
 
       return response;
@@ -92,8 +126,33 @@ export const authService = {
   
   async getCurrentUser() {
     try {
+      console.log('Obteniendo datos del usuario actual...');
       const response = await fetchApi('/users/profile');
-      return response;
+      console.log('Respuesta del perfil:', response);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Error al obtener perfil');
+      }
+
+      // Asegurarnos de que tenemos todos los campos necesarios
+      const userData = {
+        ...response.data,
+        id: response.data.id,
+        username: response.data.username,
+        email: response.data.email,
+        credits: response.data.credits || 0,
+        profession: response.data.profession || '',
+        rating: response.data.rating || 0,
+        sales: response.data.sales || 0,
+        profilePhoto: response.data.profilePhoto || null,
+        description: response.data.description || '',
+        negotiations: response.data.negotiations || []
+      };
+
+      return {
+        ...response,
+        data: userData
+      };
     } catch (error) {
       console.error('Error al obtener usuario actual:', error);
       throw error;

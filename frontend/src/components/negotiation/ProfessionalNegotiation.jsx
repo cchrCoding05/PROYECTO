@@ -5,7 +5,7 @@ import AlertMessage from '../Layout/AlertMessage';
 import { chatService } from '../../services/chatService';
 import './Negotiation.css';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'http://api.helpex.com:22193/api';
 
 const ProfessionalNegotiation = () => {
     const { id } = useParams();
@@ -540,7 +540,7 @@ const ProfessionalNegotiation = () => {
                         <div className="card-body">
                             <div className="text-center mb-4">
                                 <img
-                                    src={professional?.profile_image || '/default-avatar.png'}
+                                    src={professional?.profile_image}
                                     alt={professional?.name}
                                     className="rounded-circle mb-3"
                                     style={{ width: '150px', height: '150px', objectFit: 'cover' }}

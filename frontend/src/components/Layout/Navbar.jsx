@@ -24,7 +24,7 @@ const Navbar = () => {
     }}>
       <div className="container">
         <Link className="navbar-brand fw-bold" to="/" style={{ color: 'var(--bs-body-color)' }}>
-          LaMacroEmpresa
+          HelpEx
         </Link>
         <button 
           className="navbar-toggler" 

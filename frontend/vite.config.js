@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://api.helpex.com:22193',
         changeOrigin: true,
         rewrite: (path) => path  // Esto mantiene la ruta /api para que coincida con las rutas de Symfony
       }

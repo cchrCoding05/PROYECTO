@@ -8,7 +8,7 @@ const Footer = () => {
     }}>
       <div className="container text-center">
         <p style={{ color: 'var(--bs-body-color)' }}>
-          LaMacroEmpresa &copy; | Intermediaria de Compras | Todos los derechos reservados.
+          HelpEx &copy; | Intermediaria de Compras | Todos los derechos reservados.
         </p>
         <div className="social-icons">
           <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" className="me-3" style={{ color: 'var(--bs-body-color)' }}>

@@ -39,16 +39,16 @@ export const chatService = {
   },
 
   // Obtener todos los chats del usuario
-  getUserChats: async () => {
-    try {
-      const response = await fetchApi('/chat');
-      console.log('Respuesta de getUserChats:', response);
-      return response;
-    } catch (error) {
-      console.error('Error en getUserChats:', error);
-      throw error;
-    }
-  },
+ getUserChats: async () => {
+  try {
+    const response = await fetchApi('/chat/my-chats');
+    console.log('Respuesta de getUserChats:', response);
+    return response;
+  } catch (error) {
+    console.error('Error en getUserChats:', error);
+    throw error;
+  }
+},
 
   // Crear un nuevo chat
   createChat: async (professionalId) => {

@@ -155,12 +155,11 @@ const Home = () => {
                       <Card className="h-100">
                         <Card.Img 
                           variant="top" 
-                          src={professional.photo || '/default-profile.png'} 
+                          src={professional.photo} 
                           alt={professional.name}
                           style={{ height: '200px', objectFit: 'cover' }}
                           onError={(e) => {
                             e.target.onerror = null;
-                            e.target.src = '/default-profile.png';
                           }}
                         />
                         <Card.Body className="text-center">
@@ -209,12 +208,11 @@ const Home = () => {
                       <Card className="h-100">
                         <Card.Img 
                           variant="top" 
-                          src={product.image || '/default-product.png'} 
+                          src={product.image} 
                           alt={product.name}
                           style={{ height: '200px', objectFit: 'cover' }}
                           onError={(e) => {
                             e.target.onerror = null;
-                            e.target.src = '/default-product.png';
                           }}
                         />
                         <Card.Body>

@@ -65,6 +65,8 @@ class TokenAuthenticator extends AbstractAuthenticator implements Authentication
                 $this->logger->info('Buscando usuario con token', ['token' => $token]);
                 $usuario = $this->em->getRepository(Usuario::class)->findOneBy(['token' => $token]);
                 
+                $this->logger->info('Resultado de búsqueda de usuario', ['usuario_encontrado' => $usuario ? $usuario->getId_usuario() : 'null']);
+                
                 if (!$usuario) {
                     $this->logger->warning('Usuario no encontrado para el token', ['token' => $token]);
                     throw new CustomUserMessageAuthenticationException('Token inválido o expirado');

@@ -48,30 +48,34 @@ export const AuthProvider = ({ children, onNavigate }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const login = async (credentials) => {
+ const login = async (credentials) => {
     try {
-      setLoading(true);
-      setError(null);
-      console.log('Iniciando proceso de login...');
-      
-      const response = await authService.login(credentials);
-      console.log('Respuesta del login:', response);
-      
-      if (response.token) {
-        localStorage.setItem('token', response.token);
-        await checkAuth(); // Verificar autenticación inmediatamente después del login
-      }
-      
-      if (onNavigate) onNavigate('/dashboard');
-      return response;
+        setLoading(true);
+        setError(null);
+        console.log('Iniciando proceso de login...');
+        
+        const response = await authService.login(credentials);
+        console.log('Respuesta del login:', response);
+        
+        if (response.token) {
+            localStorage.setItem('token', response.token);
+            // Establecer el usuario actual con la estructura correcta
+            setCurrentUser({
+                data: response.user,
+                token: response.token
+            });
+        }
+        
+        if (onNavigate) onNavigate('/dashboard');
+        return response;
     } catch (error) {
-      console.error('Error en login:', error);
-      setError(error.message);
-      throw error;
+        console.error('Error en login:', error);
+        setError(error.message);
+        throw error;
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   const logout = async () => {
     try {
