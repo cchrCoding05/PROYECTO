@@ -271,6 +271,18 @@ const EditProduct = () => {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
+                  <Form.Label>Estado del Producto</Form.Label>
+                  <Form.Select
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                  >
+                    <option value={1}>Disponible</option>
+                    <option value={3}>Intercambiado</option>
+                  </Form.Select>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
                   <Form.Label>Imagen del Producto</Form.Label>
                   <div className="image-upload-container">
                     <div className="image-preview-container mb-3">

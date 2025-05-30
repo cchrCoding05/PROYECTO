@@ -313,6 +313,14 @@ const ProductNegotiation = () => {
               <p className="text-muted">
                 Vendedor: {product.seller.username}
               </p>
+              <Button 
+                variant="primary" 
+                className="mb-3"
+                onClick={() => navigate(`/negotiate/professional/${product.seller.id}`)}
+              >
+                <i className="bi bi-chat-dots me-2"></i>
+                Ir al chat con el vendedor
+              </Button>
               <p className="mb-0">
                 <strong>Estado:</strong> {product.state === 1 ? 'Disponible' : product.state === 2 ? 'Reservado' : 'Intercambiado'}
               </p>

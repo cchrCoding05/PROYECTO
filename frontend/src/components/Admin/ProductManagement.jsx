@@ -279,7 +279,6 @@ const ProductManagement = () => {
                                             }
                                         >
                                             <option value={1}>Disponible</option>
-                                            <option value={2}>Reservado</option>
                                             <option value={3}>Intercambiado</option>
                                         </select>
                                     </div>
