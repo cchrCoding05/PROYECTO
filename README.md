@@ -117,8 +117,12 @@ npm run dev
 
 ---
 
-## 👨‍💻 Autores
+## 👨‍💻 Autor
 
-- Chahine Chrayeh El Mokhtari - [Tu contacto o perfil de GitHub]
+- Chahine Chrayeh El Mokhtari
+  
+- ✉️ [Email](mailto:chahinechrayehelmokhtari@gmail.com)  
+- 💼 [LinkedIn](https://linkedin.com/in/chrayehChahine)  
+- 🌐 [Mi página web](https://cchrCoding05.github.io)
 
 ---
