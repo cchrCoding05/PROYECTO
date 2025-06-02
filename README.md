@@ -71,7 +71,6 @@ Una vez configurado, accede a: **[http://www.helpex.com:22193](http://www.helpex
 ```bash
 git clone https://github.com/cchrCoding05/PROYECTO.git
 cd PROYECTO
-git checkout dev
 ```
 
 ---
