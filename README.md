@@ -5,6 +5,12 @@ Este proyecto cuenta con un backend en **Symfony** y un frontend en **React**. I
 
 ---
 
+# HelpEx
+
+HelpEx es una plataforma innovadora diseñada para conectar a personas que necesitan ayuda con voluntarios dispuestos a ofrecer su tiempo y habilidades. La aplicación facilita la creación de una comunidad solidaria donde los usuarios pueden publicar solicitudes de ayuda, ofrecer sus servicios como voluntarios y coordinar actividades de apoyo mutuo. Con un enfoque en la accesibilidad y la facilidad de uso, HelpEx busca fomentar la colaboración y el apoyo comunitario en tiempos de necesidad.
+
+---
+
 ## 🚀 Tecnologías Utilizadas
 
 ### Backend
