@@ -185,7 +185,6 @@ class UserController extends AbstractController
             $topUsers = $qb->getQuery()->getResult();
             
             $usersData = array_map(function($user) {
-                // Obtener valoraciones del usuario
                 $valoraciones = $this->em->getRepository(Valoracion::class)->findBy(['profesional' => $user]);
                 $sumaPuntuaciones = 0;
                 foreach ($valoraciones as $valoracion) {
