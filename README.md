@@ -45,11 +45,11 @@ Una vez configurado, accede a: **[http://www.helpex.com:22193](http://www.helpex
 - Symfony
 - Doctrine ORM
 - MySQL
-- Node
 
 ### Frontend
 - React 18+
 - Vite
+- Node
 - React Router
 - Bootstrap
 
