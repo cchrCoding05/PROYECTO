@@ -12,21 +12,50 @@ const Login = () => {
     email: '',
     password: ''
   });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({
+    email: '',
+    password: '',
+    general: ''
+  });
   const [loading, setLoading] = useState(false);
 
   // Efecto para cargar el error persistente al montar el componente
   useEffect(() => {
     const persistedError = localStorage.getItem('authError');
     if (persistedError) {
-      setError(persistedError);
+      setErrors(prev => ({ ...prev, general: persistedError }));
       localStorage.removeItem('authError');
     }
   }, []);
 
   const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    // Validación más estricta del formato de email
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!emailRegex.test(email)) {
+      return {
+        isValid: false,
+        message: 'El formato del correo electrónico no es válido'
+      };
+    }
+    
+    // Validar que no tenga espacios
+    if (email.includes(' ')) {
+      return {
+        isValid: false,
+        message: 'El correo electrónico no debe contener espacios'
+      };
+    }
+    
+    // Validar que tenga un dominio válido
+    const parts = email.split('@');
+    if (parts.length !== 2 || !parts[1].includes('.')) {
+      return {
+        isValid: false,
+        message: 'El correo debe tener un dominio válido (ejemplo: usuario@dominio.com)'
+      };
+    }
+    
+    return { isValid: true };
   };
 
   const handleChange = (e) => {
@@ -35,21 +64,65 @@ const Login = () => {
       ...prev,
       [name]: value.trim()
     }));
-    setError('');
+    
+    // Validar email en tiempo real
+    if (name === 'email' && value.trim()) {
+      const emailValidation = validateEmail(value.trim());
+      if (!emailValidation.isValid) {
+        setErrors(prev => ({ ...prev, email: emailValidation.message }));
+      } else {
+        setErrors(prev => ({ ...prev, email: '', general: '' }));
+      }
+    } else {
+      setErrors(prev => ({ ...prev, [name]: '', general: '' }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    e.stopPropagation();
+    
+    // Limpiar errores previos
+    setErrors({ email: '', password: '', general: '' });
     setLoading(true);
 
+    // Validaciones
+    let hasErrors = false;
+    const newErrors = { email: '', password: '', general: '' };
+
+    if (!formData.email) {
+      newErrors.email = 'El correo electrónico es requerido';
+      hasErrors = true;
+    } else {
+      const emailValidation = validateEmail(formData.email);
+      if (!emailValidation.isValid) {
+        newErrors.email = emailValidation.message;
+        hasErrors = true;
+      }
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'La contraseña es requerida';
+      hasErrors = true;
+    }
+
+    if (hasErrors) {
+      setErrors(newErrors);
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Usar el método login del hook useAuth que ya incluye la obtención del perfil
-      await login(formData);
-      navigate('/');
+      const response = await login(formData);
+      if (response && response.token) {
+        navigate('/');
+      }
     } catch (err) {
       console.error('Error en login:', err);
-      setError(err.message || 'Error al iniciar sesión');
+      setErrors(prev => ({
+        ...prev,
+        general: err.message || 'Error al iniciar sesión'
+      }));
     } finally {
       setLoading(false);
     }
@@ -61,18 +134,15 @@ const Login = () => {
         <Card.Body>
           <h2 className="text-center mb-4">Iniciar Sesión</h2>
           
-          {error && (
+          {errors.general && (
             <AlertMessage
-              message={error}
+              message={errors.general}
               type="danger"
-              onClose={() => {
-                setError('');
-                localStorage.removeItem('authError');
-              }}
+              onClose={() => setErrors(prev => ({ ...prev, general: '' }))}
             />
           )}
 
-          <Form onSubmit={handleSubmit}>
+          <Form onSubmit={handleSubmit} noValidate>
             <Form.Group className="mb-3">
               <Form.Label>Email</Form.Label>
               <Form.Control
@@ -81,9 +151,12 @@ const Login = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Ingresa tu email"
-                isInvalid={!!error}
+                isInvalid={!!errors.email}
                 required
               />
+              <Form.Control.Feedback type="invalid">
+                {errors.email}
+              </Form.Control.Feedback>
             </Form.Group>
 
             <Form.Group className="mb-3">
@@ -94,9 +167,12 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Ingresa tu contraseña"
-                isInvalid={!!error}
+                isInvalid={!!errors.password}
                 required
               />
+              <Form.Control.Feedback type="invalid">
+                {errors.password}
+              </Form.Control.Feedback>
             </Form.Group>
 
             <Button 

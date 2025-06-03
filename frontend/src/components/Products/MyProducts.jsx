@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card, Button, Container, Row, Col, Alert } from 'react-bootstrap';
 import { productService } from '../../services/productService';
 import AlertMessage from '../Layout/AlertMessage';
+import '../../styles/variables.css';
 
 const MyProducts = () => {
   const [products, setProducts] = useState([]);
@@ -48,7 +49,7 @@ const MyProducts = () => {
   if (loading) {
     return (
       <Container className="mt-4">
-        <h2>Mis Productos</h2>
+        <h2 className="text-primary">Mis Productos</h2>
         <AlertMessage message="Cargando productos..." type="info" />
       </Container>
     );
@@ -57,7 +58,7 @@ const MyProducts = () => {
   if (error) {
     return (
       <Container className="mt-4">
-        <h2>Mis Productos</h2>
+        <h2 className="text-primary">Mis Productos</h2>
         <AlertMessage message={error} type="danger" onClose={() => setError(null)} />
       </Container>
     );
@@ -66,7 +67,7 @@ const MyProducts = () => {
   if (success) {
     return (
       <Container className="mt-4">
-        <h2>Mis Productos</h2>
+        <h2 className="text-primary">Mis Productos</h2>
         <AlertMessage message={success} type="success" onClose={() => setSuccess(null)} />
       </Container>
     );
@@ -74,7 +75,7 @@ const MyProducts = () => {
 
   return (
     <Container className="mt-4">
-      <h2>Mis Productos</h2>
+      <h2 className="text-primary">Mis Productos</h2>
       {products.length === 0 ? (
         <AlertMessage message={<span>No tienes productos publicados. <Link to="/upload-product" className="btn btn-primary ms-3">Subir Producto</Link></span>} type="info" />
       ) : (
@@ -93,7 +94,7 @@ const MyProducts = () => {
                   )}
                   <Card.Body className="d-flex flex-column">
                     <div className="flex-grow-1">
-                      <Card.Title>{product.name}</Card.Title>
+                      <Card.Title className="text-primary">{product.name}</Card.Title>
                       <Card.Text>{product.description}</Card.Text>
                       <Card.Text>
                         <strong>Precio:</strong> {product.price} créditos

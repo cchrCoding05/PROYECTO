@@ -1,48 +1,73 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { adminService } from '../../services/adminService';
 import './ProductManagement.css';
+import AlertMessage from '../Layout/AlertMessage';
 
 const ProductManagement = ({ itemsPerPage = 20 }) => {
-    const [products, setProducts] = useState([]);
+    const [allProducts, setAllProducts] = useState([]);
+    const [filteredProducts, setFilteredProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [currentPage, setCurrentPage] = useState(1);
+    const [alert, setAlert] = useState(null);
 
-    const fetchProducts = async () => {
+    const fetchAllProducts = useCallback(async () => {
         try {
             const response = await adminService.getAllProducts();
             if (response.success && Array.isArray(response.data)) {
-                setProducts(response.data);
+                setAllProducts(response.data);
+                setAlert(null);
             } else {
-                console.error('Formato de respuesta inválido:', response);
-                showAlert('Error', 'Formato de datos inválido', 'danger');
+                console.error('Formato de respuesta inválido al cargar productos:', response);
+                setAlert({ message: 'Formato de datos inválido al cargar productos', type: 'danger' });
             }
         } catch (error) {
             console.error('Error al cargar productos:', error);
-            showAlert('Error', 'No se pudieron cargar los productos', 'danger');
+            setAlert({ message: error.message || 'No se pudieron cargar los productos', type: 'danger' });
         }
-    };
+    }, []);
 
     useEffect(() => {
-        fetchProducts();
-    }, [searchTerm]);
+        fetchAllProducts();
+    }, [fetchAllProducts]);
 
-    const showAlert = (title, message, type) => {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.innerHTML = `
-            <strong>${title}</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        document.body.appendChild(alertDiv);
-        setTimeout(() => alertDiv.remove(), 5000);
-    };
+    useEffect(() => {
+        let currentProducts = [...allProducts];
+
+        if (searchTerm) {
+            const lowerCaseSearchTerm = searchTerm.toLowerCase();
+            currentProducts = currentProducts.filter(product =>
+                product.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+                (product.description?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+                (product.seller?.username.toLowerCase() || '').includes(lowerCaseSearchTerm)
+            );
+        }
+
+        if (sortConfig.key) {
+            currentProducts = currentProducts.sort((a, b) => {
+                const aValue = a[sortConfig.key];
+                const bValue = b[sortConfig.key];
+
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+
+        setFilteredProducts(currentProducts);
+        setCurrentPage(1);
+    }, [searchTerm, sortConfig, allProducts]);
 
     const handleEdit = (product) => {
         setSelectedProduct(product);
         setShowModal(true);
+        setAlert(null);
     };
 
     const handleDelete = async (productId) => {
@@ -50,11 +75,13 @@ const ProductManagement = ({ itemsPerPage = 20 }) => {
             try {
                 const response = await adminService.deleteProduct(productId);
                 if (response.success) {
-                    showAlert('Éxito', 'Producto eliminado correctamente', 'success');
-                    fetchProducts();
+                    setAlert({ message: 'Producto eliminado correctamente', type: 'success' });
+                    fetchAllProducts();
+                } else {
+                    setAlert({ message: response.message || 'No se pudo eliminar el producto', type: 'danger' });
                 }
             } catch (error) {
-                showAlert('Error', error.message || 'No se pudo eliminar el producto', 'danger');
+                setAlert({ message: error.message || 'No se pudo eliminar el producto', type: 'danger' });
             }
         }
     };
@@ -71,12 +98,14 @@ const ProductManagement = ({ itemsPerPage = 20 }) => {
             });
 
             if (response.success) {
-                showAlert('Éxito', 'Producto actualizado correctamente', 'success');
+                setAlert({ message: 'Producto actualizado correctamente', type: 'success' });
                 setShowModal(false);
-                fetchProducts();
+                fetchAllProducts();
+            } else {
+                setAlert({ message: response.message || 'No se pudo actualizar el producto', type: 'danger' });
             }
         } catch (error) {
-            showAlert('Error', error.message || 'No se pudo actualizar el producto', 'danger');
+            setAlert({ message: error.message || 'No se pudo actualizar el producto', type: 'danger' });
         }
     };
 
@@ -86,53 +115,20 @@ const ProductManagement = ({ itemsPerPage = 20 }) => {
             direction = 'desc';
         }
         setSortConfig({ key, direction });
-    };
-
-    const getSortedProducts = () => {
-        let filteredProducts = products;
-
-        // Filtrar por término de búsqueda
-        if (searchTerm) {
-            const searchLower = normalizeText(searchTerm.toLowerCase());
-            filteredProducts = products.filter(product =>
-                normalizeText(product.name.toLowerCase()).includes(searchLower) ||
-                normalizeText(product.description?.toLowerCase() || '').includes(searchLower) ||
-                normalizeText(product.seller?.username.toLowerCase() || '').includes(searchLower)
-            );
-        }
-
-        // Ordenar productos
-        if (sortConfig.key) {
-            filteredProducts = [...filteredProducts].sort((a, b) => {
-                let aValue = a[sortConfig.key];
-                let bValue = b[sortConfig.key];
-
-                if (aValue < bValue) {
-                    return sortConfig.direction === 'asc' ? -1 : 1;
-                }
-                if (aValue > bValue) {
-                    return sortConfig.direction === 'asc' ? 1 : -1;
-                }
-                return 0;
-            });
-        }
-
-        return filteredProducts;
+        setCurrentPage(1);
     };
 
     const getPaginatedProducts = () => {
-        const sortedProducts = getSortedProducts();
         const startIndex = (currentPage - 1) * itemsPerPage;
-        return sortedProducts.slice(startIndex, startIndex + itemsPerPage);
+        return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
     };
 
-    const totalPages = Math.ceil(getSortedProducts().length / itemsPerPage);
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
     const handlePageChange = (pageNumber) => {
         setCurrentPage(pageNumber);
     };
 
-    // Función para normalizar texto (eliminar tildes)
     const normalizeText = (text) => {
         return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     };
@@ -142,8 +138,21 @@ const ProductManagement = ({ itemsPerPage = 20 }) => {
         return sortConfig.direction === 'asc' ? ' ↑' : ' ↓';
     };
 
+    const showEmptyState = allProducts.length === 0 && !searchTerm;
+    const showNoResultsState = allProducts.length > 0 && filteredProducts.length === 0 && searchTerm;
+
     return (
         <div className="container py-4">
+            {alert && (
+                <div className="alert-container">
+                    <AlertMessage
+                        message={alert.message}
+                        type={alert.type}
+                        onClose={() => setAlert(null)}
+                    />
+                </div>
+            )}
+
             <div className="input-group mb-4">
                 <span className="input-group-text">
                     <i className="bi bi-search"></i>
@@ -157,113 +166,121 @@ const ProductManagement = ({ itemsPerPage = 20 }) => {
                 />
             </div>
 
-            {products.length === 0 ? (
+            {showEmptyState ? (
                 <div className="empty-state">
                     <i className="bi bi-box"></i>
                     <h3>No hay productos</h3>
                     <p>Añade un nuevo producto para comenzar a gestionar tu catálogo.</p>
                 </div>
+            ) : showNoResultsState ? (
+                <div className="empty-state">
+                    <i className="bi bi-search"></i>
+                    <h3>No se encontraron productos</h3>
+                    <p>Intenta ajustar tu búsqueda.</p>
+                </div>
             ) : (
-                <>
-                    <div className="table-responsive">
-                        <table className="table table-hover product-table-responsive">
-                            <thead>
-                                <tr>
-                                    <th>Imagen</th>
-                                    <th
-                                        onClick={() => handleSort('name')}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        Nombre{getSortIndicator('name')}
-                                    </th>
-                                    <th
-                                        onClick={() => handleSort('credits')}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        Créditos{getSortIndicator('credits')}
-                                    </th>
-                                    <th>Estado</th>
-                                    <th>Vendedor</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {getPaginatedProducts().map((product) => (
-                                    <tr key={product.id}>
-                                        <td>
-                                            <img
-                                                src={product.image || 'https://via.placeholder.com/50'}
-                                                alt={product.name}
-                                                className="product-thumbnail"
-                                            />
-                                        </td>
-                                        <td>{product.name}</td>
-                                        <td>{product.credits}</td>
-                                        <td>
-                                            <span className={`badge bg-${getStateColor(product.state)}`}>
-                                                {getStateText(product.state)}
-                                            </span>
-                                        </td>
-                                        <td>{product.seller.username}</td>
-                                        <td>
-                                            <button
-                                                className="btn btn-primary btn-sm me-2 btn-edit"
-                                                onClick={() => handleEdit(product)}
-                                            >
-                                                Editar
-                                            </button>
-                                            <button
-                                                className="btn btn-danger btn-sm btn-delete"
-                                                onClick={() => handleDelete(product.id)}
-                                            >
-                                                Eliminar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Paginación */}
-                    {totalPages > 1 && (
-                        <nav aria-label="Navegación de productos" className="mt-4">
-                            <ul className="pagination justify-content-center">
-                                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                                    <button
-                                        className="page-link"
-                                        onClick={() => handlePageChange(currentPage - 1)}
-                                        disabled={currentPage === 1}
-                                    >
-                                        Anterior
-                                    </button>
-                                </li>
-                                {[...Array(totalPages)].map((_, index) => (
-                                    <li key={index + 1} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                <div className="table-responsive">
+                    <table className="table table-hover product-table-responsive">
+                        <thead>
+                            <tr>
+                                <th>Imagen</th>
+                                <th
+                                    onClick={() => {
+                                        handleSort('name');
+                                        setCurrentPage(1);
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    Nombre{getSortIndicator('name')}
+                                </th>
+                                <th
+                                    onClick={() => {
+                                        handleSort('credits');
+                                        setCurrentPage(1);
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    Créditos{getSortIndicator('credits')}
+                                </th>
+                                <th>Estado</th>
+                                <th>Vendedor</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {getPaginatedProducts().map((product) => (
+                                <tr key={product.id}>
+                                    <td>
+                                        <img
+                                            src={product.image || 'https://via.placeholder.com/50'}
+                                            alt={product.name}
+                                            className="product-thumbnail"
+                                        />
+                                    </td>
+                                    <td>{product.name}</td>
+                                    <td>{product.credits}</td>
+                                    <td>
+                                        <span className={`badge bg-${getStateColor(product.state)}`}>
+                                            {getStateText(product.state)}
+                                        </span>
+                                    </td>
+                                    <td>{product.seller.username}</td>
+                                    <td>
                                         <button
-                                            className="page-link"
-                                            onClick={() => handlePageChange(index + 1)}
+                                            className="btn btn-primary btn-sm me-2 btn-edit"
+                                            onClick={() => handleEdit(product)}
                                         >
-                                            {index + 1}
+                                            Editar
                                         </button>
-                                    </li>
-                                ))}
-                                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                                    <button
-                                        className="page-link"
-                                        onClick={() => handlePageChange(currentPage + 1)}
-                                        disabled={currentPage === totalPages}
-                                    >
-                                        Siguiente
-                                    </button>
-                                </li>
-                            </ul>
-                        </nav>
-                    )}
-                </>
+                                        <button
+                                            className="btn btn-danger btn-sm btn-delete"
+                                            onClick={() => handleDelete(product.id)}
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
 
-            {/* Modal de edición */}
+            {totalPages > 1 && (
+                <nav aria-label="Navegación de productos" className="mt-4">
+                    <ul className="pagination justify-content-center">
+                        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                            <button
+                                className="page-link"
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                            >
+                                Anterior
+                            </button>
+                        </li>
+                        {[...Array(totalPages)].map((_, index) => (
+                            <li key={index + 1} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                                <button
+                                    className="page-link"
+                                    onClick={() => handlePageChange(index + 1)}
+                                >
+                                    {index + 1}
+                                </button>
+                            </li>
+                        ))}
+                        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                            <button
+                                className="page-link"
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                            >
+                                Siguiente
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            )}
+
             {showModal && (
                 <div className="modal fade show" style={{ display: 'block' }}>
                     <div className="modal-dialog">

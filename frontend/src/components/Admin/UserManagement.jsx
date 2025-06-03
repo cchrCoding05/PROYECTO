@@ -1,55 +1,87 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { adminService } from '../../services/adminService';
 import './ProfessionalManagement.css';
+import AlertMessage from '../Layout/AlertMessage';
 
 const UserManagement = ({ itemsPerPage = 20 }) => {
-    const [users, setUsers] = useState([]);
+    const [allUsers, setAllUsers] = useState([]); // Guarda todos los usuarios cargados inicialmente
+    const [filteredUsers, setFilteredUsers] = useState([]); // Guarda la lista de usuarios después de aplicar el filtro y ordenación
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [currentPage, setCurrentPage] = useState(1);
+    const [alert, setAlert] = useState(null);
 
-    const fetchUsers = async () => {
+    // Cargar todos los usuarios una vez al inicio
+    const fetchAllUsers = useCallback(async () => {
         try {
             const response = await adminService.getAllUsers();
             if (response.success && Array.isArray(response.data)) {
-                setUsers(response.data);
+                setAllUsers(response.data); // Guarda la lista completa
+                // setFilteredUsers(response.data); // Inicialmente, los filtrados son todos (esto se manejará en el useEffect de filtrado/ordenación)
+                setAlert(null);
             } else {
-                console.error('Formato de respuesta inválido:', response);
-                showAlert('Error', 'Formato de datos inválido', 'danger');
+                console.error('Formato de respuesta inválido al cargar usuarios:', response);
+                setAlert({ message: 'Formato de datos inválido al cargar usuarios', type: 'danger' });
             }
         } catch (error) {
             console.error('Error al cargar usuarios:', error);
-            showAlert('Error', 'No se pudieron cargar los usuarios', 'danger');
+            setAlert({ message: error.message || 'No se pudieron cargar los usuarios', type: 'danger' });
         }
-    };
+    }, []); // Dependencia vacía para ejecutar solo al montar
 
     useEffect(() => {
-        fetchUsers();
-    }, [searchTerm]);
+        fetchAllUsers();
+    }, [fetchAllUsers]);
 
-    const showAlert = (title, message, type) => {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.innerHTML = `
-            <strong>${title}</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        document.body.appendChild(alertDiv);
-        setTimeout(() => alertDiv.remove(), 5000);
-    };
+    // Efecto para filtrar y ordenar cuando cambia el término de búsqueda, el orden o la lista completa de usuarios
+    useEffect(() => {
+        let currentUsers = [...allUsers];
+
+        // 1. Filtrar por término de búsqueda
+        if (searchTerm) {
+            const lowerCaseSearchTerm = searchTerm.toLowerCase();
+            currentUsers = currentUsers.filter(user =>
+                user.username.toLowerCase().includes(lowerCaseSearchTerm) ||
+                user.email.toLowerCase().includes(lowerCaseSearchTerm)
+            );
+        }
+
+        // 2. Ordenar la lista filtrada
+        if (sortConfig.key) {
+            currentUsers = currentUsers.sort((a, b) => {
+                const aValue = a[sortConfig.key];
+                const bValue = b[sortConfig.key];
+
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+
+        // 3. Actualizar la lista de usuarios filtrados y ordenar al inicio
+        setFilteredUsers(currentUsers);
+        setCurrentPage(1); // Resetear paginación al filtrar u ordenar
+
+    }, [searchTerm, sortConfig, allUsers]); // Dependencias: término de búsqueda, configuración de orden y lista completa
 
     const handleDelete = async (userId) => {
         if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
             try {
                 const response = await adminService.deleteUser(userId);
                 if (response.success) {
-                    showAlert('Éxito', 'Usuario eliminado correctamente', 'success');
-                    fetchUsers();
+                    setAlert({ message: 'Usuario eliminado correctamente', type: 'success' });
+                    fetchAllUsers(); // Volver a cargar todos los usuarios después de eliminar para actualizar la lista completa
+                } else {
+                    setAlert({ message: response.message || 'No se pudo eliminar el usuario', type: 'danger' });
                 }
             } catch (error) {
-                showAlert('Error', error.message || 'No se pudo eliminar el usuario', 'danger');
+                setAlert({ message: error.message || 'No se pudo eliminar el usuario', type: 'danger' });
             }
         }
     };
@@ -57,6 +89,7 @@ const UserManagement = ({ itemsPerPage = 20 }) => {
     const handleEdit = (user) => {
         setSelectedUser(user);
         setShowModal(true);
+        setAlert(null); // Limpiar alerta al abrir modal
     };
 
     const handleSave = async (e) => {
@@ -72,12 +105,14 @@ const UserManagement = ({ itemsPerPage = 20 }) => {
             });
 
             if (response.success) {
-                showAlert('Éxito', 'Usuario actualizado correctamente', 'success');
+                setAlert({ message: 'Usuario actualizado correctamente', type: 'success' });
                 setShowModal(false);
-                fetchUsers();
+                fetchAllUsers(); // Volver a cargar todos los usuarios después de actualizar para actualizar la lista completa
+            } else {
+                setAlert({ message: response.message || 'No se pudo actualizar el usuario', type: 'danger' });
             }
         } catch (error) {
-            showAlert('Error', error.message || 'No se pudo actualizar el usuario', 'danger');
+            setAlert({ message: error.message || 'No se pudo actualizar el usuario', type: 'danger' });
         }
     };
 
@@ -87,52 +122,20 @@ const UserManagement = ({ itemsPerPage = 20 }) => {
             direction = 'desc';
         }
         setSortConfig({ key, direction });
-    };
-
-    const getSortedUsers = () => {
-        let filteredUsers = users;
-
-        // Filtrar por término de búsqueda
-        if (searchTerm) {
-            const searchLower = normalizeText(searchTerm.toLowerCase());
-            filteredUsers = users.filter(user =>
-                normalizeText(user.username.toLowerCase()).includes(searchLower) ||
-                normalizeText(user.email.toLowerCase()).includes(searchLower)
-            );
-        }
-
-        // Ordenar usuarios
-        if (sortConfig.key) {
-            filteredUsers = [...filteredUsers].sort((a, b) => {
-                let aValue = a[sortConfig.key];
-                let bValue = b[sortConfig.key];
-
-                if (aValue < bValue) {
-                    return sortConfig.direction === 'asc' ? -1 : 1;
-                }
-                if (aValue > bValue) {
-                    return sortConfig.direction === 'asc' ? 1 : -1;
-                }
-                return 0;
-            });
-        }
-
-        return filteredUsers;
+        setCurrentPage(1);
     };
 
     const getPaginatedUsers = () => {
-        const sortedUsers = getSortedUsers();
         const startIndex = (currentPage - 1) * itemsPerPage;
-        return sortedUsers.slice(startIndex, startIndex + itemsPerPage);
+        return filteredUsers.slice(startIndex, startIndex + itemsPerPage);
     };
 
-    const totalPages = Math.ceil(getSortedUsers().length / itemsPerPage);
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
     const handlePageChange = (pageNumber) => {
         setCurrentPage(pageNumber);
     };
 
-    // Función para normalizar texto (eliminar tildes)
     const normalizeText = (text) => {
         return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     };
@@ -142,8 +145,22 @@ const UserManagement = ({ itemsPerPage = 20 }) => {
         return sortConfig.direction === 'asc' ? ' ↑' : ' ↓';
     };
 
+    // Determinar si mostrar el estado vacío general o el de búsqueda
+    const showEmptyState = allUsers.length === 0 && !searchTerm;
+    const showNoResultsState = allUsers.length > 0 && filteredUsers.length === 0 && searchTerm;
+
     return (
         <div className="container py-4">
+            {alert && (
+                <div className="alert-container">
+                    <AlertMessage
+                        message={alert.message}
+                        type={alert.type}
+                        onClose={() => setAlert(null)}
+                    />
+                </div>
+            )}
+
             <div className="input-group mb-4">
                 <span className="input-group-text">
                     <i className="bi bi-search"></i>
@@ -157,66 +174,88 @@ const UserManagement = ({ itemsPerPage = 20 }) => {
                 />
             </div>
 
-            <div className="table-responsive">
-                <table className="table table-hover user-table-responsive">
-                    <thead>
-                        <tr>
-                            <th>Foto</th>
-                            <th
-                                onClick={() => handleSort('username')}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                Nombre{getSortIndicator('username')}
-                            </th>
-                            <th
-                                onClick={() => handleSort('email')}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                Email{getSortIndicator('email')}
-                            </th>
-                            <th
-                                onClick={() => handleSort('credits')}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                Créditos{getSortIndicator('credits')}
-                            </th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {getPaginatedUsers().map((user) => (
-                            <tr key={user.id}>
-                                <td>
-                                    <img
-                                        src={user.foto_perfil || 'https://via.placeholder.com/50'}
-                                        alt={user.username}
-                                        className="professional-avatar"
-                                    />
-                                </td>
-                                <td>{user.username}</td>
-                                <td>{user.email}</td>
-                                <td>{user.credits}</td>
-                                <td>
-                                    <button
-                                        className="btn btn-primary btn-sm me-2 btn-edit"
-                                        onClick={() => handleEdit(user)}
-                                    >
-                                        Editar
-                                    </button>
-                                    <button
-                                        className="btn btn-danger btn-sm btn-delete"
-                                        onClick={() => handleDelete(user.id)}
-                                    >
-                                        Eliminar
-                                    </button>
-                                </td>
+            {showEmptyState ? (
+                 <div className="empty-state">
+                     <i className="bi bi-people"></i>
+                     <h3>No hay usuarios</h3>
+                     <p>La lista de usuarios está vacía.</p>
+                 </div>
+             ) : showNoResultsState ? (
+                 <div className="empty-state">
+                     <i className="bi bi-search"></i>
+                     <h3>No se encontraron usuarios</h3>
+                     <p>Intenta ajustar tu búsqueda.</p>
+                 </div>
+            ) : (
+                <div className="table-responsive">
+                    <table className="table table-hover user-table-responsive">
+                        <thead>
+                            <tr>
+                                <th>Foto</th>
+                                <th
+                                    onClick={() => {
+                                        handleSort('username');
+                                        setCurrentPage(1); // Resetear paginación al ordenar
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    Nombre{getSortIndicator('username')}
+                                </th>
+                                <th
+                                    onClick={() => {
+                                        handleSort('email');
+                                        setCurrentPage(1); // Resetear paginación al ordenar
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    Email{getSortIndicator('email')}
+                                </th>
+                                <th
+                                    onClick={() => {
+                                        handleSort('credits');
+                                        setCurrentPage(1); // Resetear paginación al ordenar
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    Créditos{getSortIndicator('credits')}
+                                </th>
+                                <th>Acciones</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            {getPaginatedUsers().map((user) => (
+                                <tr key={user.id}>
+                                    <td>
+                                        <img
+                                            src={user.foto_perfil || 'https://via.placeholder.com/50'}
+                                            alt={user.username}
+                                            className="professional-avatar"
+                                        />
+                                    </td>
+                                    <td>{user.username}</td>
+                                    <td>{user.email}</td>
+                                    <td>{user.credits}</td>
+                                    <td>
+                                        <button
+                                            className="btn btn-primary btn-sm me-2 btn-edit"
+                                            onClick={() => handleEdit(user)}
+                                        >
+                                            Editar
+                                        </button>
+                                        <button
+                                            className="btn btn-danger btn-sm btn-delete"
+                                            onClick={() => handleDelete(user.id)}
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+             )}
 
-            {/* Paginación */}
             {totalPages > 1 && (
                 <nav aria-label="Navegación de usuarios" className="mt-4">
                     <ul className="pagination justify-content-center">
@@ -252,7 +291,6 @@ const UserManagement = ({ itemsPerPage = 20 }) => {
                 </nav>
             )}
 
-            {/* Modal de edición */}
             {showModal && (
                 <div className="modal fade show" style={{ display: 'block' }}>
                     <div className="modal-dialog">

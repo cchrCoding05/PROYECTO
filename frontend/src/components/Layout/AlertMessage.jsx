@@ -23,13 +23,19 @@ const AlertMessage = ({ message, type = 'danger', duration = 5000, onClose }) =>
   if (!visible) return null;
 
   return (
-    <div className={`alert alert-${type}`}>
-      <div className="alert-content">
-        {message}
+    <div className="alert-container">
+      <div className={`alert alert-${type}`}>
+        <div className="alert-content">
+          {message}
+        </div>
+        <button 
+          className="alert-close" 
+          onClick={handleClose}
+          aria-label="Cerrar"
+        >
+          &times;
+        </button>
       </div>
-      <button className="alert-close" onClick={handleClose}>
-        &times;
-      </button>
     </div>
   );
 };

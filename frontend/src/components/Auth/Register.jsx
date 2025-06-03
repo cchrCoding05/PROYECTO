@@ -153,11 +153,13 @@ const Register = () => {
         <h2 className="text-center">Registrarse</h2>
         
         {alert && (
-          <AlertMessage 
-            message={alert.message} 
-            type={alert.type} 
-            onClose={() => setAlert(null)} 
-          />
+          <div className="alert-container">
+            <AlertMessage 
+              message={alert.message} 
+              type={alert.type} 
+              onClose={() => setAlert(null)} 
+            />
+          </div>
         )}
         
         <form onSubmit={handleSubmit}>

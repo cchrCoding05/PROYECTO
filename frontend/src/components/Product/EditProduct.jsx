@@ -52,7 +52,8 @@ const EditProduct = () => {
           name: productData.name || productData.title || '',
           description: productData.description || '',
           credits: productData.credits || 0,
-          image: productData.image || ''
+          image: productData.image || '',
+          state: productData.state || 1
         });
         setPreviewImage(productData.image || '');
       } catch (err) {
@@ -142,7 +143,7 @@ const EditProduct = () => {
         description: formData.description,
         credits: parseInt(formData.credits),
         image: imageUrl,
-        state: formData.state
+        state: parseInt(formData.state)
       });
       
       if (result && result.success === false) {
@@ -158,7 +159,7 @@ const EditProduct = () => {
       
       // Redirigir a la lista de productos después de 2 segundos
       setTimeout(() => {
-        navigate('/my-products');
+        navigate('/profile?tab=products');
       }, 2000);
     } catch (err) {
       console.error('Error al actualizar producto:', err);
@@ -375,7 +376,7 @@ const EditProduct = () => {
                   </Button>
                   <Button 
                     variant="secondary" 
-                    onClick={() => navigate(`/negotiation/${id}`)}
+                    onClick={() => navigate('/profile?tab=products')}
                     disabled={loading}
                   >
                     Cancelar

@@ -76,7 +76,7 @@ const MyNegotiations = () => {
             {getRoleBadge(negotiation.isSeller)}
             {getStatusBadge(negotiation.status, negotiation.isActive)}
           </div>
-          <Card.Title className="mb-3">{negotiation.product.name}</Card.Title>
+          <h5 className="card-title text-primary mb-0">{negotiation.product.name}</h5>
           <Card.Text>
             <strong>Precio original:</strong> {negotiation.product.credits} créditos
           </Card.Text>

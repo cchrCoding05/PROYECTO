@@ -24,48 +24,51 @@ export const authService = {
       console.log('Respuesta del servidor:', response);
 
       if (!response.success) {
+        if (response.message === 'Credenciales inválidas') {
+          throw new Error('Correo o contraseña incorrectos');
+        }
         throw new Error(response.message || 'Error al iniciar sesión');
       }
 
-      if (response.token) {
-        console.log('Token recibido, guardando en localStorage...');
-        localStorage.setItem('token', response.token);
-        
-        // Esperar un momento para asegurar que el token se guardó
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Verificar que el token se guardó correctamente
-        const savedToken = localStorage.getItem('token');
-        console.log('Token guardado:', savedToken ? 'Sí' : 'No');
-        console.log('Valor del token guardado:', savedToken);
-        
-        if (!savedToken) {
-          throw new Error('Error al guardar el token');
-        }
-        
-        // Intentar obtener el perfil del usuario
-        console.log('Obteniendo perfil del usuario...');
-        try {
-          const userProfile = await this.getCurrentUser();
-          console.log('Perfil obtenido:', userProfile);
-          
-          // Verificar que tenemos los datos del usuario
-          if (!userProfile || !userProfile.data) {
-            throw new Error('No se pudo obtener el perfil del usuario');
-          }
-          
-          return {
-            ...response,
-            user: userProfile.data
-          };
-        } catch (profileError) {
-          console.error('Error al obtener perfil:', profileError);
-          // Si falla al obtener el perfil, al menos devolvemos los datos básicos
-          return response;
-        }
+      if (!response.token) {
+        throw new Error('No se recibió el token de autenticación');
       }
 
-      return response;
+      console.log('Token recibido, guardando en localStorage...');
+      localStorage.setItem('token', response.token);
+      
+      // Esperar un momento para asegurar que el token se guardó
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Verificar que el token se guardó correctamente
+      const savedToken = localStorage.getItem('token');
+      console.log('Token guardado:', savedToken ? 'Sí' : 'No');
+      console.log('Valor del token guardado:', savedToken);
+      
+      if (!savedToken) {
+        throw new Error('Error al guardar el token');
+      }
+      
+      // Intentar obtener el perfil del usuario
+      console.log('Obteniendo perfil del usuario...');
+      try {
+        const userProfile = await this.getCurrentUser();
+        console.log('Perfil obtenido:', userProfile);
+        
+        // Verificar que tenemos los datos del usuario
+        if (!userProfile || !userProfile.data) {
+          throw new Error('No se pudo obtener el perfil del usuario');
+        }
+        
+        return {
+          ...response,
+          user: userProfile.data
+        };
+      } catch (profileError) {
+        console.error('Error al obtener perfil:', profileError);
+        // Si falla al obtener el perfil, al menos devolvemos los datos básicos
+        return response;
+      }
     } catch (error) {
       console.error('Error en login:', error);
       throw error;

@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import AlertMessage from '../Layout/AlertMessage';
 import './Negotiation.css';
 import { Button } from 'react-bootstrap';
+import '../../styles/variables.css';
 
 const ProductNegotiation = () => {
   const { id } = useParams();
@@ -294,7 +295,7 @@ const ProductNegotiation = () => {
 
   return (
     <div className="container py-4">
-      <h2 className="text-center display-5 mb-4">
+      <h2 className="text-center display-5 mb-4 text-primary">
         Negociación: {product.name}
       </h2>
       <div className="row">
@@ -308,7 +309,7 @@ const ProductNegotiation = () => {
               onError={e => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/400?text=Sin+Imagen'; }}
             />
             <div className="card-body">
-              <h5 className="card-title">Precio actual</h5>
+              <h5 className="card-title text-primary">{product.name}</h5>
               <p className="h3">{product.credits} créditos</p>
               <p className="text-muted">
                 Vendedor: {product.seller.username}

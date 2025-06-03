@@ -58,6 +58,9 @@ class AuthController extends AbstractController
             $hashedPassword = $passwordHasher->hashPassword($usuario, $data['password']);
             $usuario->setContrasena($hashedPassword);
             
+            // Establecer la imagen de perfil por defecto
+            $usuario->setFotoPerfil('https://res.cloudinary.com/dhi3vddex/image/upload/v1748979403/04065d25-c7c6-4b60-b540-84a67c9722e0.png');
+            
             if (isset($data['descripcion'])) {
                 $usuario->setDescripcion($data['descripcion']);
             }
