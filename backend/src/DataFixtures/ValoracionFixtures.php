@@ -121,22 +121,11 @@ class ValoracionFixtures extends Fixture implements DependentFixtureInterface
         $valoracion10->setFechaCreacion(new \DateTimeImmutable());
         $manager->persist($valoracion10);
 
-        // Valoraciones para Carmen Art
-        $carmen = $this->getReference('usuario_carmen_art', Usuario::class);
-        
-        $valoracion11 = new Valoracion();
-        $valoracion11->setUsuario($diego);
-        $valoracion11->setProfesional($carmen);
-        $valoracion11->setPuntuacion(5);
-        $valoracion11->setComentario('Ilustraciones increíbles');
-        $valoracion11->setFechaCreacion(new \DateTimeImmutable());
-        $manager->persist($valoracion11);
-
         // Valoraciones para Roberto Consultant
         $roberto = $this->getReference('usuario_roberto_consultant', Usuario::class);
         
         $valoracion12 = new Valoracion();
-        $valoracion12->setUsuario($carmen);
+        $valoracion12->setUsuario($roberto);
         $valoracion12->setProfesional($roberto);
         $valoracion12->setPuntuacion(4);
         $valoracion12->setComentario('Buen asesoramiento tecnológico');

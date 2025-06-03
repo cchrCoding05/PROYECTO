@@ -63,17 +63,10 @@ class IntercambioServicioFixtures extends Fixture implements DependentFixtureInt
                 'fecha_completado' => null
             ],
             [
-                'cantidad_creditos' => 40,
-                'estado' => 'completado',
-                'servicio' => 'servicio_ilustración_digital',
-                'solicitante' => 'usuario_roberto_consultant',
-                'fecha_completado' => new \DateTimeImmutable('2024-03-30')
-            ],
-            [
                 'cantidad_creditos' => 70,
                 'estado' => 'en_proceso',
                 'servicio' => 'servicio_consultoría_tecnológica',
-                'solicitante' => 'usuario_carmen_art',
+                'solicitante' => 'usuario_laura_marketing',
                 'fecha_completado' => null
             ],
             [

@@ -64,13 +64,6 @@ class ServicioFixtures extends Fixture implements DependentFixtureInterface
                 'categoria' => 'categoria_desarrollo_web'
             ],
             [
-                'titulo' => 'Ilustración digital',
-                'descripcion' => 'Creación de ilustraciones digitales personalizadas',
-                'creditos' => 40,
-                'usuario' => 'usuario_carmen_art',
-                'categoria' => 'categoria_diseno_grafico'
-            ],
-            [
                 'titulo' => 'Consultoría tecnológica',
                 'descripcion' => 'Asesoramiento en transformación digital',
                 'creditos' => 70,
