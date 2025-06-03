@@ -70,7 +70,7 @@ const UserManagement = ({ itemsPerPage = 20 }) => {
                 description: selectedUser.description,
                 profilePhoto: selectedUser.foto_perfil
             });
-            
+
             if (response.success) {
                 showAlert('Éxito', 'Usuario actualizado correctamente', 'success');
                 setShowModal(false);
@@ -91,11 +91,11 @@ const UserManagement = ({ itemsPerPage = 20 }) => {
 
     const getSortedUsers = () => {
         let filteredUsers = users;
-        
+
         // Filtrar por término de búsqueda
         if (searchTerm) {
             const searchLower = normalizeText(searchTerm.toLowerCase());
-            filteredUsers = users.filter(user => 
+            filteredUsers = users.filter(user =>
                 normalizeText(user.username.toLowerCase()).includes(searchLower) ||
                 normalizeText(user.email.toLowerCase()).includes(searchLower)
             );
@@ -162,19 +162,19 @@ const UserManagement = ({ itemsPerPage = 20 }) => {
                     <thead>
                         <tr>
                             <th>Foto</th>
-                            <th 
+                            <th
                                 onClick={() => handleSort('username')}
                                 style={{ cursor: 'pointer' }}
                             >
                                 Nombre{getSortIndicator('username')}
                             </th>
-                            <th 
+                            <th
                                 onClick={() => handleSort('email')}
                                 style={{ cursor: 'pointer' }}
                             >
                                 Email{getSortIndicator('email')}
                             </th>
-                            <th 
+                            <th
                                 onClick={() => handleSort('credits')}
                                 style={{ cursor: 'pointer' }}
                             >
@@ -322,4 +322,4 @@ const UserManagement = ({ itemsPerPage = 20 }) => {
     );
 };
 
-export default UserManagement; 
+export default UserManagement;

@@ -10,11 +10,11 @@ export const adminService = {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (!response.success) {
         throw new Error(response.message || 'Error al eliminar el usuario');
       }
-      
+
       return response;
     } catch (error) {
       console.error('Error en deleteUser:', error);
@@ -30,11 +30,11 @@ export const adminService = {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (!response.success) {
         throw new Error(response.message || 'Error al obtener los usuarios');
       }
-      
+
       return response; // Retornamos la respuesta completa
     } catch (error) {
       console.error('Error en getAllUsers:', error);
@@ -50,7 +50,7 @@ export const adminService = {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       return response;
     } catch (error) {
       console.error('Error en checkUserDeletion:', error);
@@ -65,11 +65,11 @@ export const adminService = {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (!response.success) {
         throw new Error(response.message || 'Error al obtener los productos');
       }
-      
+
       return response;
     } catch (error) {
       console.error('Error en getAllProducts:', error);
@@ -85,11 +85,11 @@ export const adminService = {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (!response.success) {
         throw new Error(response.message || 'Error al eliminar el producto');
       }
-      
+
       return response;
     } catch (error) {
       console.error('Error en deleteProduct:', error);
@@ -107,11 +107,11 @@ export const adminService = {
         },
         body: JSON.stringify(productData)
       });
-      
+
       if (!response.success) {
         throw new Error(response.message || 'Error al actualizar el producto');
       }
-      
+
       return response;
     } catch (error) {
       console.error('Error en updateProduct:', error);
@@ -129,14 +129,52 @@ export const adminService = {
         },
         body: JSON.stringify(userData)
       });
-      
+
       if (!response.success) {
         throw new Error(response.message || 'Error al actualizar el usuario');
       }
-      
+
       return response;
     } catch (error) {
       console.error('Error en updateUser:', error);
+      throw error;
+    }
+  },
+
+  getSystemStats: async () => {
+    try {
+      const response = await fetchApi('/admin/stats', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.success) {
+        throw new Error(response.message || 'Error al obtener las estadísticas del sistema');
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error en getSystemStats:', error);
+      throw error;
+    }
+  },
+
+  getRecentActivity: async (limit = 10) => {
+    try {
+      const response = await fetchApi(`/admin/activity?limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.success) {
+        throw new Error(response.message || 'Error al obtener la actividad reciente');
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error en getRecentActivity:', error);
       throw error;
     }
   }

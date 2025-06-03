@@ -14,25 +14,17 @@
 .nav-pills .nav-link {
     color: #495057;
     border-radius: 0.25rem;
-    padding: 0.75rem 1rem;
     margin-bottom: 0.5rem;
     transition: all 0.3s ease;
-    text-align: left;
-    width: 100%;
-    border: none;
-    background: none;
-    font-weight: 500;
 }
 
 .nav-pills .nav-link:hover {
     background-color: #e9ecef;
-    color: #495057;
 }
 
 .nav-pills .nav-link.active {
     background-color: #0d6efd;
     color: white;
-    font-weight: 600;
 }
 
 .nav-pills .nav-link i {
@@ -75,6 +67,20 @@
     margin-bottom: 1.5rem;
     color: var(--text-color);
     font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .nav-pills {
+        margin-bottom: 1rem;
+    }
+
+    .nav-pills .nav-link {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .tab-content {
+        padding: 1rem;
+    }
 }
 
 .card {
@@ -166,17 +172,3 @@
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
 }
-
-@media (max-width: 768px) {
-    .nav-pills {
-        margin-bottom: 1rem;
-    }
-    
-    .nav-pills .nav-link {
-        padding: 0.5rem 0.75rem;
-    }
-    
-    .tab-content {
-        padding: 1rem;
-    }
-} 

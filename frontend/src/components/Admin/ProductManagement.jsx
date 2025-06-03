@@ -69,7 +69,7 @@ const ProductManagement = ({ itemsPerPage = 20 }) => {
                 state: selectedProduct.state,
                 image: selectedProduct.image
             });
-            
+
             if (response.success) {
                 showAlert('Éxito', 'Producto actualizado correctamente', 'success');
                 setShowModal(false);
@@ -90,11 +90,11 @@ const ProductManagement = ({ itemsPerPage = 20 }) => {
 
     const getSortedProducts = () => {
         let filteredProducts = products;
-        
+
         // Filtrar por término de búsqueda
         if (searchTerm) {
             const searchLower = normalizeText(searchTerm.toLowerCase());
-            filteredProducts = products.filter(product => 
+            filteredProducts = products.filter(product =>
                 normalizeText(product.name.toLowerCase()).includes(searchLower) ||
                 normalizeText(product.description?.toLowerCase() || '').includes(searchLower) ||
                 normalizeText(product.seller?.username.toLowerCase() || '').includes(searchLower)
@@ -170,13 +170,13 @@ const ProductManagement = ({ itemsPerPage = 20 }) => {
                             <thead>
                                 <tr>
                                     <th>Imagen</th>
-                                    <th 
+                                    <th
                                         onClick={() => handleSort('name')}
                                         style={{ cursor: 'pointer' }}
                                     >
                                         Nombre{getSortIndicator('name')}
                                     </th>
-                                    <th 
+                                    <th
                                         onClick={() => handleSort('credits')}
                                         style={{ cursor: 'pointer' }}
                                     >
@@ -366,4 +366,4 @@ const getStateText = (state) => {
     }
 };
 
-export default ProductManagement; 
+export default ProductManagement;
