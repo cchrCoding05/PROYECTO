@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { adminService } from '../../services/adminService';
 import './ProductManagement.css';
 
-const ProductManagement = () => {
+const ProductManagement = ({ itemsPerPage = 20 }) => {
     const [products, setProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+    const [currentPage, setCurrentPage] = useState(1);
 
     const fetchProducts = async () => {
         try {
@@ -101,20 +102,34 @@ const ProductManagement = () => {
         }
 
         // Ordenar productos
-        if (!sortConfig.key) return filteredProducts;
+        if (sortConfig.key) {
+            filteredProducts = [...filteredProducts].sort((a, b) => {
+                let aValue = a[sortConfig.key];
+                let bValue = b[sortConfig.key];
 
-        return [...filteredProducts].sort((a, b) => {
-            let aValue = a[sortConfig.key];
-            let bValue = b[sortConfig.key];
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
 
-            if (aValue < bValue) {
-                return sortConfig.direction === 'asc' ? -1 : 1;
-            }
-            if (aValue > bValue) {
-                return sortConfig.direction === 'asc' ? 1 : -1;
-            }
-            return 0;
-        });
+        return filteredProducts;
+    };
+
+    const getPaginatedProducts = () => {
+        const sortedProducts = getSortedProducts();
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return sortedProducts.slice(startIndex, startIndex + itemsPerPage);
+    };
+
+    const totalPages = Math.ceil(getSortedProducts().length / itemsPerPage);
+
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
     };
 
     // Función para normalizar texto (eliminar tildes)
@@ -149,65 +164,103 @@ const ProductManagement = () => {
                     <p>Añade un nuevo producto para comenzar a gestionar tu catálogo.</p>
                 </div>
             ) : (
-                <div className="table-responsive">
-                    <table className="table table-hover product-table-responsive">
-                        <thead>
-                            <tr>
-                                <th>Imagen</th>
-                                <th 
-                                    onClick={() => handleSort('name')}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    Nombre{getSortIndicator('name')}
-                                </th>
-                                <th 
-                                    onClick={() => handleSort('credits')}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    Créditos{getSortIndicator('credits')}
-                                </th>
-                                <th>Estado</th>
-                                <th>Vendedor</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {getSortedProducts().map((product) => (
-                                <tr key={product.id}>
-                                    <td>
-                                        <img
-                                            src={product.image || 'https://via.placeholder.com/50'}
-                                            alt={product.name}
-                                            className="product-thumbnail"
-                                        />
-                                    </td>
-                                    <td>{product.name}</td>
-                                    <td>{product.credits}</td>
-                                    <td>
-                                        <span className={`badge bg-${getStateColor(product.state)}`}>
-                                            {getStateText(product.state)}
-                                        </span>
-                                    </td>
-                                    <td>{product.seller.username}</td>
-                                    <td>
-                                        <button
-                                            className="btn btn-primary btn-sm me-2 btn-edit"
-                                            onClick={() => handleEdit(product)}
-                                        >
-                                            Editar
-                                        </button>
-                                        <button
-                                            className="btn btn-danger btn-sm btn-delete"
-                                            onClick={() => handleDelete(product.id)}
-                                        >
-                                            Eliminar
-                                        </button>
-                                    </td>
+                <>
+                    <div className="table-responsive">
+                        <table className="table table-hover product-table-responsive">
+                            <thead>
+                                <tr>
+                                    <th>Imagen</th>
+                                    <th 
+                                        onClick={() => handleSort('name')}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        Nombre{getSortIndicator('name')}
+                                    </th>
+                                    <th 
+                                        onClick={() => handleSort('credits')}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        Créditos{getSortIndicator('credits')}
+                                    </th>
+                                    <th>Estado</th>
+                                    <th>Vendedor</th>
+                                    <th>Acciones</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                {getPaginatedProducts().map((product) => (
+                                    <tr key={product.id}>
+                                        <td>
+                                            <img
+                                                src={product.image || 'https://via.placeholder.com/50'}
+                                                alt={product.name}
+                                                className="product-thumbnail"
+                                            />
+                                        </td>
+                                        <td>{product.name}</td>
+                                        <td>{product.credits}</td>
+                                        <td>
+                                            <span className={`badge bg-${getStateColor(product.state)}`}>
+                                                {getStateText(product.state)}
+                                            </span>
+                                        </td>
+                                        <td>{product.seller.username}</td>
+                                        <td>
+                                            <button
+                                                className="btn btn-primary btn-sm me-2 btn-edit"
+                                                onClick={() => handleEdit(product)}
+                                            >
+                                                Editar
+                                            </button>
+                                            <button
+                                                className="btn btn-danger btn-sm btn-delete"
+                                                onClick={() => handleDelete(product.id)}
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Paginación */}
+                    {totalPages > 1 && (
+                        <nav aria-label="Navegación de productos" className="mt-4">
+                            <ul className="pagination justify-content-center">
+                                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                    <button
+                                        className="page-link"
+                                        onClick={() => handlePageChange(currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                    >
+                                        Anterior
+                                    </button>
+                                </li>
+                                {[...Array(totalPages)].map((_, index) => (
+                                    <li key={index + 1} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                                        <button
+                                            className="page-link"
+                                            onClick={() => handlePageChange(index + 1)}
+                                        >
+                                            {index + 1}
+                                        </button>
+                                    </li>
+                                ))}
+                                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                    <button
+                                        className="page-link"
+                                        onClick={() => handlePageChange(currentPage + 1)}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Siguiente
+                                    </button>
+                                </li>
+                            </ul>
+                        </nav>
+                    )}
+                </>
             )}
 
             {/* Modal de edición */}
