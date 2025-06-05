@@ -319,17 +319,15 @@ const ProductNegotiation = () => {
                   />
                 </div>
                 <div className="col-md-6">
-                  <h4>{product.name}</h4>
-                  <p className="text-muted">{product.description}</p>
-                  <p>
-                    <strong>Estado:</strong> {product.state === 1 ? 'Disponible' : product.state === 2 ? 'Reservado' : 'Intercambiado'}
-                  </p>
-                  <p>
-                    <strong>Precio:</strong> {product.price} créditos
-                  </p>
-                  <p>
-                    <strong>Vendedor:</strong> {product.seller.username}
-                  </p>
+                  <div className="product-details">
+                    <h3>{product.name}</h3>
+                    <p className="product-description">{product.description}</p>
+                    <div className="product-info">
+                      <p><strong>Estado:</strong> {product.state === 1 ? 'Disponible' : product.state === 2 ? 'Reservado' : 'Intercambiado'}</p>
+                      <p><strong>Precio:</strong> {product.credits} créditos</p>
+                      <p><strong>Vendedor:</strong> {product.seller.username}</p>
+                    </div>
+                  </div>
                   {isOwnerValue && product.state !== 1 && (
                     <div className="alert alert-info">
                       <i className="bi bi-info-circle me-2"></i>
