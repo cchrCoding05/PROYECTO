@@ -40,7 +40,7 @@ class Mensaje
 
     public function __construct()
     {
-        $this->fecha_envio = new \DateTimeImmutable();
+        $this->fecha_envio = new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid'));
     }
 
     public function getId_mensaje(): ?int
