@@ -10,12 +10,14 @@ import './ProfessionalSearch.css';
 const ProfessionalSearch = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [noResults, setNoResults] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [hasSearched, setHasSearched] = useState(false);
   const professionalsPerPage = 15;
 
   // Inicializar Cloudinary
@@ -31,6 +33,13 @@ const ProfessionalSearch = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Efecto para cargar profesionales iniciales
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      searchProfessionals('');
+    }
+  }, [isAuthenticated, user]);
+
   // Función para normalizar texto (quitar tildes y convertir a minúsculas)
   const normalizeText = (text) => {
     if (!text) return '';
@@ -41,28 +50,26 @@ const ProfessionalSearch = () => {
       .trim();
   };
 
-  useEffect(() => {
-    // Cargar profesionales al iniciar
-    searchProfessionals();
-  }, []);
-
   const searchProfessionals = async (query = '') => {
     try {
       setLoading(true);
       setError(null);
       setNoResults(false);
       
+      if (query !== '') {
+        setHasSearched(true);
+      }
+      
       console.log('Buscando profesionales con query:', query);
       const results = await professionalService.search(query);
       console.log('Resultados de búsqueda completos:', results);
-
+      
       if (results && results.success === false) {
         setError(results.message || 'Error en la búsqueda de profesionales');
         setProfessionals([]);
-        setNoResults(true);
         return;
       }
-
+      
       // Validar que results.data es un array
       const professionalsArray = Array.isArray(results.data) ? results.data : [];
       console.log('Número total de profesionales antes de filtrar:', professionalsArray.length);
@@ -133,11 +140,6 @@ const ProfessionalSearch = () => {
   const handleInputChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    
-    // Si el campo de búsqueda está vacío, mostrar todos los profesionales
-    if (!query.trim()) {
-      searchProfessionals('');
-    }
   };
 
   const renderStars = (rating) => {
@@ -218,7 +220,7 @@ const ProfessionalSearch = () => {
           </button>
         </div>
       </form>
-
+      
       {loading && (
         <div className="text-center my-4">
           <div className="spinner-border text-primary" role="status">
@@ -232,7 +234,7 @@ const ProfessionalSearch = () => {
 
       <div className="mt-4">
         <h3 className="text-center mb-4">
-          {searchQuery ? `Resultados para "${searchQuery}"` : 'Todos los profesionales'}
+          {hasSearched && searchQuery.trim() ? `Resultados para "${searchQuery}"` : 'Profesionales disponibles'}
         </h3>
         
         {!loading && !error && !noResults && professionals.length > 0 ? (
@@ -295,7 +297,7 @@ const ProfessionalSearch = () => {
                       </div>
                       
                       <div className="d-flex justify-content-center gap-3">
-                      <Link 
+                        <Link 
                           to={`/negotiate/professional/${professional.id}`}
                           className="btn btn-primary"
                         >

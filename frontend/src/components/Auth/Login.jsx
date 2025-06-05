@@ -123,7 +123,6 @@ const Login = () => {
         ...prev,
         general: err.message || 'Error al iniciar sesión'
       }));
-    } finally {
       setLoading(false);
     }
   };

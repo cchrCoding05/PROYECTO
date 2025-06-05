@@ -8,23 +8,18 @@ import './Search.css';
 const ProductSearch = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  
+  // Estados
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [noResults, setNoResults] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [hasSearched, setHasSearched] = useState(false);
   const productsPerPage = 15;
 
-  useEffect(() => {
-    const checkAuth = () => {
-      if (!isAuthenticated) {
-        navigate('/login', { replace: true });
-      }
-    };
-    checkAuth();
-  }, [isAuthenticated, navigate]);
-
+  // Función de búsqueda
   const searchProducts = useCallback(async (query = '') => {
     if (!isAuthenticated || !user) {
       navigate('/login', { replace: true });
@@ -35,6 +30,10 @@ const ProductSearch = () => {
       setLoading(true);
       setError(null);
       setNoResults(false);
+      
+      if (query !== '') {
+        setHasSearched(true);
+      }
       
       const results = await productService.search(query);
       
@@ -82,19 +81,41 @@ const ProductSearch = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Cargar productos iniciales
+  // Efecto para verificar autenticación
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Efecto para cargar productos iniciales
+  useEffect(() => {
+    if (isAuthenticated && user) {
       searchProducts('');
     }
-  }, [isAuthenticated, searchProducts]);
+  }, [isAuthenticated, user, searchProducts]);
 
-  // Calcular los productos a mostrar en la página actual
+  // Manejadores de eventos
+  const handleSearch = (e) => {
+    e.preventDefault();
+    searchProducts(searchQuery);
+  };
+
+  const handleInputChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Cálculos de paginación
   const indexOfLast = currentPage * productsPerPage;
   const indexOfFirst = indexOfLast - productsPerPage;
   const currentProducts = products.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(products.length / productsPerPage);
 
+  // Funciones auxiliares
   const getStateText = (state) => {
     switch (state) {
       case 1: return 'Disponible';
@@ -111,19 +132,6 @@ const ProductSearch = () => {
       case 3: return 'text-danger';
       default: return 'text-muted';
     }
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    searchProducts(searchQuery);
-  };
-
-  const handleInputChange = (e) => {
-    setSearchQuery(e.target.value);
-  };
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
   };
 
   if (!isAuthenticated) {
@@ -164,21 +172,10 @@ const ProductSearch = () => {
         </div>
       )}
       
-      {noResults && !loading && !error && (
-        <div className="text-center bg-light bg-opacity-25 p-4 rounded my-4">
-          <h3 className="fw-bold text-secondary">No se encontraron objetos</h3>
-          {searchQuery ? (
-            <p className="text-muted">No hay resultados para "<strong>{searchQuery}</strong>". Intenta con otra búsqueda.</p>
-          ) : (
-            <p className="text-muted">No hay objetos disponibles en este momento.</p>
-          )}
-        </div>
-      )}
-      
       {!loading && !error && !noResults && products.length > 0 && (
         <div className="mt-4">
           <h3 className="text-center mb-4">
-            {searchQuery ? `Resultados para "${searchQuery}"` : 'Objetos disponibles'}
+            {hasSearched && searchQuery.trim() ? `Resultados para "${searchQuery}"` : 'Objetos disponibles'}
           </h3>
           
           <div className="row g-4">
@@ -229,7 +226,7 @@ const ProductSearch = () => {
               </div>
             ))}
           </div>
-          {/* Paginación */}
+          
           {totalPages > 1 && (
             <nav className="d-flex justify-content-center mt-4">
               <ul className="pagination">
@@ -240,6 +237,17 @@ const ProductSearch = () => {
                 ))}
               </ul>
             </nav>
+          )}
+        </div>
+      )}
+      
+      {!loading && !error && noResults && (
+        <div className="text-center bg-light bg-opacity-25 p-4 rounded my-4">
+          <h3 className="fw-bold text-secondary">No se encontraron objetos</h3>
+          {searchQuery ? (
+            <p className="text-muted">No hay resultados para "<strong>{searchQuery}</strong>". Intenta con otra búsqueda.</p>
+          ) : (
+            <p className="text-muted">No hay objetos disponibles en este momento.</p>
           )}
         </div>
       )}
