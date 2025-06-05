@@ -7,9 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: process.env.NODE_ENV === 'production' 
-          ? 'http://api.helpex.com:22193'
-          : 'http://localhost:8000',
+        target: import.meta.env.VITE_API_URL || 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path,

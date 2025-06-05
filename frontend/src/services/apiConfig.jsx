@@ -1,7 +1,5 @@
 // Configuración de la API
-const API_URL = process.env.NODE_ENV === 'production' 
-    ? 'http://api.helpex.com:22193/api'
-    : 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 // Función para realizar peticiones a la API
 export const fetchApi = async (endpoint, options = {}) => {
