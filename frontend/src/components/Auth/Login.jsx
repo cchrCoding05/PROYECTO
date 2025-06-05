@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Button, Alert, Container, Card } from 'react-bootstrap';
+import { Form, Button, Container, Card } from 'react-bootstrap';
 import { useAuth } from '../../hooks/useAuth';
 import './Auth.css';
-import AlertMessage from '../Layout/AlertMessage';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,15 +17,6 @@ const Login = () => {
     general: ''
   });
   const [loading, setLoading] = useState(false);
-
-  // Efecto para cargar el error persistente al montar el componente
-  useEffect(() => {
-    const persistedError = localStorage.getItem('authError');
-    if (persistedError) {
-      setErrors(prev => ({ ...prev, general: persistedError }));
-      localStorage.removeItem('authError');
-    }
-  }, []);
 
   const validateEmail = (email) => {
     // Validación más estricta del formato de email
@@ -119,10 +109,13 @@ const Login = () => {
       }
     } catch (err) {
       console.error('Error en login:', err);
-      setErrors(prev => ({
-        ...prev,
-        general: err.message || 'Error al iniciar sesión'
-      }));
+      const errorMessage = err.message || 'Error al iniciar sesión';
+      alert(errorMessage);
+      setErrors({
+        email: '',
+        password: '',
+        general: errorMessage
+      });
       setLoading(false);
     }
   };
@@ -132,14 +125,6 @@ const Login = () => {
       <Card className="p-4 shadow-sm" style={{ maxWidth: '400px', width: '100%' }}>
         <Card.Body>
           <h2 className="text-center mb-4">Iniciar Sesión</h2>
-          
-          {errors.general && (
-            <AlertMessage
-              message={errors.general}
-              type="danger"
-              onClose={() => setErrors(prev => ({ ...prev, general: '' }))}
-            />
-          )}
 
           <Form onSubmit={handleSubmit} noValidate>
             <Form.Group className="mb-3">
