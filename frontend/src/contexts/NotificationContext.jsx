@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { notificationService } from '../services/notificationService';
 
 const NotificationContext = createContext();
@@ -16,37 +17,42 @@ export const NotificationProvider = ({ children }) => {
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const { isAuthenticated } = useAuth();
 
     const fetchNotifications = async () => {
+        if (!isAuthenticated) return;
+        
         try {
             setLoading(true);
             setError(null);
             const response = await notificationService.getNotifications();
             if (response.success) {
                 setNotifications(response.data);
-            } else {
-                setError(response.message || 'Error al cargar las notificaciones');
             }
         } catch (error) {
-            setError(error.message || 'Error al cargar las notificaciones');
-            console.error('Error en fetchNotifications:', error);
+            console.error('Error al obtener notificaciones:', error);
+            setError(error.message);
         } finally {
             setLoading(false);
         }
     };
 
     const fetchUnreadCount = async () => {
+        if (!isAuthenticated) return;
+        
         try {
             const response = await notificationService.getUnreadCount();
             if (response.success) {
                 setUnreadCount(response.data.count);
             }
         } catch (error) {
-            console.error('Error en fetchUnreadCount:', error);
+            console.error('Error al obtener contador de notificaciones no leídas:', error);
         }
     };
 
     const markAsRead = async (notificationId) => {
+        if (!isAuthenticated) return;
+        
         try {
             const response = await notificationService.markAsRead(notificationId);
             if (response.success) {
@@ -60,12 +66,13 @@ export const NotificationProvider = ({ children }) => {
                 setUnreadCount(prev => Math.max(0, prev - 1));
             }
         } catch (error) {
-            console.error('Error en markAsRead:', error);
-            setError(error.message || 'Error al marcar la notificación como leída');
+            console.error('Error al marcar notificación como leída:', error);
         }
     };
 
     const markAllAsRead = async () => {
+        if (!isAuthenticated) return;
+        
         try {
             const response = await notificationService.markAllAsRead();
             if (response.success) {
@@ -78,39 +85,47 @@ export const NotificationProvider = ({ children }) => {
                 setUnreadCount(0);
             }
         } catch (error) {
-            console.error('Error en markAllAsRead:', error);
-            setError(error.message || 'Error al marcar todas las notificaciones como leídas');
+            console.error('Error al marcar todas las notificaciones como leídas:', error);
         }
     };
 
     const refreshNotifications = async () => {
-        await Promise.all([
-            fetchNotifications(),
-            fetchUnreadCount()
-        ]);
+        if (!isAuthenticated) return;
+        
+        try {
+            await Promise.all([
+                fetchNotifications(),
+                fetchUnreadCount()
+            ]);
+        } catch (error) {
+            console.error('Error al refrescar notificaciones:', error);
+        }
     };
 
     useEffect(() => {
-        refreshNotifications();
-
-        // Actualizar cada 30 segundos en lugar de cada minuto
-        const interval = setInterval(refreshNotifications, 30000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    const value = {
-        notifications,
-        unreadCount,
-        loading,
-        error,
-        refreshNotifications,
-        markAsRead,
-        markAllAsRead
-    };
+        if (isAuthenticated) {
+            refreshNotifications();
+            const interval = setInterval(refreshNotifications, 10000);
+            return () => clearInterval(interval);
+        } else {
+            setNotifications([]);
+            setUnreadCount(0);
+            setError(null);
+        }
+    }, [isAuthenticated]);
 
     return (
-        <NotificationContext.Provider value={value}>
+        <NotificationContext.Provider
+            value={{
+                notifications,
+                unreadCount,
+                loading,
+                error,
+                markAsRead,
+                markAllAsRead,
+                refreshNotifications
+            }}
+        >
             {children}
         </NotificationContext.Provider>
     );

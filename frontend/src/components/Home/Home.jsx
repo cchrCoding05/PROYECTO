@@ -163,7 +163,7 @@ const Home = () => {
                           }}
                         />
                         <Card.Body className="text-center">
-                          <Card.Title>{professional.name}</Card.Title>
+                          <div className="text-dark dark:text-white card-title h5">{professional.name}</div>
                           <Card.Text>{professional.profession}</Card.Text>
                           <div className="d-flex flex-column align-items-center mb-3">
                             <div className="mb-1">
@@ -216,19 +216,19 @@ const Home = () => {
                           }}
                         />
                         <Card.Body>
-                          <Card.Title>{product.name}</Card.Title>
+                          <div className="text-dark dark:text-white card-title h5">{product.name}</div>
                           <Card.Text>{product.description}</Card.Text>
-                          <div className="d-flex justify-content-between align-items-center">
+                          <div className="d-flex justify-content-between align-items-center mb-3">
                             <span className="h5 mb-0">{product.price} créditos</span>
-                            <Link to={`/product/${product.id}`} className="btn btn-primary">
-                              Ver Detalles
-                            </Link>
                           </div>
-                          <div className="mt-2 text-muted">
+                          <div className="mt-2 text-muted mb-3">
                             <small>
                               Vendedor: {product.user?.name}
                             </small>
                           </div>
+                          <Link to={`/product/${product.id}`} className="btn btn-primary w-100">
+                            Ver Detalles
+                          </Link>
                         </Card.Body>
                       </Card>
                     </Col>

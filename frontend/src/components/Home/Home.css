@@ -103,4 +103,88 @@
     .hero-subtitle {
         font-size: 1rem;
     }
+}
+
+/* Estilos para modo oscuro */
+.dark .card {
+    background-color: #2d3748;
+    border-color: #4a5568;
+}
+
+.dark .card-title {
+    color: #ffffff !important;
+}
+
+.dark .card-text {
+    color: #e2e8f0 !important;
+}
+
+.dark .text-muted {
+    color: #a0aec0 !important;
+}
+
+.dark .card-body {
+    background-color: #2d3748;
+}
+
+.dark .card-header {
+    background-color: #1a202c;
+    border-bottom-color: #4a5568;
+}
+
+.dark .card .h5 {
+    color: #ffffff !important;
+}
+
+.dark .card .text-primary {
+    color: #63b3ed !important;
+}
+
+.dark .card .btn-primary {
+    background-color: #4299e1;
+    border-color: #4299e1;
+}
+
+.dark .card .btn-primary:hover {
+    background-color: #3182ce;
+    border-color: #3182ce;
+}
+
+/* Estilos específicos para títulos de tarjetas con mayor especificidad */
+.card .card-title.text-dark.dark\:text-white,
+.card .text-dark.dark\:text-white {
+    color: #1a202c !important;
+}
+
+[data-bs-theme="dark"] .card .card-title.text-dark.dark\:text-white,
+[data-bs-theme="dark"] .card .text-dark.dark\:text-white {
+    color: #ffffff !important;
+}
+
+/* Asegurar que los estilos se apliquen incluso con estilos en línea */
+.card .card-title.text-dark.dark\:text-white[style],
+.card .text-dark.dark\:text-white[style] {
+    color: #1a202c !important;
+}
+
+[data-bs-theme="dark"] .card .card-title.text-dark.dark\:text-white[style],
+[data-bs-theme="dark"] .card .text-dark.dark\:text-white[style] {
+    color: #ffffff !important;
+}
+
+.card-title {
+    color: #1a202c;
+}
+
+.dark .card-title {
+    color: #ffffff !important;
+}
+
+/* Sobrescribir estilos de Bootstrap */
+.card .text-dark.dark\:text-white {
+    color: #1a202c !important;
+}
+
+.dark .card .text-dark.dark\:text-white {
+    color: #ffffff !important;
 } 

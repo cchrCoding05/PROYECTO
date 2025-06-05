@@ -114,7 +114,7 @@ const Navbar = () => {
                     borderColor: 'var(--bs-border-color)'
                   }}>
                     <li>
-                      <Link className="dropdown-item" to="/profile" style={{ color: 'var(--bs-body-color)' }}>
+                      <Link className="dropdown-item" to="/profile?tab=profile" style={{ color: 'var(--bs-body-color)' }}>
                         Mi perfil
                       </Link>
                     </li>
@@ -126,6 +126,11 @@ const Navbar = () => {
                     <li>
                       <Link className="dropdown-item" to="/profile?tab=negotiations" style={{ color: 'var(--bs-body-color)' }}>
                         Mis negociaciones
+                      </Link>
+                    </li>
+                    <li>
+                      <Link className="dropdown-item" to="/profile?tab=chats" style={{ color: 'var(--bs-body-color)' }}>
+                        Mis chats
                       </Link>
                     </li>
                     <li><hr className="dropdown-divider" style={{ borderColor: 'var(--bs-border-color)' }} /></li>

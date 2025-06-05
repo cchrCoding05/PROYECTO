@@ -5,7 +5,8 @@ import { Card, ListGroup, Badge, Spinner, Alert, Button } from 'react-bootstrap'
 import '../../styles/Negotiation.css';
 import AlertMessage from '../Layout/AlertMessage';
 
-const API_URL = 'http://api.helpex.com:22193/api';
+// const API_URL = 'http://api.helpex.com:22193/api';
+const API_URL = 'http://localhost:8000/api';
 
 const MyChats = () => {
     const [chats, setChats] = useState([]);

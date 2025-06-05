@@ -269,7 +269,7 @@ const ProfessionalSearch = () => {
                         )}
                       </div>
                       
-                      <h4 className="card-title mb-1 fw-bold">{professional.name}</h4>
+                      <h4 className="card-title mb-1 fw-bold text-dark dark:text-white">{professional.name}</h4>
                       <div className="text-primary fw-medium mb-2">{professional.profession}</div>
                       <p className="card-text text-body-secondary small mb-3" style={{ 
                         display: '-webkit-box', 

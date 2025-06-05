@@ -33,7 +33,25 @@ const NotificationBell = () => {
             >
                 <i className="bi bi-bell"></i>
                 {unreadCount > 0 && (
-                    <span className="notification-badge">{unreadCount}</span>
+                    <span className="notification-badge" style={{
+                        position: 'absolute',
+                        top: '-5px',
+                        right: '-5px',
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        borderRadius: '50%',
+                        padding: '2px 6px',
+                        fontSize: '0.75rem',
+                        minWidth: '18px',
+                        height: '18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}>
+                        {unreadCount}
+                    </span>
                 )}
                 {loading && (
                     <span className="notification-loading">

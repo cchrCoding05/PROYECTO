@@ -196,7 +196,7 @@ const ProductSearch = () => {
                     }}
                   />
                   <div className="card-body">
-                    <h5 className="card-title">{product.name}</h5>
+                    <h5 className="card-title text-dark dark:text-white">{product.name}</h5>
                     <p className="card-text">{product.description}</p>
                     <p className="card-text">
                       <small className="text-muted">

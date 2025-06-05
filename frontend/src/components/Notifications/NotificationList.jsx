@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -6,12 +6,19 @@ import { es } from 'date-fns/locale';
 import './NotificationList.css';
 
 const NotificationList = ({ onClose }) => {
-    const { notifications, loading, error, markAsRead, markAllAsRead } = useNotifications();
+    const { notifications, loading, error, markAsRead, markAllAsRead, refreshNotifications } = useNotifications();
     const navigate = useNavigate();
+
+    // Actualizar la lista cuando se abre el desplegable
+    useEffect(() => {
+        refreshNotifications();
+    }, []);
 
     const handleNotificationClick = async (notification) => {
         try {
-            await markAsRead(notification.id);
+            if (!notification.leido) {
+                await markAsRead(notification.id);
+            }
             
             // Redirigir según el tipo de notificación
             switch (notification.tipo) {

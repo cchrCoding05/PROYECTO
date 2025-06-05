@@ -5,7 +5,8 @@ import AlertMessage from '../Layout/AlertMessage';
 import { chatService } from '../../services/chatService';
 import './Negotiation.css';
 
-const API_URL = 'http://api.helpex.com:22193/api';
+// const API_URL = 'http://api.helpex.com:22193/api';
+const API_URL = 'http://localhost:8000/api';
 
 const ProfessionalNegotiation = () => {
     const { id } = useParams();
@@ -482,7 +483,12 @@ const ProfessionalNegotiation = () => {
                             textAlign: isCurrentUser ? 'right' : 'left'
                         }}
                     >
-                        {msg.fecha ? new Date(msg.fecha).toLocaleTimeString() : 'Sin fecha'}
+                        {msg.fecha ? new Date(msg.fecha).toLocaleTimeString('es-ES', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false,
+                            timeZone: 'Europe/Madrid'
+                        }) : 'Sin fecha'}
                     </span>
                 </div>
             </div>
@@ -545,7 +551,7 @@ const ProfessionalNegotiation = () => {
                                     className="rounded-circle mb-3"
                                     style={{ width: '150px', height: '150px', objectFit: 'cover' }}
                                 />
-                                <h5 className="card-title mb-1">{professional?.name || 'No disponible'}</h5>
+                                <h5 className="card-title mb-1 text-dark dark:text-white">{professional?.name || 'No disponible'}</h5>
                                 <p className="text-muted mb-0">{professional?.profession || 'Profesión no especificada'}</p>
                             </div>
                         </div>
@@ -553,7 +559,7 @@ const ProfessionalNegotiation = () => {
 
                     <div className="card shadow-sm">
                         <div className="card-body">
-                            <h5 className="card-title">Proponer precio</h5>
+                            <h5 className="card-title text-dark dark:text-white">Proponer precio</h5>
                             {negotiationError && (
                                 <AlertMessage
                                     message={negotiationError}
@@ -590,7 +596,7 @@ const ProfessionalNegotiation = () => {
                             {negotiations.some(msg => msg.estado === 'finalizada') && (
                                 <div className="card shadow-sm mt-3">
                                     <div className="card-body">
-                                        <h5 className="card-title">Valorar Servicio</h5>
+                                        <h5 className="card-title text-dark dark:text-white">Valorar Servicio</h5>
                                         <div className="rating-stars mb-3">
                                             {[1, 2, 3, 4, 5].map((star) => (
                                                 <i
@@ -625,7 +631,7 @@ const ProfessionalNegotiation = () => {
                 <div className="col-md-8">
                     <div className="card shadow-sm mb-4">
                         <div className="card-body">
-                            <h5 className="card-title mb-4">Propuestas de precio</h5>
+                            <h5 className="card-title mb-4 text-dark dark:text-white">Propuestas de precio</h5>
                             {priceProposals.length === 0 ? (
                                 <p className="text-muted">No hay propuestas de precio aún.</p>
                             ) : (
@@ -702,7 +708,7 @@ const ProfessionalNegotiation = () => {
 
                     <div className="card shadow-sm">
                         <div className="card-body">
-                            <h5 className="card-title mb-4">Chat</h5>
+                            <h5 className="card-title mb-4 text-dark dark:text-white">Chat</h5>
                             <div className="chat-messages" style={{ height: '400px', overflowY: 'auto' }}>
                                 {chatMessages.length === 0 ? (
                                     <p className="text-muted">No hay mensajes aún. ¡Inicia la conversación!</p>

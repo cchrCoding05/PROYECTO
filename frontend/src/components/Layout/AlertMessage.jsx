@@ -5,14 +5,13 @@ const AlertMessage = ({ message, type = 'danger', duration = 5000, onClose }) =>
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    if (duration > 0) {
-      const timer = setTimeout(() => {
-        setVisible(false);
-        if (onClose) onClose();
-      }, duration);
-      
-      return () => clearTimeout(timer);
-    }
+    // Asegurar que siempre haya un temporizador para cerrar la alerta
+    const timer = setTimeout(() => {
+      setVisible(false);
+      if (onClose) onClose();
+    }, duration);
+    
+    return () => clearTimeout(timer);
   }, [duration, onClose]);
 
   const handleClose = () => {

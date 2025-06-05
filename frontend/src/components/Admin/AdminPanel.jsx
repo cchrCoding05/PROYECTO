@@ -55,9 +55,9 @@ const AdminPanel = () => {
         return (
             <div className="row">
                 <div className="col-md-6 mb-4">
-                    <div className="card">
-                        <div className="card-header">
-                            <h5 className="card-title mb-0">Estadísticas de Usuarios</h5>
+                    <div className="card" style={{ backgroundColor: 'var(--surface-color)' }}>
+                        <div className="card-header" style={{ backgroundColor: 'var(--surface-color-2)' }}>
+                            <h5 className="card-title mb-0" style={{ color: 'var(--primary-color)' }}>Estadísticas de Usuarios</h5>
                         </div>
                         <div className="card-body">
                             <p>Total de usuarios: {stats.users.total}</p>
@@ -65,9 +65,9 @@ const AdminPanel = () => {
                     </div>
                 </div>
                 <div className="col-md-6 mb-4">
-                    <div className="card">
-                        <div className="card-header">
-                            <h5 className="card-title mb-0">Estadísticas de Productos</h5>
+                    <div className="card" style={{ backgroundColor: 'var(--surface-color)' }}>
+                        <div className="card-header" style={{ backgroundColor: 'var(--surface-color-2)' }}>
+                            <h5 className="card-title mb-0" style={{ color: 'var(--primary-color)' }}>Estadísticas de Productos</h5>
                         </div>
                         <div className="card-body">
                             <p>Total de productos: {stats.products.total}</p>
@@ -78,9 +78,9 @@ const AdminPanel = () => {
                     </div>
                 </div>
                 <div className="col-md-6 mb-4">
-                    <div className="card">
-                        <div className="card-header">
-                            <h5 className="card-title mb-0">Negociaciones</h5>
+                    <div className="card" style={{ backgroundColor: 'var(--surface-color)' }}>
+                        <div className="card-header" style={{ backgroundColor: 'var(--surface-color-2)' }}>
+                            <h5 className="card-title mb-0" style={{ color: 'var(--primary-color)' }}>Negociaciones</h5>
                         </div>
                         <div className="card-body">
                             <p>Total de negociaciones: {stats.negotiations.total}</p>
@@ -90,9 +90,9 @@ const AdminPanel = () => {
                     </div>
                 </div>
                 <div className="col-md-6 mb-4">
-                    <div className="card">
-                        <div className="card-header">
-                            <h5 className="card-title mb-0">Top Vendedores</h5>
+                    <div className="card" style={{ backgroundColor: 'var(--surface-color)' }}>
+                        <div className="card-header" style={{ backgroundColor: 'var(--surface-color-2)' }}>
+                            <h5 className="card-title mb-0" style={{ color: 'var(--primary-color)' }}>Top Vendedores</h5>
                         </div>
                         <div className="card-body">
                             <ul className="list-group">
@@ -116,9 +116,9 @@ const AdminPanel = () => {
         if (!recentActivity.length) return <p>No hay actividad reciente</p>;
 
         return (
-            <div className="card">
-                <div className="card-header">
-                    <h5 className="card-title mb-0">Actividad Reciente</h5>
+            <div className="card" style={{ backgroundColor: 'var(--surface-color)' }}>
+                <div className="card-header" style={{ backgroundColor: 'var(--surface-color-2)' }}>
+                    <h5 className="card-title mb-0" style={{ color: 'var(--primary-color)' }}>Actividad Reciente</h5>
                 </div>
                 <div className="card-body">
                     <div className="list-group">
