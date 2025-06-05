@@ -40,11 +40,9 @@ class NotificacionRepository extends ServiceEntityRepository
     public function marcarComoLeida(int $notificacionId, int $usuarioId): void
     {
         $this->createQueryBuilder('n')
-            ->update()
-            ->set('n.leido', ':leido')
+            ->delete()
             ->where('n.id = :id')
             ->andWhere('n.usuario = :usuarioId')
-            ->setParameter('leido', true)
             ->setParameter('id', $notificacionId)
             ->setParameter('usuarioId', $usuarioId)
             ->getQuery()

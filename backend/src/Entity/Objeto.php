@@ -48,7 +48,7 @@ class Objeto
 
     public function __construct()
     {
-        $this->fecha_creacion = new \DateTimeImmutable();
+        $this->fecha_creacion = new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid'));
         $this->intercambios = new ArrayCollection();
         $this->estado = self::ESTADO_DISPONIBLE;
     }

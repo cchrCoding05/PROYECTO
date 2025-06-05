@@ -27,11 +27,33 @@ const Register = () => {
   };
 
   const validateEmail = (email) => {
-    // Debe tener un punto después de la arroba
-    const atIndex = email.indexOf('@');
-    if (atIndex === -1) return false;
-    const domain = email.slice(atIndex + 1);
-    return domain.includes('.') && domain.split('.').pop().length > 0;
+    // Validación más estricta del formato de email
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!emailRegex.test(email)) {
+      return {
+        isValid: false,
+        message: 'El formato del correo electrónico no es válido'
+      };
+    }
+    
+    // Validar que no tenga espacios
+    if (email.includes(' ')) {
+      return {
+        isValid: false,
+        message: 'El correo electrónico no debe contener espacios'
+      };
+    }
+    
+    // Validar que tenga un dominio válido
+    const parts = email.split('@');
+    if (parts.length !== 2 || !parts[1].includes('.')) {
+      return {
+        isValid: false,
+        message: 'El correo debe tener un dominio válido (ejemplo: usuario@dominio.com)'
+      };
+    }
+    
+    return { isValid: true };
   };
 
   const handleSubmit = async (e) => {
@@ -56,9 +78,10 @@ const Register = () => {
     }
 
     // Validación de correo personalizada
-    if (!validateEmail(formData.email)) {
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.isValid) {
       setAlert({ 
-        message: 'El correo debe tener un punto después de la arroba (ejemplo: usuario@dominio.com)', 
+        message: emailValidation.message, 
         type: 'danger' 
       });
       return;

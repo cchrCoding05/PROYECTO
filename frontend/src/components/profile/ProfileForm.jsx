@@ -197,16 +197,6 @@ const ProfileForm = () => {
                           className="hidden-input"
                           disabled={loading}
                         />
-                        {previewAvatar && (
-                          <button
-                            type="button"
-                            className="avatar-remove-btn"
-                            onClick={() => setPreviewAvatar('')}
-                            disabled={loading}
-                          >
-                            Quitar foto
-                          </button>
-                        )}
                       </div>
                     </div>
                   </div>

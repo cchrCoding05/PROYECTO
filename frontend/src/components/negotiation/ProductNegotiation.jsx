@@ -321,9 +321,12 @@ const ProductNegotiation = () => {
                 <div className="col-md-6">
                   <h4>{product.name}</h4>
                   <p className="text-muted">{product.description}</p>
-                  <p>
-                    <strong>Precio:</strong> {product.price} créditos
-                  </p>
+                  <div className="alert alert-primary">
+                    <h5 className="mb-2">Precio: {product.price} créditos</h5>
+                    <p className="mb-0">
+                      <strong>Vendedor:</strong> {product.seller.username}
+                    </p>
+                  </div>
                   <p>
                     <strong>Estado:</strong> {product.state === 1 ? 'Disponible' : product.state === 2 ? 'Reservado' : 'Intercambiado'}
                   </p>

@@ -128,7 +128,8 @@ const NotificationList = ({ onClose }) => {
                                     <span className="notification-time">
                                         {formatDistanceToNow(new Date(notification.fecha_creacion), {
                                             addSuffix: true,
-                                            locale: es
+                                            locale: es,
+                                            timeZone: 'Europe/Madrid'
                                         })}
                                     </span>
                                 </div>

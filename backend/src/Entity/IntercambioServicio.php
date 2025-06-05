@@ -43,7 +43,7 @@ class IntercambioServicio
 
     public function __construct()
     {
-        $this->fecha_solicitud = new \DateTimeImmutable();
+        $this->fecha_solicitud = new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid'));
         $this->valoraciones = new ArrayCollection();
         $this->transacciones = new ArrayCollection();
     }

@@ -133,7 +133,7 @@ class NegotiationController extends AbstractController
             $intercambio->setVendedor($producto->getUsuario());
             $intercambio->setComprador($this->getUser());
             $intercambio->setPrecioPropuesto($data['price']);
-            $intercambio->setFechaSolicitud(new \DateTimeImmutable());
+            $intercambio->setFechaSolicitud(new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid')));
 
             $this->em->persist($intercambio);
 
@@ -147,7 +147,7 @@ class NegotiationController extends AbstractController
             $negociacion->setAceptadoVendedor(false);
             $negociacion->setEstado('EN_NEGOCIACION');
             $negociacion->setTipo('producto');
-            $negociacion->setFechaCreacion(new \DateTimeImmutable());
+            $negociacion->setFechaCreacion(new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid')));
             $negociacion->setIntercambio($intercambio);
 
             $this->em->persist($negociacion);
@@ -161,7 +161,7 @@ class NegotiationController extends AbstractController
             $notificacion->setReferenciaId($producto->getId_objeto());
             $notificacion->setEmisor($this->getUser());
             $notificacion->setLeido(false);
-            $notificacion->setFechaCreacion(new \DateTimeImmutable());
+            $notificacion->setFechaCreacion(new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid')));
 
             $this->em->persist($notificacion);
             $this->em->flush();
@@ -857,7 +857,7 @@ class NegotiationController extends AbstractController
                 $negociacion->setAceptado(false);
                 $negociacion->setAceptadoComprador(false);
                 $negociacion->setAceptadoVendedor(false);
-                $negociacion->setFechaCreacion(new \DateTimeImmutable());
+                $negociacion->setFechaCreacion(new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid')));
 
                 $this->em->persist($negociacion);
                 $this->em->flush(); // Flush para obtener el ID de la negociación
@@ -868,7 +868,7 @@ class NegotiationController extends AbstractController
                 $notificacion->setTipo('propuesta_servicio');
                 $notificacion->setMensaje($this->getUser()->getNombreUsuario() . ' te ha propuesto un precio de ' . $data['price'] . ' créditos por tu servicio');
                 $notificacion->setLeido(false);
-                $notificacion->setFechaCreacion(new \DateTimeImmutable());
+                $notificacion->setFechaCreacion(new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid')));
                 $notificacion->setReferenciaId($negociacion->getId_negociacion());
                 $notificacion->setEmisor($this->getUser());
 
@@ -1030,7 +1030,7 @@ class NegotiationController extends AbstractController
             $mensaje->setReceptor($receptor);
             $mensaje->setContenido($data['contenido']);
             $mensaje->setLeido(false);
-            $mensaje->setFechaEnvio(new \DateTimeImmutable());
+            $mensaje->setFechaEnvio(new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid')));
 
             $this->em->persist($mensaje);
             $this->em->flush();
@@ -1043,7 +1043,7 @@ class NegotiationController extends AbstractController
             $notificacion->setReferenciaId($mensaje->getId_mensaje());
             $notificacion->setEmisor($this->getUser());
             $notificacion->setLeido(false);
-            $notificacion->setFechaCreacion(new \DateTimeImmutable());
+            $notificacion->setFechaCreacion(new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid')));
 
             $this->em->persist($notificacion);
             $this->em->flush();

@@ -462,6 +462,14 @@ const ProfessionalNegotiation = () => {
         }
     };
 
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [negotiations]);
+
     const renderMessage = (msg) => {
         if (!msg || !msg.isMessage) return null;
         const isCurrentUser = msg.user_id === user?.id;

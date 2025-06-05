@@ -51,7 +51,7 @@ class NegociacionPrecio
 
     public function __construct()
     {
-        $this->fecha_creacion = new \DateTimeImmutable();
+        $this->fecha_creacion = new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid'));
     }
 
     public function getId_negociacion(): ?int

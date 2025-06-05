@@ -37,12 +37,14 @@ const ProductManagement = ({ itemsPerPage = 20 }) => {
         let currentProducts = [...allProducts];
 
         if (searchTerm) {
-            const lowerCaseSearchTerm = searchTerm.toLowerCase();
-            currentProducts = currentProducts.filter(product =>
-                product.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-                (product.description?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
-                (product.seller?.username.toLowerCase() || '').includes(lowerCaseSearchTerm)
-            );
+            const normalizedSearchTerm = normalizeText(searchTerm.toLowerCase());
+            currentProducts = currentProducts.filter(product => {
+                const normalizedProductName = normalizeText(product.name.toLowerCase());
+                const normalizedSellerName = normalizeText((product.seller?.username || '').toLowerCase());
+                
+                return normalizedProductName.includes(normalizedSearchTerm) ||
+                       normalizedSellerName.includes(normalizedSearchTerm);
+            });
         }
 
         if (sortConfig.key) {
