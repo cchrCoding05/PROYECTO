@@ -132,7 +132,7 @@ const ProductUpload = () => {
         });
         setImage(null);
         setPreviewImage('');
-        navigate('/my-products');
+        navigate('/profile?tab=products');
       } else {
         throw new Error(productResponse.message || 'Error al crear el producto');
       }

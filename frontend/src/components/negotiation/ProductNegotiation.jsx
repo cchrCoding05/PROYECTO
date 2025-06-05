@@ -299,48 +299,48 @@ const ProductNegotiation = () => {
         Negociación: {product.name}
       </h2>
       <div className="row">
-        <div className="col-md-6">
-          <div className="card shadow-sm mb-4">
-            <img 
-              src={product.image} 
-              alt={product.name}
-              className="img-fluid rounded-top"
-              style={{ maxHeight: '300px', objectFit: 'cover' }}
-              onError={e => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/400?text=Sin+Imagen'; }}
-            />
+        <div className="col-md-8">
+          <div className="card shadow-sm">
             <div className="card-body">
-              <h5 className="card-title text-primary">{product.name}</h5>
-              <p className="h3">{product.credits} créditos</p>
-              <p className="text-muted">
-                Vendedor: {product.seller.username}
-              </p>
-              <Button 
-                variant="primary" 
-                className="mb-3"
-                onClick={() => navigate(`/negotiate/professional/${product.seller.id}`)}
-              >
-                <i className="bi bi-chat-dots me-2"></i>
-                Ir al chat con el vendedor
-              </Button>
-              <p className="mb-0">
-                <strong>Estado:</strong> {product.state === 1 ? 'Disponible' : product.state === 2 ? 'Reservado' : 'Intercambiado'}
-              </p>
-              {isOwnerValue && (
-                <div className="mt-3">
-                  <div className="alert alert-info">
-                    <i className="bi bi-info-circle me-2"></i>
-                    {product.state === 1 
-                      ? 'Como vendedor, puedes aceptar o rechazar las ofertas que reciban tus productos.'
-                      : product.state === 2 
+              <h5 className="card-title mb-4">Detalles del Producto</h5>
+              {actionMessage && (
+                <AlertMessage 
+                  message={actionMessage.text} 
+                  type={actionMessage.type} 
+                />
+              )}
+              <div className="row">
+                <div className="col-md-6">
+                  <img 
+                    src={product.image} 
+                    alt={product.name} 
+                    className="img-fluid rounded mb-3"
+                    style={{ maxHeight: '300px', objectFit: 'cover' }}
+                  />
+                </div>
+                <div className="col-md-6">
+                  <h4>{product.name}</h4>
+                  <p className="text-muted">{product.description}</p>
+                  <p>
+                    <strong>Precio:</strong> {product.price} créditos
+                  </p>
+                  <p>
+                    <strong>Estado:</strong> {product.state === 1 ? 'Disponible' : product.state === 2 ? 'Reservado' : 'Intercambiado'}
+                  </p>
+                  {isOwnerValue && product.state !== 1 && (
+                    <div className="alert alert-info">
+                      <i className="bi bi-info-circle me-2"></i>
+                      {product.state === 2 
                         ? 'Este producto está reservado. Las negociaciones están en pausa.'
                         : 'Este producto ya ha sido intercambiado.'}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
           {product.state !== 3 && (
-            <div className="card shadow-sm">
+            <div className="card shadow-sm mt-4">
               <div className="card-body">
                 <h5 className="card-title">Proponer nuevo precio</h5>
                 {negotiationSuccess && (
@@ -378,19 +378,12 @@ const ProductNegotiation = () => {
             </div>
           )}
         </div>
-        <div className="col-md-6">
+        <div className="col-md-4">
           <div className="card shadow-sm">
             <div className="card-body">
               <h5 className="card-title mb-4">
                 {isOwnerValue ? 'Ofertas recibidas' : 'Historial de negociaciones'}
               </h5>
-              {actionMessage && (
-                <AlertMessage 
-                  message={actionMessage.text} 
-                  type={actionMessage.type} 
-                  onClose={() => setActionMessage(null)}
-                />
-              )}
               {loadingNegotiations && (
                 <div className="text-center py-2">
                   <div className="spinner-border spinner-border-sm text-primary" role="status">
@@ -454,10 +447,10 @@ const ProductNegotiation = () => {
                     });
 
                     return (
-<div 
-  key={negotiation.id} 
-  className={`list-group-item ${yaAceptado ? 'accepted-negotiation' : ''}`}
->
+                      <div 
+                        key={negotiation.id} 
+                        className={`list-group-item ${yaAceptado ? 'accepted-negotiation' : ''}`}
+                      >
                         <div className="d-flex justify-content-between align-items-start">
                           <div className="flex-grow-1">
                             <div className="d-flex align-items-center mb-2">

@@ -41,20 +41,26 @@ const EditProduct = () => {
         setError(null);
         
         const result = await productService.getById(id);
-        console.log('Respuesta del servidor:', result);
+        console.log('Respuesta completa del servidor:', result);
         
         if (!result.success) {
           throw new Error(result.message || 'Error al cargar el producto');
         }
         
         const productData = result.data;
-        setFormData({
+        console.log('Datos del producto recibidos:', productData);
+        console.log('Estado del producto recibido:', productData.estado);
+        
+        const newFormData = {
           name: productData.name || productData.title || '',
           description: productData.description || '',
           credits: productData.credits || 0,
           image: productData.image || '',
-          state: productData.state || 1
-        });
+          state: parseInt(productData.estado) || 1
+        };
+        
+        console.log('Nuevo formData a establecer:', newFormData);
+        setFormData(newFormData);
         setPreviewImage(productData.image || '');
       } catch (err) {
         console.error('Error al cargar producto:', err);
@@ -69,10 +75,15 @@ const EditProduct = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    console.log('Cambio en el formulario:', { name, value });
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: value
+      };
+      console.log('Nuevo estado del formulario:', newData);
+      return newData;
+    });
   };
 
   const handleImageChange = (e) => {
