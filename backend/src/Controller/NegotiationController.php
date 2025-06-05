@@ -522,7 +522,7 @@ class NegotiationController extends AbstractController
                         'message' => $mensaje->getContenido(),
                         'user_id' => $mensaje->getEmisor()->getId_usuario(),
                         'user_name' => $mensaje->getEmisor()->getNombreUsuario(),
-                        'created_at' => $mensaje->getFechaEnvio()->format('Y-m-d H:i:s'),
+                        'created_at' => $mensaje->getFechaEnvio()->setTimezone(new \DateTimeZone('Europe/Madrid'))->format('Y-m-d H:i:s'),
                         'isBuyer' => $mensaje->getEmisor()->getId_usuario() === $user->getId_usuario(),
                         'leido' => $mensaje->isLeido()
                     ];
@@ -1060,7 +1060,7 @@ class NegotiationController extends AbstractController
                 'data' => [
                     'id' => $mensaje->getId_mensaje(),
                     'contenido' => $mensaje->getContenido(),
-                    'fecha_envio' => $mensaje->getFechaEnvio()->format('Y-m-d H:i:s'),
+                    'fecha_envio' => $mensaje->getFechaEnvio()->setTimezone(new \DateTimeZone('Europe/Madrid'))->format('Y-m-d H:i:s'),
                     'emisor' => [
                         'id' => $mensaje->getEmisor()->getId_usuario(),
                         'nombre' => $mensaje->getEmisor()->getNombreUsuario()

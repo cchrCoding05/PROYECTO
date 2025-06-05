@@ -62,7 +62,7 @@ class ChatController extends AbstractController
                         ],
                         'lastMessage' => [
                             'content' => $mensaje->getContenido(),
-                            'date' => $mensaje->getFechaEnvio()->format('c'),
+                            'date' => $mensaje->getFechaEnvio()->setTimezone(new \DateTimeZone('Europe/Madrid'))->format('c'),
                         ],
                         // Puedes agregar más info aquí si tienes propuestas, etc.
                     ];

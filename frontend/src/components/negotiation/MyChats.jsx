@@ -253,6 +253,14 @@ const MyChats = () => {
                                         {chat.lastMessage && (
                                             <small className="text-muted d-block">
                                                 {chat.lastMessage.content}
+                                                <span className="ms-2">
+                                                    {new Date(chat.lastMessage.date).toLocaleString('es-ES', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        hour12: false,
+                                                        timeZone: 'Europe/Madrid'
+                                                    })}
+                                                </span>
                                             </small>
                                         )}
                                     </div>

@@ -482,7 +482,7 @@ const ProfessionalNegotiation = () => {
                             textAlign: isCurrentUser ? 'right' : 'left'
                         }}
                     >
-                        {msg.fecha ? new Date(msg.fecha).toLocaleTimeString('es-ES', {
+                        {msg.fecha ? new Date(msg.fecha).toLocaleString('es-ES', {
                             hour: '2-digit',
                             minute: '2-digit',
                             hour12: false,
