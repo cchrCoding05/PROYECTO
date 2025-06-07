@@ -77,7 +77,12 @@ const MyProducts = () => {
     <Container className="mt-4">
       <h2 className="text-primary">Mis Productos</h2>
       {products.length === 0 ? (
-        <AlertMessage message={<span>No tienes productos publicados. <Link to="/upload-product" className="btn btn-primary ms-3">Subir Producto</Link></span>} type="info" />
+        <div className="text-center my-4">
+          <p className="text-muted mb-3">No tienes productos publicados.</p>
+          <Link to="/upload-product" className="btn btn-primary">
+            Subir Producto
+          </Link>
+        </div>
       ) : (
         <Row>
           {products.map(product => {

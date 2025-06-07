@@ -131,9 +131,15 @@ const MyNegotiations = () => {
     <Container className="mt-4">
       <h2 className="mb-4">Mis Negociaciones</h2>
       {negociacionesConObjetos.length === 0 ? (
-        <Alert variant="info">
-          No tienes negociaciones activas con productos
-        </Alert>
+        <div className="text-center my-4">
+          <p className="text-muted mb-3">No tienes negociaciones activas con productos.</p>
+          <Button 
+            variant="primary" 
+            onClick={() => navigate('/search')}
+          >
+            Buscar Productos
+          </Button>
+        </div>
       ) : (
         <Row xs={1} md={2} lg={3} className="g-4">
           {negociacionesConObjetos.map(renderNegotiationCard)}
