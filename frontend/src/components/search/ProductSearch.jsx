@@ -19,6 +19,16 @@ const ProductSearch = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const productsPerPage = 15;
 
+  // Función para normalizar texto (quitar tildes y convertir a minúsculas)
+  const normalizeText = (text) => {
+    if (!text) return '';
+    return text
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+  };
+
   // Función de búsqueda
   const searchProducts = useCallback(async (query = '') => {
     if (!isAuthenticated || !user) {
@@ -31,11 +41,14 @@ const ProductSearch = () => {
       setError(null);
       setNoResults(false);
       
-      if (query !== '') {
+      // Normalizar la consulta de búsqueda
+      const normalizedQuery = normalizeText(query);
+      
+      if (normalizedQuery !== '') {
         setHasSearched(true);
       }
       
-      const results = await productService.search(query);
+      const results = await productService.search(normalizedQuery);
       
       if (results && results.success === false) {
         setError(results.message || 'Error al buscar productos');

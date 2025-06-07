@@ -106,15 +106,21 @@ const EditProduct = () => {
     setLoading(true);
 
     try {
-      // Validaciones básicas
-      if (!formData.name.trim()) {
+      // Validaciones más robustas
+      if (!formData.name || formData.name.trim().length === 0) {
         setError('El nombre del producto es requerido');
         setLoading(false);
         return;
       }
 
-      if (!formData.credits || parseInt(formData.credits) < 1) {
-        setError('El precio debe ser al menos 1 crédito');
+      if (!formData.description || formData.description.trim().length === 0) {
+        setError('La descripción del producto es requerida');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.credits || isNaN(formData.credits) || parseInt(formData.credits) < 1) {
+        setError('El precio debe ser un número válido mayor a 0');
         setLoading(false);
         return;
       }
@@ -247,18 +253,20 @@ const EditProduct = () => {
 
               <form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Nombre del Producto</Form.Label>
+                  <Form.Label>Nombre del Producto <span className="text-danger">*</span></Form.Label>
                   <Form.Control
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Nombre del producto"
+                    required
+                    minLength={1}
                   />
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Descripción</Form.Label>
+                  <Form.Label>Descripción <span className="text-danger">*</span></Form.Label>
                   <Form.Control
                     as="textarea"
                     rows={3}
@@ -266,11 +274,13 @@ const EditProduct = () => {
                     value={formData.description}
                     onChange={handleChange}
                     placeholder="Describe tu producto"
+                    required
+                    minLength={1}
                   />
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Precio (créditos)</Form.Label>
+                  <Form.Label>Precio (créditos) <span className="text-danger">*</span></Form.Label>
                   <Form.Control
                     type="number"
                     name="credits"
@@ -279,6 +289,7 @@ const EditProduct = () => {
                     min="1"
                     step="1"
                     placeholder="Precio en créditos"
+                    required
                   />
                 </Form.Group>
 
